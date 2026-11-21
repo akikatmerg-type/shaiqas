@@ -74,9 +74,9 @@ body.pfs canvas { width: min(100vw, calc(100dvh * 16 / 9)); height: auto; aspect
 body.pfs .bar { display: none; }
 #fsx { display: none; position: fixed; z-index: 60; top: max(8px, env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); width: 40px; height: 40px; border-radius: 20px; border: 1.5px solid var(--gold); background: rgba(20,14,16,.7); color: var(--text); font: 800 18px var(--display); }
 body.pfs #fsx { display: block; }
+body.pwa #fsx { display: none !important; }
+body.pfs canvas:focus-visible, .stage:fullscreen canvas:focus-visible { outline: none; }
 #rot { display: none; }
-@media (orientation: portrait) { body.pfs #rot { display: flex; position: fixed; inset: 0; z-index: 55; background: rgba(8,6,12,.92); color: var(--text); align-items: center; justify-content: center; text-align: center; font: 700 20px var(--display); padding: 24px; } }
-</style>
 <script>
 /* SHAIQAS — procedural audio engine (Web Audio only, no asset files).
  * Sets window.AUDIO. See BRIEF.md for the contract.
@@ -1595,6 +1595,8 @@ body.pfs #fsx { display: block; }
 })();
 
 </script>
+@media (orientation: portrait) { body.pfs #rot { display: flex; position: fixed; inset: 0; z-index: 55; background: rgba(8,6,12,.92); color: var(--text); align-items: center; justify-content: center; text-align: center; font: 700 20px var(--display); padding: 24px; } }
+</style>
 
 <div class="stage" id="stage">
   <canvas id="game" width="1280" height="720" tabindex="0" aria-label="SHAIQAS ойыны"></canvas>
@@ -12544,6 +12546,33 @@ function fsToggle() {
 }
 if (fsBtn) fsBtn.addEventListener("click", fsToggle);
 { const x = document.getElementById("fsx"); if (x) x.addEventListener("click", () => pfsSet(false)); }
+
+// ================= ТЕЛЕФОН: автоматты толық экран =================
+// Телефонда ойын бірден бүкіл экранды толтырады; браузерде шын толық экран алғашқы түртуде қосылады
+// (браузерлер оны тек пайдаланушы әрекетінен кейін рұқсат етеді). Орнатылған қосымшада — бірден.
+(function autoFs() {
+  let mob = false, inst = false;
+  try { mob = matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 900; } catch (_) {}
+  try { inst = matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches || navigator.standalone === true; } catch (_) {}
+  if (!mob || /sktest/.test(location.search)) return;
+  let auto = true;
+  const lockLand = () => { try { screen.orientation.lock("landscape").catch(() => {}); } catch (_) {} };
+  if (inst) document.body.classList.add("pwa");
+  pfsSet(true); lockLand();
+  if (inst) return; // қосымша онсыз да толық экранда
+  const st = document.getElementById("stage");
+  const req = st && (st.requestFullscreen || st.webkitRequestFullscreen);
+  if (!req) return; // iPhone Safari: тек «жалған» толық экран (немесе «Басты экранға қосу»)
+  const tryReal = () => {
+    if (!auto || document.fullscreenElement || document.webkitFullscreenElement) return;
+    try { const r = req.call(st); if (r && r.then) r.then(lockLand).catch(() => {}); } catch (_) {}
+  };
+  document.addEventListener("pointerup", e => { if (e.pointerType !== "mouse") tryReal(); }, true);
+  document.addEventListener("touchend", tryReal, true);
+  const x = document.getElementById("fsx");
+  if (x) x.addEventListener("click", () => { auto = false; try { if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (_) {} });
+  if (fsBtn) fsBtn.addEventListener("click", () => { auto = true; });
+})();
 
 // ================= БАПТАУЛАР: дыбыс деңгейлері (жалпы / музыка / әсерлер) =================
 const STG = { open: false, sel: 0, drag: null, fb: { master: .8, music: .6, sfx: .85 }, rep: 0, lastPrev: 0, t0: 0 };
