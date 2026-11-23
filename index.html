@@ -2246,7 +2246,15 @@ else {
 let TEST_UNLOCK_SKILLS = TEST_UNLOCK_ALL;
 function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (_) {} }
 const rankIndex = () => SAVE.prog.filter(p => p >= 4).length;
-const unlocked = c => TEST_UNLOCK_ALL || c === 0 || SAVE.prog[c - 1] >= 4;
+// Тарау ашылуы: алдыңғы тараудың 4 ұрысы жеңілген + сол тараудың викторинасынан өткен болу керек.
+// (Ескі ойыншылар: келесі тарауда ұрысып қойған болса — ол ашық қалады.)
+function qzPassMin() { try { return KID.on ? 5 : 6; } catch (_) { return 6; } }
+let QZB_CACHE = null;
+function quizBest(ch) { if (!QZB_CACHE) { try { QZB_CACHE = histStore().quiz || {}; } catch (_) { QZB_CACHE = {}; } } return QZB_CACHE[ch] | 0; }
+function quizPassed(ch) { return quizBest(ch) >= qzPassMin(); }
+const unlocked = c => TEST_UNLOCK_ALL || c === 0 || (SAVE.prog[c - 1] >= 4 && (quizPassed(c - 1) || (SAVE.prog[c] | 0) > 0));
+function quizGate(c) { return !TEST_UNLOCK_ALL && c > 0 && SAVE.prog[c - 1] >= 4 && !unlocked(c); }
+function lockMsg(c) { return quizGate(c) ? `Алдымен ${CHAPTERS[c - 1].roman} тараудың викторинасынан өт` : "Алдыңғы тарауды аяқта"; }
 
 // ================= ПОЗАЛАР =================
 const P = {
@@ -7575,18 +7583,18 @@ const game = {
       if (this.mapView !== "stages") { campMapUI(this, B); this.ui = ui; return; }
       const ci = this.mapPage, open = unlocked(ci), prog = TEST_UNLOCK_ALL ? 4 : SAVE.prog[ci];
       CHAPTERS[ci].nodes.forEach((n, i) => B([MAP_OX + n.x - 44, MAP_OY + n.y - 44, 88, 110], "", () => {
-        if (open && i <= prog) this.mapStage = i; else { this.toast = open ? "Алдымен алдыңғы ұрысты жең" : "Алдыңғы тарауды аяқта"; this.toastT = 2; }
+        if (open && i <= prog) this.mapStage = i; else { this.toast = open ? "Алдымен алдыңғы ұрысты жең" : lockMsg(ci); this.toastT = 2; }
       }, { hidden: true }));
       const mm = this.mapMode, msg = t => { this.toast = t; this.toastT = 2.2; };
       if (mm === "story") {
         const can = open && this.mapStage <= prog;
-        B([892, 590, 336, 56], can ? "ҰРЫСҚА!" : "ЖАБЫҚ", () => { if (can) this.startCampaign(ci); else msg("Алдыңғы тарауды аяқта"); }, { primary: true, disabled: !can });
+        B([892, 590, 336, 56], can ? "ҰРЫСҚА!" : "ЖАБЫҚ", () => { if (can) this.startCampaign(ci); else msg(lockMsg(ci)); }, { primary: true, disabled: !can });
         B([892, 538, 336, 44], "ТАРИХЫН ОҚУ", () => this.startPrologue(ci, this.mapStage, true), { small: true });
       } else {
         const can = mm === "boss" ? open && prog >= 4 : open;
         const lbl = { train: "ЖАТТЫҒУ", tour: "ТУРНИРДІ БАСТАУ", surv: "БАСТАУ", duel: "ЖЕКПЕ-ЖЕК", boss: "БАСТАР ШАБУЫЛЫ" }[mm];
-        B([892, 590, 336, 56], can ? lbl : "ЖАБЫҚ", () => { if (can) { if (mm === "duel") this.goDuelSel(ci); else this.startMode(mm, ci); } else msg(mm === "boss" ? "Алдымен осы тараудың жорығын аяқта" : "Алдыңғы тарауды аяқта"); }, { primary: true, disabled: !can });
-        if (mm === "tour") TOUR_TIERS.forEach((t, i) => { const ok = open && tierOpen(ci, i); B([896 + i * 112, 246, 104, 36], ok ? t.name : "ЖАБЫҚ", () => { if (ok) { SAVE.tourTier = i; persist(); } else msg(open ? `Алдымен ${TOUR_TIERS[i - 1].name.toLowerCase()} турнирін жең` : "Алдыңғы тарауды аяқта"); }, { small: true, tab: true, tiny: true, active: i === (tierOpen(ci, SAVE.tourTier) ? SAVE.tourTier : 0) && ok }); });
+        B([892, 590, 336, 56], can ? lbl : "ЖАБЫҚ", () => { if (can) { if (mm === "duel") this.goDuelSel(ci); else this.startMode(mm, ci); } else msg(mm === "boss" ? "Алдымен осы тараудың жорығын аяқта" : lockMsg(ci)); }, { primary: true, disabled: !can });
+        if (mm === "tour") TOUR_TIERS.forEach((t, i) => { const ok = open && tierOpen(ci, i); B([896 + i * 112, 246, 104, 36], ok ? t.name : "ЖАБЫҚ", () => { if (ok) { SAVE.tourTier = i; persist(); } else msg(open ? `Алдымен ${TOUR_TIERS[i - 1].name.toLowerCase()} турнирін жең` : lockMsg(ci)); }, { small: true, tab: true, tiny: true, active: i === (tierOpen(ci, SAVE.tourTier) ? SAVE.tourTier : 0) && ok }); });
       }
       B([24, 664, 150, 46], "◀ АЛДЫҢҒЫ", () => this.setPage(ci - 1), { small: true });
       B([686, 664, 150, 46], "КЕЛЕСІ ▶", () => this.setPage(ci + 1), { small: true });
@@ -9112,7 +9120,7 @@ function drawMapPage(g, time) {
     g.fillStyle = "rgba(20,12,8,.62)"; g.fillRect(ox, MAP_OY, 820, 560);
     g.fillStyle = "#e9ad3c"; roundRect(g, ox + 380, MAP_OY + 250, 60, 46, 6); g.fill();
     g.strokeStyle = "#e9ad3c"; g.lineWidth = 7; g.beginPath(); g.arc(ox + 410, MAP_OY + 248, 20, Math.PI, 0); g.stroke();
-    text(g, "Алдыңғы тарауды аяқта", ox + 410, MAP_OY + 340, 26, "#fff3e0");
+    text(g, lockMsg(ci), ox + 410, MAP_OY + 340, 26, "#fff3e0");
   }
   g.restore();
   }
@@ -9248,7 +9256,7 @@ function campMapBack(G) { G.mapView = "map"; G.mapPop = null; G.mapMode = "story
 function campOpenSite(G, i) {
   const s = CAMP_SITES[i], ci = G.mapPage;
   G.mapSite = i;
-  if (!unlocked(ci)) { G.toast = "Алдымен алдыңғы тарауды аяқта"; G.toastT = 2.2; return; }
+  if (!unlocked(ci)) { G.toast = lockMsg(ci); G.toastT = 2.2; return; }
   if (s.id === "story") { G.mapView = "stages"; G.mapMode = "story"; G.mapStage = Math.min(3, SAVE.prog[ci]); G.pt = 0; G.hover = -1; return; }
   G.mapPop = s.id; G.mapMode = s.id; G.popT0 = performance.now(); G.hover = -1;
 }
@@ -9270,8 +9278,8 @@ function campMapUI(G, B) {
     const mm = G.mapPop, px = campPopX(mm), dx = px - 870;
     const can = mm === "boss" ? open && prog >= 4 : open;
     const lbl = { train: "ЖАТТЫҒУ", tour: "ТУРНИРДІ БАСТАУ", surv: "БАСТАУ", duel: "ЖЕКПЕ-ЖЕК", boss: "БАСТАР ШАБУЫЛЫ" }[mm];
-    B([892 + dx, 590, 336, 56], can ? lbl : "ЖАБЫҚ", () => { if (can) { if (mm === "duel") G.goDuelSel(ci); else G.startMode(mm, ci); } else msg(mm === "boss" ? "Алдымен осы тараудың жорығын аяқта" : "Алдыңғы тарауды аяқта"); }, { primary: true, disabled: !can });
-    if (mm === "tour") TOUR_TIERS.forEach((t, i) => { const ok = open && tierOpen(ci, i); B([896 + dx + i * 112, 246, 104, 36], ok ? t.name : "ЖАБЫҚ", () => { if (ok) { SAVE.tourTier = i; persist(); } else msg(open ? `Алдымен ${TOUR_TIERS[i - 1].name.toLowerCase()} турнирін жең` : "Алдыңғы тарауды аяқта"); }, { small: true, tab: true, tiny: true, active: i === (tierOpen(ci, SAVE.tourTier) ? SAVE.tourTier : 0) && ok }); });
+    B([892 + dx, 590, 336, 56], can ? lbl : "ЖАБЫҚ", () => { if (can) { if (mm === "duel") G.goDuelSel(ci); else G.startMode(mm, ci); } else msg(mm === "boss" ? "Алдымен осы тараудың жорығын аяқта" : lockMsg(ci)); }, { primary: true, disabled: !can });
+    if (mm === "tour") TOUR_TIERS.forEach((t, i) => { const ok = open && tierOpen(ci, i); B([896 + dx + i * 112, 246, 104, 36], ok ? t.name : "ЖАБЫҚ", () => { if (ok) { SAVE.tourTier = i; persist(); } else msg(open ? `Алдымен ${TOUR_TIERS[i - 1].name.toLowerCase()} турнирін жең` : lockMsg(ci)); }, { small: true, tab: true, tiny: true, active: i === (tierOpen(ci, SAVE.tourTier) ? SAVE.tourTier : 0) && ok }); });
     B([px + 380 - 56, 100, 44, 44], "", () => { G.mapPop = null; SFX("ui_back"); }, { hidden: true, popClose: true });
     B([24, 18, 150, 46], "◀ КАРТА", () => { G.mapPop = null; }, { small: true });
     return;
@@ -9531,9 +9539,9 @@ function drawCampMap(g, time) {
   campStory(g, S0, selI === 0, T, ci);
   if (!open) {
     g.fillStyle = "rgba(20,12,8,.35)"; g.fillRect(M.x, M.y, M.w, M.h);
-    g.font = `800 24px ${FONT_D}`; const tw = g.measureText("Алдыңғы тарауды аяқта").width + 60;
+    g.font = `800 24px ${FONT_D}`; const tw = g.measureText(lockMsg(ci)).width + 60;
     dzPoint(g, W / 2 - tw / 2, M.y + 14, tw, 44, 16); g.fillStyle = "rgba(20,12,8,.88)"; g.fill(); g.strokeStyle = dzGold(g, M.y + 14, M.y + 58); g.lineWidth = 2; g.stroke();
-    text(g, "Алдыңғы тарауды аяқта", W / 2, M.y + 45, 24, "#ffe3a0");
+    text(g, lockMsg(ci), W / 2, M.y + 45, 24, "#ffe3a0");
   }
   g.restore();
   // төменгі жолақ: тарау атауы мен нүктелер
@@ -13402,7 +13410,7 @@ const QUIZ = [
 const ALB = { sel: 0, open: -1, from: "lobby", newCard: null, figs: {}, hov: -1 };
 const QZ = { ch: 0, i: 0, opts: null, picked: -1, score: 0, done: false, reward: 0, t: 0 };
 function histStore() { try { const d = JSON.parse(localStorage.getItem("shaiqas-hist") || "{}"); return d && typeof d === "object" ? d : {}; } catch (_) { return {}; } }
-function histSave(d) { try { localStorage.setItem("shaiqas-hist", JSON.stringify(d)); } catch (_) {} }
+function histSave(d) { QZB_CACHE = null; try { localStorage.setItem("shaiqas-hist", JSON.stringify(d)); } catch (_) {} }
 // Жеке тест режимі: альбом атауын 5 рет бассаң — тек осы браузерде бәрі ашылады (қайта 5 рет — өшеді)
 const HALL = { taps: 0, last: 0 };
 function histAllTap() {
@@ -14508,6 +14516,10 @@ const TUT_L = {
     { tx: "Есіңде болсын: асықпа, жауды бақыла, қорғанып тұрып соқ. Ал енді — алға, батыр!", go: "ҰРЫСҚА! ▶",
       ru: "Запомни: не спеши, следи за врагом, защищайся и бей. А теперь — вперёд, батыр!" },
   ],
+  gate: [{ tx: () => `Жарайсың, балам! Бірақ келесі тарауға бірден өтпейміз. Алдымен осы тараудың тарихын қаншалықты білетініңді тексерейік: ${QZ_N} сұрақтың кемінде ${qzPassMin()}-сына дұрыс жауап бер.`,
+    ru: () => `Молодец, сынок! Но в следующую главу сразу не идём. Сначала проверим, как ты знаешь историю этой главы: ответь правильно хотя бы на ${qzPassMin()} из ${QZ_N} вопросов.` },
+    { tg: ["ВИКТОРИНАҒА ▶"], tx: "Жауабын білмесең — қорықпа. Тарих альбомындағы карточкаларды оқып, қайта тапсыра бересің. Білім — батырдың екінші қаруы!",
+      ru: "Не знаешь ответа — не бойся. Прочитай карточки в альбоме истории и попробуй снова. Знание — второе оружие батыра!" }],
   arena: [{ tx: "Бұл — еркін алаң. Мұнда уақыт та, жеңіліс те жоқ. Әдістерді асықпай жаттықтыр! Пернелері мен тізбектері — Әдістер кітабында.",
     ru: "Это свободная арена. Здесь нет ни времени, ни поражений. Спокойно тренируй приёмы! Клавиши и связки — в Книге приёмов." }],
   win: [{ tx: "Алғашқы жеңісің құтты болсын, балам! Жеңіс үшін теңге мен тәжірибе алдың. Жылдам әрі аз соққы алып жеңсең — көбірек жұлдыз.",
@@ -14544,6 +14556,7 @@ function tutTrigger() {
     if (G.phase === "matchEnd" && G.mode !== "duel") return [G.pWins >= G.needWins ? "win" : "loss", 2];
     return null;
   }
+  if (s === "story" && G.story && G.story.quiz != null) return ["gate", 1.4];
   if (s === "lobby") return ["lobby", .9];
   if (s === "map") return G.mapView === "stages" ? (G.mapMode === "story" ? ["stages", .7] : null) : ["map", .7];
   if (TUT_L[s]) return [s, .6];
@@ -14872,6 +14885,87 @@ function nameClose() {
   if (!NAME.v && !testMode) setTimeout(() => nameOpen(true), 700);
 }
 if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { NAME, nameOpen, nameApply, playerName });
+
+// ================= ВИКТОРИНА — КЕЛЕСІ ТАРАУДЫҢ КІЛТІ =================
+// Тараудың бас жауын жеңген соң келесі тарау бірден ашылмайды: алдымен сол тараудың
+// тарих викторинасынан өту керек (8 сұрақтың кемінде 6-ы дұрыс; балалар режимінде — 5).
+function quizPending() { for (let c = 0; c < NCH - 1; c++) if (quizGate(c + 1)) return c; return -1; }
+{
+  const G = game;
+  // 1) Тарау аяқталғанда — жырау викторинаға шақырады
+  const _am = G.afterMatch;
+  G.afterMatch = function (next) {
+    const ch = this.chapter;
+    const r = _am.call(this, next);
+    if (this.screen === "story" && this.story && this.mode === "campaign" && ch < NCH - 1 && !quizPassed(ch) && !TEST_UNLOCK_ALL) {
+      this.story.quiz = ch;
+      this.story.text = this.story.text + ` Келесі тарауды ашу үшін ${CHAPTERS[ch].roman} тараудың тарих викторинасынан өт!`;
+      this.story.then = () => quizStart(ch);
+    }
+    return r;
+  };
+  const _bu = G.buildUI;
+  G.buildUI = function (...a) {
+    const r = _bu.apply(this, a);
+    const tut = typeof TUT !== "undefined" && TUT.cur;
+    let L = tut ? (TUT.under || []) : this.ui;
+    // 2) Әңгіме экраны: батырма — «ВИКТОРИНАҒА»
+    if (this.screen === "story" && this.story && this.story.quiz != null) {
+      const b = L.find(u => u.label === "ЖАЛҒАСТЫРУ"); if (b) b.label = "ВИКТОРИНАҒА ▶";
+    }
+    // 3) Викторина нәтижесі: өтсе — келесі тарау, өтпесе — қайта тапсыру
+    if (this.screen === "quiz" && QZ.done) {
+      const ch = QZ.ch, gate = ch < NCH - 1, ok = quizPassed(ch);
+      L = L.filter(u => u.r[1] !== 486);
+      const B = (rr, label, act, opt = {}) => L.push(Object.assign({ r: rr, label, act }, opt));
+      if (gate && ok) {
+        B([360, 486, 270, 54], "ҚАЙТА", () => quizStart(ch), { small: true });
+        B([650, 486, 270, 54], "КЕЛЕСІ ТАРАУ ▶", () => { SFX("ui_select"); this.goMap(ch + 1); }, { primary: true, small: true });
+      } else if (gate) {
+        B([360, 486, 270, 54], "КАРТОЧКАЛАРДЫ ОҚУ", () => { ALB.sel = ch; this.screen = "album"; this.pt = 0; this.hover = -1; SFX("ui_select"); }, { small: true });
+        B([650, 486, 270, 54], "ҚАЙТА ТАПСЫРУ", () => quizStart(ch), { primary: true, small: true });
+      } else {
+        B([360, 486, 270, 54], "ҚАЙТА", () => quizStart(ch), { small: true });
+        B([650, 486, 270, 54], "АЛЬБОМ", () => { this.screen = "album"; this.pt = 0; this.hover = -1; }, { primary: true, small: true });
+      }
+    }
+    // 4) Жабық тарау (викторина керек): картада — викторинаға батырма
+    if (this.screen === "map" && this.mapView !== "stages" && !this.mapPop && quizGate(this.mapPage)) {
+      const pc = this.mapPage - 1;
+      L.unshift({ r: [450, 470, 380, 60], label: `${CHAPTERS[pc].roman} ТАРАУ ВИКТОРИНАСЫ ▶`, act: () => { SFX("ui_select"); quizStart(pc); }, primary: true });
+    }
+    if (tut) TUT.under = L; else this.ui = L;
+    return r;
+  };
+  // 5) Викторина экранында — өту шарты
+  const _dq = drawQuiz;
+  drawQuiz = function (g, time) {
+    _dq(g, time);
+    const ch = QZ.ch, min = qzPassMin(); if (ch >= NCH - 1) return;
+    if (QZ.done) {
+      const ok = quizPassed(ch), nowOk = QZ.score >= min;
+      const msg = ok ? `${CHAPTERS[ch + 1].roman} тарау ашылды! Жаңа жорық күтіп тұр.` : `Келесі тарауды ашу үшін кемінде ${min} / ${QZ_N} дұрыс жауап керек.`;
+      const sub = ok ? (nowOk ? "Тарихты жақсы білесің, балам!" : "Бұрын да өткенсің — тарау ашық.") : "Карточкаларды оқып шық та, қайта тапсыр. Білім — батырдың қаруы!";
+      g.save(); g.fillStyle = "rgba(14,10,24,.8)"; dzShape(g, 260, 578, 760, 76, 14); g.fill(); g.strokeStyle = ok ? "#8fe0a0" : "#ffb070"; g.lineWidth = 2; dzShape(g, 260, 578, 760, 76, 14); g.stroke(); g.restore();
+      text(g, msg, W / 2, 608, 21, ok ? "#a8f0b8" : "#ffd36b", "center", FONT_D, 800);
+      text(g, sub, W / 2, 636, 15, "#e8dccb", "center", FONT_B, 600);
+    } else if (!quizPassed(ch)) {
+      text(g, `Келесі тарау үшін: кемінде ${min} дұрыс жауап · қазір: ${QZ.score}`, 36, 698, 15, "#ffe3a0", "left", FONT_B, 700);
+    }
+  };
+  // 6) Лобби: жырау викторинаны еске салады
+  const _zl = zhLobbyLines;
+  zhLobbyLines = function () {
+    let L = _zl(); const c = quizPending();
+    if (c >= 0) {
+      const done = zhFill(ZH_ADV.lDone[0]);
+      L = L.filter(x => x !== done);
+      L.unshift(`Балам, ${CHAPTERS[c + 1].roman} тарауға аттану үшін алдымен ${CHAPTERS[c].roman} тараудың тарих викторинасынан өт! Тарих альбомын ашып, карточкаларды оқып ал.`);
+    }
+    return L;
+  };
+}
+if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { quizPassed, quizGate, unlocked, quizPending, qzPassMin });
 
 // ================= ЦИКЛ =================
 game.goLobby();
