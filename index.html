@@ -13731,7 +13731,7 @@ const CROWD_KZ = ["#2f5fb0", "#b03030", "#2f7a4a", "#7a3a8a", "#c08a2a", "#3a6a8
 function crowdBuild(ch) {
   const r = seeded(9100 + ch * 17), acc = CHAPTERS[ch].accent || "#888";
   const mk = (side, i, n) => {
-    const kid = r() < .28, woman = !kid && r() < .35;
+    r(); const kid = false, woman = r() < .35; // ұрыс кезінде көрермендер арасында бала жоқ — тек ересектер
     const enemyHats = ["turban", "tymaq", "dulyga", "borik"];
     return {
       x: side < 0 ? 70 + i * 26 + r() * 10 : ARENA - 70 - i * 26 - r() * 10,
