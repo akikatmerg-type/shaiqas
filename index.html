@@ -14967,6 +14967,57 @@ function quizPending() { for (let c = 0; c < NCH - 1; c++) if (quizGate(c + 1)) 
 }
 if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { quizPassed, quizGate, unlocked, quizPending, qzPassMin });
 
+// ================= ТУРНИР САҚТАЛАДЫ: картаға шықсаң да, кесте сол күйі қалады =================
+const TOURS_KEY = "shaiqas-tour-run";
+function tourLoad() { try { const d = JSON.parse(localStorage.getItem(TOURS_KEY) || "{}"); return d && typeof d === "object" ? d : {}; } catch (_) { return {}; } }
+function tourStore(ch, run) {
+  const d = tourLoad();
+  if (run && !run.out && !run.champ) d[ch] = run; else delete d[ch];
+  try { localStorage.setItem(TOURS_KEY, JSON.stringify(d)); } catch (_) {}
+}
+function tourSaved(ch) {
+  const r = tourLoad()[ch];
+  return r && !r.out && !r.champ && Array.isArray(r.lv) && Array.isArray(r.slots) && r.lv[r.stage] ? r : null;
+}
+function tourTierOf(ch) { return tierOpen(ch, SAVE.tourTier) ? SAVE.tourTier : 0; }
+{
+  const G = game;
+  const _sm = G.startMode;
+  G.startMode = function (mode, ch) {
+    if (mode === "tour" && !this.tourFresh) {
+      const sv = tourSaved(ch);
+      if (sv && sv.tier === tourTierOf(ch)) { // сақталған турнирді жалғастыру
+        this.mode = "tour"; this.chapter = ch; this.needWins = 1; this.pvp = false; this.run = sv;
+        try { const me = sv.slots.find(s => s.me); if (me) me.name = this.makePlayer(0).name; } catch (_) {}
+        this.goBracket(); return;
+      }
+    }
+    const r = _sm.apply(this, arguments);
+    if (mode === "tour" && this.run) tourStore(ch, this.run);
+    return r;
+  };
+  const _em = G.endMatch;
+  G.endMatch = function (...a) {
+    const r = _em.apply(this, a);
+    if (this.mode === "tour" && this.run && this.run.slots) tourStore(this.chapter, this.run);
+    return r;
+  };
+  const _bu = G.buildUI;
+  G.buildUI = function (...a) {
+    const r = _bu.apply(this, a);
+    const tut = typeof TUT !== "undefined" && TUT.cur, L = tut ? (TUT.under || []) : this.ui;
+    if (this.screen === "map") {
+      const ci = this.mapPage, b = L.find(u => u.label === "ТУРНИРДІ БАСТАУ");
+      if (b) { const sv = tourSaved(ci); if (sv && sv.tier === tourTierOf(ci)) b.label = "ТУРНИРДІ ЖАЛҒАСТЫРУ"; }
+    }
+    if (this.screen === "bracket" && this.run && !this.run.out && !this.run.champ && !L.some(u => u.label === "ЖАҢАДАН БАСТАУ")) {
+      L.push({ r: [940, 536, 300, 50], label: "ЖАҢАДАН БАСТАУ", small: true, act: () => { this.tourFresh = true; try { this.startMode("tour", this.chapter); } finally { this.tourFresh = false; } } });
+    }
+    return r;
+  };
+}
+if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { tourSaved, tourLoad });
+
 // ================= ЦИКЛ =================
 game.goLobby();
 let last = performance.now();
