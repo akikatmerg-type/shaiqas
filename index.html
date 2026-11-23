@@ -13816,7 +13816,7 @@ function crowdDraw(g) {
   const G = game, _sr = G.startRound;
   G.startRound = function (...a) {
     const r = _sr.apply(this, a);
-    try { CROWD.on = this.mode !== "arena"; const ch = this.stage && CHAPTERS.findIndex(c => c.stage === this.stage.id); crowdBuild(ch >= 0 ? ch : this.chapter); } catch (_) { CROWD.on = false; }
+    try { CROWD.on = false; const ch = this.stage && CHAPTERS.findIndex(c => c.stage === this.stage.id); crowdBuild(ch >= 0 ? ch : this.chapter); } catch (_) { CROWD.on = false; }
     return r;
   };
   const _up = G.update;
@@ -15065,6 +15065,117 @@ function tourForfeit(G, run, ch) {
   };
 }
 if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { tourSaved, tourLoad });
+
+// ================= ФОНДАҒЫ ШАЙҚАС: алыста екі қол бір-бірімен соғысып жатыр =================
+// Көрермендер алынды. Оның орнына — алыс жоспарда (параллакспен) қазақ қолы мен жау қолының шайқасы:
+// жұптасып семсерлесу, шапқан салт аттылар, тулар, шаң. Қан жоқ — балаларға лайық.
+const BGW = { ch: -1, pairs: [], riders: [], flags: [], dust: [], t: 0, on: false };
+const BGW_KZ = ["#b03030", "#2f7a4a", "#8a2a3a", "#c08a2a", "#3a7a5a", "#a8452a"]; // жау түсімен шатаспасын (көк жоқ)
+const BGW_HAT = ["turban", "helmet", "fur", "helmet", "turban", "fur"]; // тараулар бойынша жау бас киімі
+function bgwBuild(ch) {
+  const r = seeded(7700 + ch * 31), acc = (CHAPTERS[ch] && CHAPTERS[ch].accent) || "#a03030", n = LOWFX ? 10 : 16;
+  BGW.pairs = []; BGW.riders = []; BGW.flags = []; BGW.dust = [];
+  for (let i = 0; i < n; i++) {
+    const row = i % 2; // 0 — алысырақ, 1 — жақынырақ
+    BGW.pairs.push({
+      x: -260 + i * (ARENA + 520) / n + r() * 60, row, ph: r() * 6.28, sp: 2.4 + r() * 1.6,
+      a: { coat: BGW_KZ[Math.floor(r() * BGW_KZ.length)], hat: r() < .65 ? "kalpak" : "fur", w: r() < .6 ? "sab" : "spear", sh: r() < .35 },
+      b: { coat: r() < .5 ? acc : dk(acc, .2 + r() * .25), hat: BGW_HAT[ch] || "helmet", w: r() < .55 ? "sab" : "spear", sh: r() < .45 },
+    });
+  }
+  for (let i = 0; i < (LOWFX ? 2 : 4); i++) BGW.riders.push({ x0: r() * (ARENA + 600) - 300, v: (i % 2 ? -1 : 1) * (70 + r() * 50), side: i % 2 ? 1 : -1, ph: r() * 6, row: r() < .5 ? 0 : 1, coat: i % 2 ? acc : BGW_KZ[i % BGW_KZ.length] });
+  for (let i = 0; i < 4; i++) BGW.flags.push({ x: -120 + i * (ARENA + 240) / 3.2 + r() * 80, col: i % 2 ? acc : "#2f6fc8", kz: i % 2 === 0, ph: r() * 6 });
+  BGW.ch = ch;
+}
+// Кішкентай жауынгер (dir: 1 — оңға қарайды). k — масштаб, sw — соққы фазасы 0..1
+function bgwSoldier(g, x, y, k, dir, o, sw, bob) {
+  g.save(); g.translate(x, y + bob); g.scale(k * dir, k); g.lineCap = "round";
+  // аяқтар (адым)
+  g.strokeStyle = "#2a1c14"; g.lineWidth = 6;
+  const st = Math.sin(sw * Math.PI) * 6;
+  g.beginPath(); g.moveTo(-3, -34); g.lineTo(-9 - st, 0); g.moveTo(3, -34); g.lineTo(10 + st, 0); g.stroke();
+  // дене (шапан / сауыт)
+  g.fillStyle = o.coat; poly(g, [[-12, -30], [12, -30], [9, -70], [-9, -70]]);
+  g.fillStyle = "rgba(0,0,0,.2)"; poly(g, [[0, -30], [12, -30], [9, -70], [1, -70]]);
+  g.fillStyle = "#e9ad3c"; g.fillRect(-10, -48, 20, 3);
+  // қалқан
+  if (o.sh) { g.fillStyle = "#6a4a2a"; circle(g, 8, -52, 10); g.fillStyle = "#c8a060"; circle(g, 8, -52, 3); }
+  // қару ұстаған қол: көтеріп — сілтейді
+  const ang = -2.1 + sw * 2.0; // -2.1 (жоғары, артта) → -0.1 (алға)
+  const hx = Math.cos(ang) * 22, hy = -64 + Math.sin(ang) * 22;
+  g.strokeStyle = o.coat; g.lineWidth = 6; g.beginPath(); g.moveTo(2, -64); g.lineTo(hx, hy); g.stroke();
+  if (o.w === "spear") { const L = 46; g.strokeStyle = "#5a3a1e"; g.lineWidth = 2.6; g.beginPath(); g.moveTo(hx - Math.cos(ang + .5) * 14, hy - Math.sin(ang + .5) * 14); g.lineTo(hx + Math.cos(ang + .5) * L, hy + Math.sin(ang + .5) * L); g.stroke();
+    g.fillStyle = "#d8dde2"; const tx = hx + Math.cos(ang + .5) * L, ty = hy + Math.sin(ang + .5) * L; circle(g, tx, ty, 2.6); }
+  else { g.strokeStyle = "#e6ebf0"; g.lineWidth = 2.6; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + Math.cos(ang) * 16, hy + Math.sin(ang) * 16 - 6, hx + Math.cos(ang) * 30, hy + Math.sin(ang) * 30); g.stroke(); }
+  // бас
+  g.fillStyle = "#d8a47c"; circle(g, 1, -79, 8);
+  const hy2 = -86;
+  if (o.hat === "kalpak") { g.fillStyle = "#f2ece0"; poly(g, [[-8, hy2 + 2], [9, hy2 + 2], [4, hy2 - 16], [-2, hy2 - 17]]); g.fillStyle = "#1a1210"; poly(g, [[-10, hy2 + 3], [-5, hy2 - 3], [-2, hy2 + 2]]); }
+  else if (o.hat === "fur") { g.fillStyle = "#6a4a2a"; g.beginPath(); g.ellipse(1, hy2 + 1, 10, 8, 0, Math.PI, Math.PI * 2); g.fill(); g.fillStyle = "#c8a070"; g.fillRect(-9, hy2, 20, 4); }
+  else if (o.hat === "turban") { g.fillStyle = "#f0e8d8"; g.beginPath(); g.ellipse(1, hy2 + 1, 10, 8, 0, Math.PI, Math.PI * 2); g.fill(); g.fillRect(-9, hy2, 20, 4); }
+  else { g.fillStyle = "#9aa4ae"; g.beginPath(); g.arc(1, hy2 + 3, 9, Math.PI, Math.PI * 2); g.fill(); poly(g, [[-3, hy2 - 5], [5, hy2 - 5], [1, hy2 - 15]]); }
+  g.restore();
+}
+function bgwDraw(g, st, cam, t) {
+  if (!BGW.on || game.screen !== "fight" || game.mode === "arena") return;
+  const ch = BGW.ch < 0 ? 0 : BGW.ch, acc = (CHAPTERS[ch] && CHAPTERS[ch].accent) || "#a03030";
+  const ROW = [{ par: .42, y: 574, k: .56 }, { par: .52, y: 592, k: .66 }];
+  g.save();
+  // тулар (артта)
+  for (const f of BGW.flags) {
+    const R = ROW[0], x = f.x - cam * R.par; if (x < -80 || x > W + 80) continue;
+    g.fillStyle = "#3a2418"; g.fillRect(x - 1.5, R.y - 120, 3, 112);
+    const sw = Math.sin(t * 2.6 + f.ph) * 5;
+    g.fillStyle = f.col; g.beginPath(); g.moveTo(x, R.y - 118); g.quadraticCurveTo(x + 20, R.y - 124 + sw, x + 40, R.y - 114 + sw); g.lineTo(x + 38, R.y - 96 + sw * .6); g.quadraticCurveTo(x + 18, R.y - 102 + sw, x, R.y - 96); g.fill();
+    if (f.kz) { g.fillStyle = "#f2c230"; circle(g, x + 18, R.y - 107 + sw * .5, 3.5); }
+  }
+  for (let row = 0; row < 2; row++) {
+    const R = ROW[row];
+    // салт аттылар
+    g.globalAlpha = .9;
+    for (const rd of BGW.riders) {
+      if (rd.row !== row) continue;
+      const span = ARENA + 700, wx = ((rd.x0 + t * rd.v) % span + span) % span - 350, x = wx - cam * R.par;
+      if (x < -120 || x > W + 120) continue;
+      g.fillStyle = dk(rd.coat, .15);
+      rider(g, x, R.y + 4, R.k * .62, rd.v > 0 ? 1 : -1, { ph: t * 9 + rd.ph, hat: rd.side < 0 ? "kalpak" : (BGW_HAT[ch] === "fur" ? "fur" : BGW_HAT[ch]), spear: true });
+      // шаң
+      g.fillStyle = "rgba(200,170,130,.25)"; for (let d = 0; d < 3; d++) { const dd = (t * 3 + d * .33 + rd.ph) % 1; circle(g, x - (rd.v > 0 ? 1 : -1) * (30 + dd * 40), R.y - 2 - dd * 10, 6 + dd * 10); }
+    }
+    g.globalAlpha = 1;
+    // жұптасып шайқасу
+    for (const p of BGW.pairs) {
+      if (p.row !== row) continue;
+      const x = p.x - cam * R.par; if (x < -80 || x > W + 80) continue;
+      const tt = t * p.sp + p.ph, gap = 22 + Math.sin(tt * .5) * 8;
+      const swA = (Math.sin(tt) + 1) / 2, swB = (Math.sin(tt + Math.PI) + 1) / 2;
+      const lungeA = Math.max(0, Math.sin(tt)) * 5, lungeB = Math.max(0, Math.sin(tt + Math.PI)) * 5;
+      bgwSoldier(g, x - gap + lungeA, R.y, R.k, 1, p.a, swA, -Math.abs(Math.sin(tt * 2)) * 1.5);
+      bgwSoldier(g, x + gap - lungeB, R.y, R.k, -1, p.b, swB, -Math.abs(Math.sin(tt * 2 + 1)) * 1.5);
+      // қарулар соқтығысқанда — ұшқын
+      const hit = Math.sin(tt * 2) > .96;
+      if (hit && !LOWFX) { g.fillStyle = "rgba(255,240,180,.9)"; circle(g, x, R.y - 70 * R.k, 3); g.fillStyle = "rgba(255,220,120,.4)"; circle(g, x, R.y - 70 * R.k, 7); }
+      // аяқ астындағы шаң
+      g.fillStyle = "rgba(190,160,120,.16)"; g.beginPath(); g.ellipse(x, R.y + 2, 38, 6, 0, 0, Math.PI * 2); g.fill();
+    }
+  }
+  // алыс тұман: шайқасты артқа «итереді»
+  const fog = g.createLinearGradient(0, 470, 0, 600);
+  fog.addColorStop(0, "rgba(210,200,215,0)"); fog.addColorStop(1, "rgba(210,200,215,.16)");
+  g.fillStyle = fog; g.fillRect(0, 470, W, 130);
+  g.restore();
+}
+{
+  const _ab = gfxAfterBack;
+  gfxAfterBack = function (g, st, cam, t) { _ab(g, st, cam, t); try { bgwDraw(g, st, cam, t == null ? nowS() : t); } catch (_) {} };
+  const G = game, _sr = G.startRound;
+  G.startRound = function (...a) {
+    const r = _sr.apply(this, a);
+    CROWD.on = false; // көрермендер жоқ
+    try { BGW.on = this.mode !== "arena"; const ch = this.stage && CHAPTERS.findIndex(c => c.stage === this.stage.id); const c2 = ch >= 0 ? ch : (this.chapter | 0); if (BGW.ch !== c2 || !BGW.pairs.length) bgwBuild(c2); } catch (_) { BGW.on = false; }
+    return r;
+  };
+}
 
 // ================= ЦИКЛ =================
 game.goLobby();
