@@ -1,7 +1,7 @@
 /* SHAIQAS service worker.
    Ойын беті: алдымен желіден (жаңартулар бірден келеді), желі жоқ болса — кэштен.
    Иконкалар мен қаріптер: кэштен, фонда жаңарады. */
-const VERSION = "shaiqas-v4";
+const VERSION = "shaiqas-v5";
 const CORE = ["./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-32.png",
   "./icons/apple-touch-icon.png"];
