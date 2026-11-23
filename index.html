@@ -14398,6 +14398,337 @@ function dmgPop(x, y, txt, col, size) { if (DMGP.length > 30) DMGP.shift(); DMGP
 }
 if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { SB, sbCast, sbSlots, DMGP });
 
+// ================= ҰСТАЗ: Бұқар жырау жаңа ойыншыны қадам-қадаммен үйретеді =================
+// Бөлек модуль: ойын механикасына тимейді, үстінен жабынды (overlay) салады.
+// Әр сабақ бір рет көрсетіледі (localStorage "shaiqas-tut"); баптауларда қайта қосуға болады.
+const TUT = { cur: null, i: 0, t: 0, wait: 0, waitId: "", under: [], btn: [], hov: -1, nud: null, done: new Set(), off: false };
+const TUT_KEY = "shaiqas-tut", TUT_OFF = "shaiqas-tut-off";
+try { TUT.done = new Set(JSON.parse(localStorage.getItem(TUT_KEY) || "[]")); TUT.off = localStorage.getItem(TUT_OFF) === "1"; } catch (_) {}
+if (/[?&]sktest\b/.test(location.search) && !/[?&]tut\b/.test(location.search)) TUT.off = true; // ескі тесттерге кедергі болмасын
+function tutSave() { try { localStorage.setItem(TUT_KEY, JSON.stringify([...TUT.done])); localStorage.setItem(TUT_OFF, TUT.off ? "1" : "0"); } catch (_) {} }
+const tutTouch = () => !!(game.touch || IS_TOUCH);
+// Нысана тіктөртбұрыштары (логикалық 1280×720 координаттары)
+const TUT_R = {
+  lvl: [22, 8, 308, 62], coins: [1164, 14, 96, 50],
+  hp: [96, 6, 1088, 84], timer: [592, 4, 96, 112], rux: [126, 50, 276, 22],
+  stick: [62, 502, 176, 176], tJ: [1104, 534, 132, 132], tK: [996, 596, 108, 108], tL: [1138, 418, 104, 104],
+  tSk: [964, 356, 290, 72], kSk: [18, 636, 330, 78],
+  stages: [126, 180, 520, 410], stPanel: [872, 92, 382, 440],
+};
+// Сабақтар. tg — нысана: батырма атауы (жолдар), тіктөртбұрыш, не функция. ru — орысша аударма.
+const TUT_L = {
+  lobby: [
+    { tx: "Сәлем, балам! Мен — Бұқар жырау, ел тарихын жырға қосқан ақынмын. Мен саған осы ойынның жолын көрсетемін.",
+      ru: "Здравствуй, сынок! Я — Бухар-жырау, акын, сложивший историю народа в песни. Я покажу тебе, как играть." },
+    { tx: "Сен — жас батыр Бауыржансың. Менің жырларымды тыңдап, бабаларың өмір сүрген заманға саяхат жасайсың.",
+      ru: "Ты — юный батыр Бауыржан. Слушая мои песни, ты отправишься в эпоху, когда жили твои предки." },
+    { tx: "Мақсатың: алты тараудағы ұрыстарды жеңу, бас жауларды құлату, тарих карточкаларын жинап, елді қорғау!",
+      ru: "Твоя цель: победить во всех битвах шести глав, одолеть главных врагов, собрать карточки истории и защитить народ!" },
+    { tg: ["ЖОРЫҚ"], tx: "Ең бастысы — ЖОРЫҚ. Осы жерден тарих картасы ашылады. Әр тарау — бір дәуір туралы жыр.",
+      ru: "Самое главное — ПОХОД. Отсюда открывается карта истории. Каждая глава — песня об одной эпохе." },
+    { tg: TUT_R.lvl, tx: "Бұл — сенің деңгейің. Жеңген сайын тәжірибе жинайсың. Деңгей өскенде жаңа әдістер, қарулар мен батырлар ашылады.",
+      ru: "Это твой уровень. За каждую победу ты получаешь опыт. С ростом уровня открываются новые приёмы, оружие и батыры." },
+    { tg: TUT_R.coins, tx: "Бұл — теңге. Ұрыста жеңіп, теңге жина. Оған ҚАРУ-ЖАРАҚ дүкенінен қылыш, сауыт, бас киім аласың.",
+      ru: "Это тенге. Побеждай и собирай тенге — на них в лавке ОРУЖИЯ покупают сабли, доспехи и шапки." },
+    { tg: ["БАТЫРЛАР", "ҚАРУ-ЖАРАҚ"], tx: "БАТЫРЛАР — тарихтағы нағыз батырлар: Қабанбай, Бөгенбай, Исатай, Махамбет... ҚАРУ-ЖАРАҚ — сенің дүкенің.",
+      ru: "БАТЫРЫ — настоящие герои истории: Кабанбай, Богенбай, Исатай, Махамбет... ОРУЖИЕ — твоя лавка снаряжения." },
+    { tg: ["ЕРКІН ҰРЫС", "ЕРКІН АЛАҢ", "ӘДІСТЕР КІТАБЫ"], tx: "ЕРКІН ҰРЫС — жылдам жекпе-жек. ЕРКІН АЛАҢ — әдістерді жаттықтыратын жер. ӘДІСТЕР КІТАБЫ — барлық соққылардың түсіндірмесі.",
+      ru: "СВОБОДНЫЙ БОЙ — быстрый поединок. СВОБОДНАЯ АРЕНА — место для тренировки приёмов. КНИГА ПРИЁМОВ — описание всех ударов." },
+    { tg: ["МАРАПАТТАР", "ТАРИХ АЛЬБОМЫ", "⚙ БАПТАУЛАР"], tx: "Жоғарыда: МАРАПАТТАР — медальдарың, ТАРИХ АЛЬБОМЫ — тарих карточкаларың, БАПТАУЛАР — дыбыс, тіл және балалар режимі.",
+      ru: "Наверху: НАГРАДЫ — твои медали, АЛЬБОМ ИСТОРИИ — карточки истории, НАСТРОЙКИ — звук, язык и детский режим." },
+    { tg: ["ЖОРЫҚ"], tx: "Ал енді, балам, жорыққа аттанайық! Батыр болу — ел тарихын білуден басталады.", go: "ЖОРЫҚҚА! ▶", press: "ЖОРЫҚ",
+      ru: "А теперь, сынок, отправимся в поход! Быть батыром — значит знать историю своего народа." },
+  ],
+  map: [
+    { tg: [[548, 160, 184, 228]], tx: "Бұл — жорық картасы. Ортада — НЕГІЗГІ ЖОРЫҚ. Онда төрт ұрыс бар, соңғысы — бас жаумен.",
+      ru: "Это карта похода. В центре — ГЛАВНЫЙ ПОХОД. В нём четыре битвы, последняя — с главным врагом." },
+    { tg: [[100, 140, 214, 440], [966, 140, 214, 440]], tx: "Айналасында — қосымша сынақтар: жаттығу алаңы, төзім қамалы, хандық турнирі, жекпе-жек. Олар да теңге мен тәжірибе береді.",
+      ru: "Вокруг — дополнительные испытания: тренировка, крепость выносливости, ханский турнир и поединок. Они тоже дают тенге и опыт." },
+    { tg: [[520, 494, 240, 148]], tx: "БАСТАР ШАБУЫЛЫ жорықты аяқтағанда ашылады. Онда барлық бас жаулар кезекпен шығады.",
+      ru: "НАШЕСТВИЕ ВОЖДЕЙ откроется после похода. Там все главные враги выходят по очереди." },
+    { tg: ["◀ АЛДЫҢҒЫ", "КЕЛЕСІ ▶"], tx: "Барлығы алты тарау — тарихтың алты кезеңі. Келесі тарау алдыңғысын жеңгенде ашылады. Бет ауыстыру — осы батырмалар.",
+      ru: "Всего шесть глав — шесть периодов истории. Следующая глава открывается после победы в предыдущей. Листать — этими кнопками." },
+    { tg: [[548, 160, 184, 228]], tx: "НЕГІЗГІ ЖОРЫҚТЫ ашайық!", go: "АШУ ▶", press: 0,
+      ru: "Откроем ГЛАВНЫЙ ПОХОД!" },
+  ],
+  stages: [
+    { tg: TUT_R.stages, tx: "Жолдағы әр белгі — бір ұрыс. Олар тарихи қалалар мен жерлерде өтеді. Кезекпен жеңесің: 1, 2, 3, ал 4-і — бас жау.",
+      ru: "Каждый знак на пути — битва. Они проходят в исторических городах и местах. Побеждай по порядку: 1, 2, 3, а 4-й — главный враг." },
+    { tg: TUT_R.stPanel, tx: "Мұнда жау туралы жазылған: аты, қаруы, сыйлығы. Жақсы ұрыссаң — үш жұлдыз аласың.",
+      ru: "Здесь написано о враге: имя, оружие, награда. Сразишься хорошо — получишь три звезды." },
+    { tg: ["ТАРИХЫН ОҚУ"], tx: "ТАРИХЫН ОҚУ — ұрысқа дейінгі тарихи оқиға. Тарихты білген батыр — екі есе күшті!",
+      ru: "ЧИТАТЬ ИСТОРИЮ — историческое событие перед битвой. Батыр, знающий историю, вдвое сильнее!" },
+    { tg: ["ҰРЫСҚА!"], tx: "Дайын болсаң — ҰРЫСҚА! Алдымен мен саған сол заманды жырлап беремін.", go: "ТҮСІНДІМ ▶",
+      ru: "Если готов — В БОЙ! Сначала я спою тебе о том времени." },
+  ],
+  prolog: [
+    { tg: ["КЕЛЕСІ ▶", "ҰРЫСҚА!"], tx: "Бұл — жыр беттері. Әр бетте тарихи оқиға бар. Оқып болған соң КЕЛЕСІ батырмасын бас.",
+      ru: "Это страницы песни. На каждой — историческое событие. Прочитав, нажми ДАЛЕЕ." },
+    { tg: ["ӨТКІЗУ ▶▶"], tx: "Асығыс болсаң, ӨТКІЗУ батырмасы бірден ұрысқа апарады. Бірақ тарихты оқысаң, викторинада оңай жауап бересің!",
+      ru: "Если торопишься, ПРОПУСТИТЬ сразу ведёт в бой. Но если прочитаешь историю, легко ответишь в викторине!" },
+  ],
+  fight: [
+    { tg: TUT_R.hp, tx: "Ұрыс басталды! Жоғарыда — денсаулық жолақтары: сары — сенікі, қызыл — жаудікі. Жаудың денсаулығын бітірсең, раунд сенікі.",
+      ru: "Бой начался! Наверху — полоски здоровья: жёлтая — твоя, красная — врага. Закончится здоровье врага — раунд твой." },
+    { tg: TUT_R.timer, tx: "Ортада — уақыт. Уақыт біткенде денсаулығы көп қалған жеңеді. Раундтарды жеңіп, бүкіл ұрысты ұт!",
+      ru: "В центре — время. Когда оно кончится, побеждает тот, у кого больше здоровья. Выигрывай раунды — и весь бой!" },
+    { tg: () => tutTouch() ? TUT_R.stick : null,
+      tx: () => tutTouch() ? "Сол жақтағы шеңбер — қозғалу: оңға-солға жүр, жоғары тартсаң — секіресің, төмен тартсаң — отырасың."
+                           : "Жүру — A мен D (не ← →). Секіру — W, отыру — S.",
+      ru: () => tutTouch() ? "Круг слева — движение: вправо-влево — ходьба, вверх — прыжок, вниз — присесть." : "Ходьба — A и D (или ← →). Прыжок — W, присесть — S." },
+    { tg: () => tutTouch() ? TUT_R.tJ : null,
+      tx: () => tutTouch() ? "Қылыш белгісі — қарумен соғу. Қатарынан бірнеше рет бассаң — комбо соққы!" : "J — қарумен соғу. Қатарынан бірнеше рет бассаң — комбо соққы!",
+      ru: () => tutTouch() ? "Знак сабли — удар оружием. Нажми несколько раз подряд — комбо!" : "J — удар оружием. Несколько раз подряд — комбо!" },
+    { tg: () => tutTouch() ? TUT_R.tK : null,
+      tx: () => tutTouch() ? "Аяқ белгісі — тебу. Жау қорғанып тұрса, тепкімен ашып жібер." : "K — тебу, L — ауыр соққы. Жау қорғанып тұрса, тепкімен ашып жібер.",
+      ru: () => tutTouch() ? "Знак ноги — пинок. Если враг защищается, пробей защиту пинком." : "K — пинок, L — тяжёлый удар. Если враг защищается, пробей защиту пинком." },
+    { tg: () => tutTouch() ? TUT_R.stick : null,
+      tx: () => "Ең маңызды сабақ — ҚОРҒАНУ! Жау соққанда " + (tutTouch() ? "шеңберді артқа (жаудан алысқа) тарт" : "артқа бас (жаудан алысқа: A не ←)") + " — соққы өтпейді. Төменнен соқса — артқа және төмен.",
+      ru: () => "Самый важный урок — ЗАЩИТА! Когда враг бьёт, " + (tutTouch() ? "потяни круг назад (от врага)" : "жми назад (от врага: A или ←)") + " — удар не пройдёт. Бьёт снизу — назад и вниз." },
+    { tg: () => tutTouch() ? [TUT_R.rux, TUT_R.tL] : TUT_R.rux,
+      tx: () => "РУХ — сенің ішкі күшің. Ұрысқан сайын көк жолақ толады. Толғанда " + (tutTouch() ? "РУХ батырмасын" : "L пернесін") + " бас — қатты арнайы соққы!",
+      ru: () => "ДУХ — твоя внутренняя сила. В бою синяя полоска наполняется. Когда полна — жми " + (tutTouch() ? "кнопку РУХ" : "L") + " — особый мощный удар!" },
+    { tg: () => tutTouch() ? TUT_R.tSk : TUT_R.kSk,
+      tx: () => "Бұл — әдістерің. Деңгей өскенде жаңалары ашылады. Әдіс дайын болса, жарқырайды — " + (tutTouch() ? "басып қолдан!" : "1–4 пернелерімен қолдан!"),
+      ru: () => "Это твои приёмы. С уровнем открываются новые. Готовый приём светится — " + (tutTouch() ? "нажми на него!" : "используй клавишами 1–4!") },
+    { tx: "Есіңде болсын: асықпа, жауды бақыла, қорғанып тұрып соқ. Ал енді — алға, батыр!", go: "ҰРЫСҚА! ▶",
+      ru: "Запомни: не спеши, следи за врагом, защищайся и бей. А теперь — вперёд, батыр!" },
+  ],
+  arena: [{ tx: "Бұл — еркін алаң. Мұнда уақыт та, жеңіліс те жоқ. Әдістерді асықпай жаттықтыр! Пернелері мен тізбектері — Әдістер кітабында.",
+    ru: "Это свободная арена. Здесь нет ни времени, ни поражений. Спокойно тренируй приёмы! Клавиши и связки — в Книге приёмов." }],
+  win: [{ tx: "Алғашқы жеңісің құтты болсын, балам! Жеңіс үшін теңге мен тәжірибе алдың. Жылдам әрі аз соққы алып жеңсең — көбірек жұлдыз.",
+    ru: "Поздравляю с первой победой, сынок! За неё ты получил тенге и опыт. Побеждай быстро и пропускай меньше ударов — будет больше звёзд." },
+    { tg: [[954, 232, 316, 330]], tx: "Ұрыстан кейін мен саған кеңес айтамын — оң жақта жазылады. Оқып жүр, ол сені күшейтеді!",
+      ru: "После боя я даю советы — они написаны справа. Читай их, они сделают тебя сильнее!" }],
+  loss: [{ tg: [[954, 232, 316, 330]], tx: "Жеңілу — ұят емес, балам. Нағыз батыр құлап барып тұрады. Оң жақтағы кеңесімді оқы да, «ҚАЙТА ҰРЫСУ» бас.",
+    ru: "Проиграть не стыдно, сынок. Настоящий батыр падает и встаёт. Прочитай мой совет справа и нажми «СРАЗИТЬСЯ СНОВА»." }],
+  shop: [{ tx: "Бұл — қару-жарақ дүкені. Үш бөлім бар: ҚАРУ, САУЫТ, БАС КИІМ. Әр заттың тарихы мен күші жазылған. Теңгең жетсе — сатып ал да, ки!",
+    ru: "Это лавка снаряжения. Три раздела: ОРУЖИЕ, ДОСПЕХИ, ГОЛОВНЫЕ УБОРЫ. У каждой вещи написаны история и сила. Хватает тенге — покупай и надевай!" },
+    { tx: "Кейбір заттар деңгейің өскенде ғана ашылады. Жақсы жабдық — жеңістің жартысы!",
+      ru: "Некоторые вещи открываются только с ростом уровня. Хорошее снаряжение — половина победы!" }],
+  heroes: [{ tx: "Бұл — батырлар. Әрқайсысы — тарихта болған адам, өз күші бар: біреуі мықты, біреуі жылдам. Деңгейің жеткенде батырды алып, оның орнында ұрысасың.",
+    ru: "Это батыры. Каждый — реальный человек из истории со своей силой: один мощный, другой быстрый. Достигнешь уровня — возьмёшь батыра и будешь сражаться за него." }],
+  album: [{ tx: "Бұл — тарих альбомы. Жорықта жеңген сайын жаңа карточка ашылады: батырлар, қалалар, оқиғалар. Карточканы басып, оқып шық!",
+    ru: "Это альбом истории. С каждой победой в походе открывается новая карточка: батыры, города, события. Нажми на карточку и прочитай!" },
+    { tx: "Карточкаларды оқысаң — викторинадан өтесің. Дұрыс жауаптар үшін медаль аласың!",
+      ru: "Прочитаешь карточки — пройдёшь викторину. За правильные ответы получишь медали!" }],
+  quiz: [{ tx: "Викторина! Тарихты қаншалықты білетініңді тексер. Асықпа, әр сұрақты мұқият оқы. Жауабын білмесең — тарих альбомындағы карточкаларды қайта оқы.",
+    ru: "Викторина! Проверь, как хорошо ты знаешь историю. Не спеши, читай каждый вопрос внимательно. Не знаешь ответа — перечитай карточки в альбоме истории." }],
+  medals: [{ tx: "Мұнда — марапаттарың. Әр медальдің шарты жазылған. Бәрін жинап, нағыз батыр атан!",
+    ru: "Здесь — твои награды. У каждой медали написано условие. Собери все и стань настоящим батыром!" }],
+  guide: [{ tx: "Әдістер кітабы: әр әдістің пернелері, күші мен қолдану жолы. Деңгейің өскенде жаңа беттер ашылады.",
+    ru: "Книга приёмов: клавиши, сила и способ применения каждого приёма. С ростом уровня открываются новые страницы." }],
+};
+// Сабақ қашан басталады (бір уақытта біреуі ғана)
+function tutTrigger() {
+  const G = game, s = G.screen;
+  if (G.paused) return null;
+  if (s === "fight") {
+    if (G.mode === "arena") return ["arena", .8];
+    if (G.pvp) return null;
+    if (G.phase === "fight" && G.round === 1) return ["fight", 1.1];
+    if (G.phase === "matchEnd" && G.mode !== "duel") return [G.pWins >= G.needWins ? "win" : "loss", 2];
+    return null;
+  }
+  if (s === "lobby") return ["lobby", .9];
+  if (s === "map") return G.mapView === "stages" ? (G.mapMode === "story" ? ["stages", .7] : null) : ["map", .7];
+  if (TUT_L[s]) return [s, .6];
+  return null;
+}
+const tutVal = v => typeof v === "function" ? v() : v;
+function tutStep() { return TUT.cur && TUT_L[TUT.cur][TUT.i]; }
+function tutRects(st) {
+  let tg = tutVal(st && st.tg); if (!tg) return [];
+  if (typeof tg[0] === "number") tg = [tg];
+  const out = [];
+  for (const it of tg) {
+    if (typeof it === "string") { const u = TUT.under.find(b => b.label === it); if (u) out.push(u.r); }
+    else if (Array.isArray(it) && typeof it[0] === "number") out.push(it);
+  }
+  return out;
+}
+function tutUnion(rs) {
+  if (!rs.length) return null;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const r of rs) { x0 = Math.min(x0, r[0]); y0 = Math.min(y0, r[1]); x1 = Math.max(x1, r[0] + r[2]); y1 = Math.max(y1, r[1] + r[3]); }
+  return [x0, y0, x1 - x0, y1 - y0];
+}
+function tutStart(id) { if (id === "fight") { TUT.zhPre = game.zhPre; game.zhPre = null; } TUT.cur = id; TUT.i = 0; TUT.t = 0; TUT.hov = 1; TUT.done.add(id); tutSave(); game.hover = -1; try { SFX("ui_select"); } catch (_) {} }
+function tutEnd() { if (TUT.cur === "fight" && TUT.zhPre) { game.zhPre = TUT.zhPre; TUT.zhPre = null; } TUT.cur = null; TUT.btn = []; game.hover = -1; }
+function tutNext() {
+  const st = tutStep(); if (!st) return tutEnd();
+  try { SFX("ui_move"); } catch (_) {}
+  if (TUT.i < TUT_L[TUT.cur].length - 1) { TUT.i++; TUT.t = 0; return; }
+  const press = st.press;
+  tutEnd();
+  if (press != null) { game.buildUI(); const k = typeof press === "string" ? game.ui.findIndex(u => u.label === press) : press; if (game.ui[k]) game.press(k); }
+}
+function tutSkip() { try { SFX("ui_back"); } catch (_) {} tutEnd(); }
+// Панельдің өлшемі мен орны (нысанаға қабаттаспайтын жерді таңдайды)
+function tutLayout(g) {
+  const st = tutStep(); if (!st) return null;
+  const w = 660, fT = `600 19px ${FONT_B}`, fR = `500 14px ${FONT_B}`;
+  const tl = zhWrapLines(g, tutVal(st.tx), w - 56, fT), rl = RU.on && st.ru ? zhWrapLines(g, tutVal(st.ru), w - 56, fR) : [];
+  const h = 104 + tl.length * 27 + (rl.length ? rl.length * 18 + 10 : 0) + 64;
+  const rs = tutRects(st), U = tutUnion(rs);
+  const cands = [[W / 2 - w / 2, H - h - 22], [W / 2 - w / 2, 92], [W - w - 28, H / 2 - h / 2], [28, H / 2 - h / 2], [W / 2 - w / 2, H / 2 - h / 2]];
+  let pos = cands[4];
+  if (U) {
+    const hit = (x, y) => !(x + w < U[0] - 18 || x > U[0] + U[2] + 18 || y + h < U[1] - 18 || y > U[1] + U[3] + 18);
+    pos = cands.find(([x, y]) => !hit(x, y)) || cands[0];
+  }
+  const [x, y] = pos, by = y + h - 56;
+  const last = TUT.i === TUT_L[TUT.cur].length - 1;
+  return { x, y, w, h, tl, rl, rs, U, st, nb: [x + w - 250, by, 228, 46], sb: last ? null : [x + 22, by + 4, 150, 40], last };
+}
+// Жабынды салу
+function tutDraw(g) {
+  const L = tutLayout(g); if (!L) return;
+  const a = easeOut(clamp(TUT.t / .3, 0, 1)), T = performance.now() / 1000;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  for (const b of TUT.under) if (!b.hidden) drawButton(g, b, false); // астыңғы батырмалар көрініп тұрсын
+  // қараңғылау + нысананың «терезесі»
+  g.globalAlpha = a; g.fillStyle = "rgba(8,6,18,.66)"; g.beginPath(); g.rect(0, 0, W, H);
+  for (const r of L.rs) { const p = 8; dzShapePath(g, r[0] - p, r[1] - p, r[2] + 2 * p, r[3] + 2 * p, 12, true); }
+  g.fill("evenodd");
+  for (const r of L.rs) {
+    const p = 8, pul = .55 + .45 * Math.sin(T * 5);
+    g.save(); g.strokeStyle = `rgba(255,214,107,${.6 + .4 * pul})`; g.lineWidth = 3.5; g.shadowColor = "#ffd36b"; g.shadowBlur = 14 + 10 * pul;
+    g.beginPath(); dzShapePath(g, r[0] - p, r[1] - p, r[2] + 2 * p, r[3] + 2 * p, 12, false); g.stroke(); g.restore();
+  }
+  // нұсқағыш жебе: панельден нысанаға
+  if (L.U) {
+    const tx = L.U[0] + L.U[2] / 2, ty = L.U[1] + L.U[3] / 2, px = clamp(tx, L.x + 40, L.x + L.w - 40), py = ty < L.y ? L.y : L.y + L.h;
+    const ang = Math.atan2(ty - py, tx - px), d = Math.hypot(tx - px, ty - py), c = Math.cos(ang), sn = Math.sin(ang);
+    const hw = L.U[2] / 2 + 16, hh = L.U[3] / 2 + 16, inside = Math.min(Math.abs(c) > 1e-6 ? hw / Math.abs(c) : 1e9, Math.abs(sn) > 1e-6 ? hh / Math.abs(sn) : 1e9);
+    const edge = Math.max(0, d - inside), bob = 6 * Math.sin(T * 6);
+    if (edge > 40) {
+      const ex = px + c * (edge - 10 + bob), ey = py + sn * (edge - 10 + bob);
+      g.save(); g.strokeStyle = "rgba(255,214,107,.85)"; g.lineWidth = 4; g.setLineDash([10, 9]); g.lineDashOffset = -T * 30;
+      g.beginPath(); g.moveTo(px + Math.cos(ang) * 14, py + Math.sin(ang) * 14); g.lineTo(ex - Math.cos(ang) * 14, ey - Math.sin(ang) * 14); g.stroke(); g.setLineDash([]);
+      g.translate(ex, ey); g.rotate(ang); g.fillStyle = "#ffd36b"; g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 6;
+      g.beginPath(); g.moveTo(10, 0); g.lineTo(-14, -13); g.lineTo(-8, 0); g.lineTo(-14, 13); g.closePath(); g.fill(); g.restore();
+    }
+  }
+  // панель
+  g.translate(0, (1 - a) * 16);
+  dzPanel(g, L.x, L.y, L.w, L.h, "parch", { band: true });
+  medallion(g, L.x + 58, L.y + 60, 36); STORY_ZH.portrait(g, L.x + 58, L.y + 60, 36, "#f6dca0", "#8a5a2a");
+  text(g, "Бұқар жырау", L.x + 108, L.y + 54, 22, "#8a1a12", "left", FONT_D, 700);
+  const n = TUT_L[TUT.cur].length;
+  text(g, n > 1 ? `ұстаздың сабағы · ${TUT.i + 1} / ${n}` : "ұстаздың кеңесі", L.x + 108, L.y + 78, 14, "#8a5a2a", "left", FONT_B, 600);
+  if (n > 1) for (let i = 0; i < n; i++) { g.fillStyle = i === TUT.i ? "#c0302a" : i < TUT.i ? "rgba(192,48,42,.45)" : "rgba(90,60,30,.25)"; circle(g, L.x + L.w - 30 - (n - 1 - i) * 16, L.y + 44, i === TUT.i ? 5.5 : 4); }
+  let yy = L.y + 122;
+  for (const l of L.tl) { text(g, l, L.x + 28, yy, 19, "#2a1a10", "left", FONT_B, 600); yy += 27; }
+  if (L.rl.length) { yy += 2; for (const l of L.rl) { text(g, l, L.x + 28, yy, 14, "#7a5a3a", "left", FONT_B, 500); yy += 18; } }
+  // батырмалар
+  const nb = { r: L.nb, label: L.st.go || (L.last ? "ТҮСІНДІМ ✓" : "АЛҒА ▶"), primary: true, small: true };
+  drawButton(g, nb, TUT.hov === 1);
+  if (L.sb) drawButton(g, { r: L.sb, label: "ӨТКІЗУ", small: true }, TUT.hov === 0);
+  if (!tutTouch()) { const hx = L.sb ? (L.sb[0] + L.sb[2] + L.nb[0]) / 2 : (L.x + 22 + L.nb[0]) / 2; text(g, L.sb ? "Enter — алға · Esc — өткізу" : "Enter — алға", hx, L.nb[1] + 29, 12, "#8a6a4a", "center", FONT_B, 600); }
+  g.restore();
+  TUT.btn = [[L.nb, () => tutNext()]].concat(L.sb ? [[L.sb, () => tutSkip()]] : []);
+}
+// дөңгелек бұрышты тіктөртбұрыш жолы (ccw — «терезе» үшін кері бағытта)
+function dzShapePath(g, x, y, w, h, r, ccw) {
+  if (!ccw) { g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  else { g.moveTo(x + r, y); g.arcTo(x, y, x, y + h, r); g.arcTo(x, y + h, x + w, y + h, r); g.arcTo(x + w, y + h, x + w, y, r); g.arcTo(x + w, y, x, y, r); g.closePath(); }
+}
+// ---- ұрыс кезіндегі қысқа ескертулер (ұрысты тоқтатпайды) ----
+const TUT_NUD = {
+  rux: { tx: () => "Рух толды! " + (tutTouch() ? "РУХ батырмасын" : "L пернесін") + " бас — арнайы соққы!", ru: "Дух наполнен! Жми — особый удар!" },
+  block: { tx: () => "Жау соққанда " + (tutTouch() ? "шеңберді артқа тарт" : "артқа бас") + " — соққы өтпейді!", ru: "Когда враг бьёт — назад, и удар не пройдёт!" },
+  hp: { tx: "Абай бол, балам! Денсаулығың азайды. Қорғанып тұр, жау ашылғанда соқ.", ru: "Осторожно, сынок! Здоровья мало. Защищайся и бей, когда враг откроется." },
+};
+function tutNudgeCheck() {
+  const G = game, p = G.player; if (TUT.off || TUT.cur || TUT.nud || !p || G.screen !== "fight" || G.phase !== "fight" || G.paused || G.pvp || G.mode === "arena") return;
+  const fire = id => { if (TUT.done.has("n_" + id)) return false; TUT.done.add("n_" + id); tutSave(); TUT.nud = { id, t: 0 }; try { SFX("ui_select"); } catch (_) {} return true; };
+  if (p.rux >= 100 && fire("rux")) return;
+  if (typeof ZH_FS !== "undefined" && ZH_FS.on && ZH_FS.hits >= 4 && ZH_FS.blocks === 0 && fire("block")) return;
+  if (p.maxHp && p.hp / p.maxHp < .35 && p.hp > 0 && fire("hp")) return;
+}
+function tutNudgeDraw(g) {
+  const N = TUT.nud; if (!N) return;
+  if (game.screen !== "fight" || N.t > 5.5) { TUT.nud = null; return; }
+  const d = TUT_NUD[N.id], a = clamp(Math.min(N.t * 4, (5.5 - N.t) * 2), 0, 1);
+  const fT = `600 17px ${FONT_B}`, tl = zhWrapLines(g, tutVal(d.tx), 480, fT), rl = RU.on ? zhWrapLines(g, d.ru, 480, `500 13px ${FONT_B}`) : [];
+  const w = 580, h = 52 + tl.length * 22 + rl.length * 16, x = W / 2 - w / 2, y = 128;
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = a; g.translate(0, (1 - a) * -12);
+  dzPanel(g, x, y, w, h, "parch", { orn: false });
+  medallion(g, x + 6, y + h / 2, 30); STORY_ZH.portrait(g, x + 6, y + h / 2, 30, "#f6dca0", "#8a5a2a");
+  text(g, "Бұқар жырау:", x + 50, y + 24, 14, "#8a1a12", "left", FONT_D, 700);
+  let yy = y + 48; for (const l of tl) { text(g, l, x + 50, yy, 17, "#2a1a10", "left", FONT_B, 600); yy += 22; }
+  for (const l of rl) { text(g, l, x + 50, yy - 4, 13, "#7a5a3a", "left", FONT_B, 500); yy += 16; }
+  g.restore();
+}
+// ---- ойынға қосу (орауыштар) ----
+{
+  const G = game;
+  const _bu = G.buildUI;
+  G.buildUI = function (...a) {
+    const r = _bu.apply(this, a);
+    if (TUT.cur) { TUT.under = this.ui; this.ui = []; }
+    return r;
+  };
+  const _up = G.update;
+  G.update = function (rdt) {
+    if (TUT.cur) {
+      TUT.t += rdt; this.toastT = Math.max(0, this.toastT - rdt);
+      this.buildUI();
+      if (!TUT_L[TUT.cur] || !tutStep()) { tutEnd(); return; }
+      if (tapped("Enter", "Space", "NumpadEnter")) { if (TUT.hov === 0 && TUT.btn[1]) tutSkip(); else tutNext(); }
+      else if (tapped("Escape", "Backspace")) tutSkip();
+      else if (tapped("ArrowLeft", "KeyA") && TUT.btn[1]) TUT.hov = 0;
+      else if (tapped("ArrowRight", "KeyD")) TUT.hov = 1;
+      just.clear(); vjust.clear(); pjust.clear();
+      return;
+    }
+    const r = _up.call(this, rdt);
+    if (TUT.nud) TUT.nud.t += rdt;
+    if (!TUT.off) {
+      const tr = tutTrigger(), id = tr && tr[0];
+      if (id && !TUT.done.has(id) && TUT_L[id]) {
+        if (TUT.waitId !== id) { TUT.waitId = id; TUT.wait = 0; }
+        TUT.wait += rdt; if (TUT.wait >= tr[1]) { TUT.waitId = ""; tutStart(id); this.buildUI(); }
+      } else TUT.waitId = "";
+      tutNudgeCheck();
+    }
+    return r;
+  };
+  const _r = render;
+  render = function (time) {
+    _r(time);
+    if (TUT.cur) tutDraw(ctx); else tutNudgeDraw(ctx);
+  };
+  // Жабынды ашық тұрғанда — басу тек ұстаздың батырмаларына барады
+  const pt = e => { try { return toLogical(e); } catch (_) { return [-1, -1]; } };
+  addEventListener("pointerdown", e => {
+    if (!TUT.cur) return;
+    e.stopPropagation(); e.preventDefault();
+    try { if (typeof skUnlockedAudio !== "undefined" && !skUnlockedAudio) skAudioUnlock(); } catch (_) {}
+    if (e.pointerType === "touch") game.touch = true;
+    const [x, y] = pt(e);
+    for (const [r, act] of TUT.btn) if (inRect(r, x, y)) { act(); return; }
+  }, true);
+  addEventListener("pointermove", e => {
+    if (!TUT.cur) return;
+    const [x, y] = pt(e); let h = -1;
+    TUT.btn.forEach(([r], i) => { if (inRect(r, x, y)) h = i === 0 ? 1 : 0; });
+    if (h !== -1) TUT.hov = h;
+    cv.style.cursor = h === -1 ? "default" : "pointer";
+  }, true);
+  // Баптаулар: ұстазды қосу/өшіру (қосқанда — басынан қайта үйретеді)
+  const S = XSCR.settings, _sui = S.ui, _sdr = S.draw;
+  S.ui = function (B) {
+    _sui.call(this, B);
+    B([110, 598, 300, 46], TUT.off ? "ҰСТАЗ: ӨШІК" : "ҰСТАЗ: ҚОСУЛЫ ✓", () => {
+      TUT.off = !TUT.off; if (!TUT.off) { TUT.done.clear(); game.toast = "Бұқар жырау қайтадан басынан үйретеді"; } else game.toast = "Ұстаздың сабақтары өшірілді";
+      game.toastT = 2.6; tutSave(); try { SFX("ui_select"); } catch (_) {}
+    }, { small: true, tab: true, active: !TUT.off });
+  };
+}
+if (/[?&]sktest\b/.test(location.search) && window.__SHQ) Object.assign(window.__SHQ, { TUT, TUT_L, tutStart, tutNext });
+
 // ================= ЦИКЛ =================
 game.goLobby();
 let last = performance.now();
