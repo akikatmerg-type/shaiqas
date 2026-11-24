@@ -46,9 +46,9 @@ def core_symbols():
     return syms
 
 UNITY = {
- 'Mathf': 'Min Max Clamp Clamp01 Abs Sin Cos Sqrt Atan2 Floor Ceil Round RoundToInt FloorToInt CeilToInt Lerp PI Pow Exp Sign Infinity',
+ 'Mathf': 'Rad2Deg Min Max Clamp Clamp01 Abs Sin Cos Sqrt Atan2 Floor Ceil Round RoundToInt FloorToInt CeilToInt Lerp PI Pow Exp Sign Infinity',
  'Screen': 'width height orientation sleepTimeout',
- 'Application': 'targetFrameRate isMobilePlatform platform',
+ 'Application': 'targetFrameRate dataPath isEditor isMobilePlatform platform',
  'Time': 'unscaledDeltaTime deltaTime unscaledTime time',
  'GUI': 'color DrawTexture DrawTextureWithTexCoords Label Button TextField enabled depth skin matrix',
  'Resources': 'Load UnloadAsset',
@@ -61,13 +61,13 @@ UNITY = {
  'TextAnchor': 'UpperLeft UpperCenter MiddleLeft MiddleCenter MiddleRight UpperRight',
  'Sprite': 'Create',
  'Object': 'FindFirstObjectByType FindAnyObjectByType DontDestroyOnLoad Destroy',
- 'TextureFormat': 'RGBA32',
+ 'TextureFormat': 'RGBA32 RGB24',
  'FilterMode': 'Bilinear Point',
  'TextureWrapMode': 'Clamp',
  'SleepTimeout': 'NeverSleep',
  'CameraClearFlags': 'SolidColor',
  'RuntimeInitializeLoadType': 'AfterSceneLoad BeforeSceneLoad',
- 'PlayerSettings': 'productName companyName defaultInterfaceOrientation allowedAutorotateToPortrait allowedAutorotateToPortraitUpsideDown allowedAutorotateToLandscapeLeft allowedAutorotateToLandscapeRight defaultScreenWidth defaultScreenHeight',
+ 'PlayerSettings': 'productName colorSpace companyName defaultInterfaceOrientation allowedAutorotateToPortrait allowedAutorotateToPortraitUpsideDown allowedAutorotateToLandscapeLeft allowedAutorotateToLandscapeRight defaultScreenWidth defaultScreenHeight',
  'UIOrientation': 'AutoRotation LandscapeLeft',
  'AssetDatabase': 'LoadAssetAtPath IsValidFolder CreateFolder CreateAsset SaveAssets ImportAsset',
  'EditorSceneManager': 'GetActiveScene NewScene SaveScene',
@@ -83,14 +83,15 @@ UNITY = {
  'Debug': 'Log LogWarning LogError',
  'GUIContent': 'none',
  'GUIStyle': 'none',
- 'KeyCode': 'A D W S J K L LeftArrow RightArrow UpArrow DownArrow Space Return Escape',
+ 'KeyCode': 'A D W S J K L LeftArrow RightArrow UpArrow DownArrow Space Return Escape F12 F11',
  'TouchPhase': 'Ended Canceled',
  'Keyboard': 'current', 'Touchscreen': 'current', 'Mouse': 'current',
  'Texture2D': 'whiteTexture',
  'TextClipping': 'Overflow Clip',
- 'System': 'Array Random Math',
+ 'System': 'Array Random Math IO DateTime Collections',
+ 'ScreenCapture': 'CaptureScreenshot',
  'Array': 'Copy',
- 'TextureFormat': 'RGBA32',
+ 'TextureFormat': 'RGBA32 RGB24',
 }
 UNITY = {k: set(v.split()) for k, v in UNITY.items()}
 

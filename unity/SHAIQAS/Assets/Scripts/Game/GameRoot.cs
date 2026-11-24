@@ -60,9 +60,23 @@ public partial class GameRoot : MonoBehaviour
         Go(U.Len(Game.S.name) == 0 ? NAME : LOBBY);
     }
 
+    System.Collections.IEnumerator Shot()
+    {
+        yield return new WaitForEndOfFrame();
+        Texture2D t = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        t.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0); t.Apply();
+        string dir = Application.dataPath + "/../Shots";
+        System.IO.Directory.CreateDirectory(dir);
+        System.IO.File.WriteAllBytes(dir + "/shot_" + System.DateTime.Now.ToString("HHmmss") + "_d" + StageLive.dbg + ".png", t.EncodeToPNG());
+        Destroy(t);
+    }
+
     void Update()
     {
         Inp.Poll();
+        // F12 — скриншот (жоба папкасындағы Shots/ ішіне): веб-нұсқамен пиксель бойынша салыстыру үшін
+        if (Application.isEditor && Inp.Tap(Inp.F12)) StartCoroutine(Shot());
+        if (Application.isEditor && Inp.Tap(Inp.F11)) { StageLive.dbg = (StageLive.dbg + 1) % 15; Toast("debug: " + StageLive.dbg); }
         float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
         pt += dt; toastT = Mathf.Max(0, toastT - dt);
         if (medalPop.Count() > 0) { medalT += dt; if (medalT > 2.6f) { medalPop.RemoveAt(0); medalT = 0; } }

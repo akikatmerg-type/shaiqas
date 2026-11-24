@@ -129,6 +129,13 @@ public class VMesh
         T(i0, i1, i2); T(i0, i2, i3);
     }
 
+    /// <summary>Әр бұрышы өз түсімен төртбұрыш (градиент).</summary>
+    public void QuadC(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3, int c0, int c1, int c2, int c3)
+    {
+        int i0 = V(x0, y0, c0, -1, 0, 0), i1 = V(x1, y1, c1, -1, 0, 0), i2 = V(x2, y2, c2, -1, 0, 0), i3 = V(x3, y3, c3, -1, 0, 0);
+        T(i0, i1, i2); T(i0, i2, i3);
+    }
+
     /// <summary>Веб: capsule(g, x1,y1,r1, x2,y2,r2) — трапеция + екі шеңбер.</summary>
     public void Capsule(float x1, float y1, float r1, float x2, float y2, float r2)
     {
@@ -154,6 +161,19 @@ public class VMesh
             if (round || i > 0) Circle(xs[i], ys[i], h);
         }
         if (round && n > 1) Circle(xs[n - 1], ys[n - 1], h);
+    }
+    /// <summary>Жіңішке сынық сызық: буындарда дөңгелек жоқ (шөп, қамыс — көп сызық үшін арзан).</summary>
+    public void Thin(float[] xs, float[] ys, int n, float w)
+    {
+        float h = w / 2; int cl = Cur();
+        for (int i = 0; i < n - 1; i++)
+        {
+            float dx = xs[i + 1] - xs[i], dy = ys[i + 1] - ys[i], l = Pz.Hypot(dx, dy); if (l < 0.0001f) continue;
+            float nx = -dy / l * h, ny = dx / l * h;
+            int i0 = V(xs[i] + nx, ys[i] + ny, cl, -1, 0, 0), i1 = V(xs[i + 1] + nx, ys[i + 1] + ny, cl, -1, 0, 0);
+            int i2 = V(xs[i + 1] - nx, ys[i + 1] - ny, cl, -1, 0, 0), i3 = V(xs[i] - nx, ys[i] - ny, cl, -1, 0, 0);
+            T(i0, i1, i2); T(i0, i2, i3);
+        }
     }
     /// <summary>Атластағы сурет: жергілікті тіктөртбұрыш (x0,y0,w,h) — сурет кілтінің ұяшығы (slot).</summary>
     public void Sprite(int sl, float x0, float y0, float w, float h)

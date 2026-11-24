@@ -10,7 +10,16 @@ using UnityEngine;
 [InitializeOnLoad]
 public static class ShaiqasSetup
 {
-    static ShaiqasSetup() { EditorApplication.delayCall += () => { if (!SessionState.GetBool("shaiqas-setup", false)) { SessionState.SetBool("shaiqas-setup", true); Setup(false); } }; }
+    static ShaiqasSetup() { EditorApplication.delayCall += () => { EnsureGamma(); if (!SessionState.GetBool("shaiqas-setup", false)) { SessionState.SetBool("shaiqas-setup", true); Setup(false); } }; }
+
+    /// <summary>Веб-кенеп (Canvas 2D) мөлдір қабаттарды sRGB-де араластырады. Linear режимде тұман мен
+    /// бұлттар «ағарып» кетеді, сондықтан ойын Gamma түс кеңістігінде жұмыс істейді.</summary>
+    static void EnsureGamma()
+    {
+        if (PlayerSettings.colorSpace == ColorSpace.Gamma) return;
+        PlayerSettings.colorSpace = ColorSpace.Gamma;
+        Debug.Log("SHAIQAS: түс кеңістігі Gamma-ға ауыстырылды (веб-кенеппен бірдей араластыру)");
+    }
 
     [MenuItem("SHAIQAS/Setup Project")]
     public static void SetupMenu() { Setup(true); }
@@ -82,6 +91,6 @@ public class ShaiqasArtImport : AssetPostprocessor
         ti.maxTextureSize = 4096;
         bool part = assetPath.Contains("/Art/parts/") || assetPath.Contains("uiatlas");
         ti.isReadable = part;
-        ti.textureCompression = part ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
+        ti.textureCompression = part || assetPath.Contains("/live/") ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
     }
 }

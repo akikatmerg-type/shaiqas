@@ -15,6 +15,10 @@ public class FightView : MonoBehaviour
     MeshRenderer rP, rE, rFx, rAdd;
     readonly VMesh vm = new VMesh(), vfx = new VMesh(), vadd = new VMesh();
     Material matAdd;
+    // фон спрайттары үшін (FighterAtlas uv2-ні оқиды, ал SpriteRenderer оны бермейді → бәрі ағарып кететін)
+    public Material matSpr, matSprAdd;
+    StageLive live;
+    public float ParK(int i) { return parK[i]; }
     readonly BgWar bgw = new BgWar(); readonly VMesh vbg = new VMesh(); Mesh meshBg;
     int dustCol = Col.Pack(160, 130, 100, 150);
     readonly Intent intent = new Intent();
@@ -28,13 +32,21 @@ public class FightView : MonoBehaviour
 
     void Awake()
     {
-        mat = Resources.Load<Material>("Materials/FighterAtlas");
-        if (mat == null)
+        // Ассет-материалды өзгертпейміз: ойын өз көшірмесімен жұмыс істейді және араластыруды анық қояды
+        // (редакторда ойын кезінде ассетке жазылған өзгеріс сақталып қалады — бәрі «ағарып» кетеді).
+        Material src = Resources.Load<Material>("Materials/FighterAtlas");
+        if (src != null) mat = new Material(src);
+        else
         {
             Shader sh = Shader.Find("Shaiqas/FighterAtlas");
             if (sh == null) sh = Shader.Find("Sprites/Default");
             mat = new Material(sh);
         }
+        mat.SetFloat("_SrcBlend", 5); mat.SetFloat("_DstBlend", 10);
+        Shader ss = Resources.Load<Shader>("Shaders/ShaiqasSprite");
+        if (ss == null || !ss.isSupported) ss = Shader.Find("Sprites/Default");
+        matSpr = new Material(ss); matSprAdd = new Material(ss);
+        matSprAdd.SetFloat("_SrcBlend", 5); matSprAdd.SetFloat("_DstBlend", 1);
         matAdd = new Material(mat);
         matAdd.SetFloat("_SrcBlend", 5); matAdd.SetFloat("_DstBlend", 1);
         showTouch = Application.isMobilePlatform;
@@ -81,24 +93,29 @@ public class FightView : MonoBehaviour
         string dc = meta.S("dustCol"); if (U.Len(dc) > 0) dustCol = Col.Parse(dc + "0.6)");
         ghosts.Clear();
         string b = "Art/stages/" + stageId + "/";
-        Spr(b + "sky", 0, 0, 0, world.transform);
-        par0 = Spr(b + "layer0", 0, 0, 1, world.transform);
-        par1 = Spr(b + "layer1", 0, 0, 2, world.transform);
-        Spr(b + "fogMid", 0, 420, 3, world.transform);
-        par2 = Spr(b + "layer2", 0, 0, 4, world.transform);
-        Spr(b + "fogLow", 0, 540, 5, world.transform);
+        Spr(b + "sky", 0, 0, StageLive.Order("sky"), world.transform);
+        par0 = Spr(b + "layer0", 0, 0, StageLive.Order("layer0"), world.transform);
+        par1 = Spr(b + "layer1", 0, 0, StageLive.Order("layer1"), world.transform);
+        Transform fogMidT = Spr(b + "fogMid", 0, 420, StageLive.Order("fogMid"), world.transform);
+        par2 = Spr(b + "layer2", 0, 0, StageLive.Order("layer2"), world.transform);
+        Transform fogLowT = Spr(b + "fogLow", 0, 540, StageLive.Order("fogLow"), world.transform);
         actors = new GameObject("Actors").transform; actors.SetParent(world.transform, false);
-        groundT = Spr(b + "ground", 0, 0, 7, actors);
+        groundT = Spr(b + "ground", 0, 0, StageLive.Order("ground"), actors);
+        live = new StageLive(); live.Setup(this, world.transform, stageId, mat, matAdd); live.SetFogs(fogMidT.gameObject, fogLowT.gameObject); live.dbgL2 = par2; live.dbgL1 = par1; live.dbgL0 = par0; live.dbgGround = groundT;
+        {
+            PostFx pf = GameRoot.I.cam.GetComponent<PostFx>(); if (pf == null) pf = GameRoot.I.cam.gameObject.AddComponent<PostFx>();
+            pf.SetStage(stageId);
+        }
         bgw.Build(m.chapter);
         {
-            GameObject go = new GameObject("BgWar"); go.transform.SetParent(world.transform, false);
+            GameObject go = new GameObject("BgWar"); go.transform.SetParent(world.transform, false); live.dbgBgw = go.transform;
             meshBg = new Mesh(); meshBg.MarkDynamic(); go.AddComponent<MeshFilter>().sharedMesh = meshBg;
-            MeshRenderer mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = mat; mr.sortingOrder = 6;
+            MeshRenderer mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = mat; mr.sortingOrder = StageLive.Order("bgw");
         }
-        meshFx = NewMesh("FxBack", 9, out rFx);
-        meshAdd = NewMesh("FxGlow", 20, out rAdd); rAdd.sharedMaterial = matAdd;
-        meshE = NewMesh("Enemy", 10, out rE);
-        meshP = NewMesh("Player", 11, out rP);
+        meshFx = NewMesh("FxBack", StageLive.Order("fxBack"), out rFx);
+        meshAdd = NewMesh("FxGlow", StageLive.Order("fxGlow"), out rAdd); rAdd.sharedMaterial = matAdd;
+        meshE = NewMesh("Enemy", StageLive.Order("enemy"), out rE);
+        meshP = NewMesh("Player", StageLive.Order("player"), out rP);
         prts.Clear();
         Looks.For(m.player); Looks.For(m.enemy);
         EnsureAtlas();
@@ -115,7 +132,7 @@ public class FightView : MonoBehaviour
         {
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0, 1), 1f);
-            sr.sharedMaterial = mat;
+            sr.sharedMaterial = matSpr;
             sr.sortingOrder = order;
         }
         return go.transform;
@@ -134,6 +151,7 @@ public class FightView : MonoBehaviour
 
     public void Teardown()
     {
+        PostFx.on = false;
         if (world != null) Destroy(world);
         world = null;
         if (stageId != null) Ui.Forget("Art/stages/" + stageId + "/");
@@ -165,6 +183,7 @@ public class FightView : MonoBehaviour
         actors.localPosition = new Vector3(-m.cam, 0, 0);
         // фондағы шайқас (экран координатында, параллакс)
         vbg.Clear(); bgw.Draw(vbg, m.cam, Time.time); Upload(meshBg, vbg);
+        if (live != null) live.Tick(m.cam, Time.time, c, z);
         // жауынгерлер
         Build(meshE, m.enemy);
         Build(meshP, m.player);
@@ -186,7 +205,7 @@ public class FightView : MonoBehaviour
     }
 
     static Vector3[] vbuf = new Vector3[0]; static Color32[] cbuf = new Color32[0]; static Vector2[] ubuf = new Vector2[0], u2buf = new Vector2[0]; static int[] tbuf = new int[0];
-    void Upload(Mesh mesh, VMesh v)
+    public void Upload(Mesh mesh, VMesh v)
     {
         if (vbuf.Length < v.nv) { int n = v.nv * 2; vbuf = new Vector3[n]; cbuf = new Color32[n]; ubuf = new Vector2[n]; u2buf = new Vector2[n]; }
         for (int i = 0; i < v.nv; i++)
