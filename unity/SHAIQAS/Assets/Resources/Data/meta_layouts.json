@@ -1,0 +1,636 @@
+{
+ "lobby": [
+  {
+   "r": [
+    48,
+    284,
+    344,
+    68
+   ],
+   "label": "ЖОРЫҚ",
+   "primary": true,
+   "icon": "map",
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    48,
+    366,
+    330,
+    62
+   ],
+   "label": "БАТЫРЛАР",
+   "primary": false,
+   "icon": "batyr",
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    48,
+    442,
+    330,
+    62
+   ],
+   "label": "ҚАРУ-ЖАРАҚ",
+   "primary": false,
+   "icon": "arms",
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    48,
+    518,
+    330,
+    62
+   ],
+   "label": "ЕРКІН ҰРЫС",
+   "primary": false,
+   "icon": "fight",
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    48,
+    594,
+    161,
+    50
+   ],
+   "label": "ЕРКІН АЛАҢ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    217,
+    594,
+    161,
+    50
+   ],
+   "label": "ӘДІСТЕР КІТАБЫ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    574,
+    16,
+    222,
+    46
+   ],
+   "label": "ТАРИХ АЛЬБОМЫ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": true,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    392,
+    16,
+    172,
+    46
+   ],
+   "label": "МАРАПАТТАР",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": true,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    806,
+    16,
+    222,
+    46
+   ],
+   "label": "⚙ БАПТАУЛАР",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": true,
+   "dis": false,
+   "pause": false
+  }
+ ],
+ "map": [
+  {
+   "r": [
+    548,
+    204,
+    184,
+    184
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    142,
+    158,
+    128,
+    158
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    1010,
+    158,
+    128,
+    158
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    142,
+    410,
+    128,
+    158
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    1010,
+    410,
+    128,
+    158
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    586,
+    494,
+    108,
+    138
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    24,
+    664,
+    176,
+    46
+   ],
+   "label": "◀ АЛДЫҢҒЫ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    1080,
+    664,
+    176,
+    46
+   ],
+   "label": "КЕЛЕСІ ▶",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    24,
+    18,
+    150,
+    46
+   ],
+   "label": "МӘЗІР",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  }
+ ],
+ "prolog": [
+  {
+   "r": [
+    1000,
+    560,
+    240,
+    44
+   ],
+   "label": "ӨТКІЗУ ▶▶",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    1000,
+    618,
+    240,
+    60
+   ],
+   "label": "КЕЛЕСІ ▶",
+   "primary": true,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  }
+ ],
+ "shop": [
+  {
+   "r": [
+    874,
+    156,
+    358,
+    82
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    874,
+    244,
+    358,
+    82
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    874,
+    332,
+    358,
+    82
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    874,
+    420,
+    358,
+    82
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    874,
+    508,
+    358,
+    82
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    874,
+    596,
+    358,
+    82
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    505,
+    556,
+    320,
+    58
+   ],
+   "label": "КИІЛГЕН",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": true,
+   "pause": false
+  },
+  {
+   "r": [
+    872,
+    104,
+    124,
+    40
+   ],
+   "label": "ҚАРУ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": true,
+   "tab": true,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    1002,
+    104,
+    124,
+    40
+   ],
+   "label": "САУЫТ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": true,
+   "tab": true,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    1132,
+    104,
+    124,
+    40
+   ],
+   "label": "БАС КИІМ",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": true,
+   "tab": true,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    24,
+    18,
+    150,
+    46
+   ],
+   "label": "МӘЗІР",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  }
+ ],
+ "heroes": [
+  {
+   "r": [
+    40,
+    104,
+    760,
+    90
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    40,
+    200,
+    760,
+    90
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    40,
+    296,
+    760,
+    90
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    40,
+    392,
+    760,
+    90
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    40,
+    488,
+    760,
+    90
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    40,
+    584,
+    760,
+    90
+   ],
+   "label": "",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  },
+  {
+   "r": [
+    858,
+    626,
+    360,
+    58
+   ],
+   "label": "ТАҢДАЛҒАН",
+   "primary": false,
+   "icon": null,
+   "small": false,
+   "tiny": false,
+   "tab": false,
+   "dis": true,
+   "pause": false
+  },
+  {
+   "r": [
+    24,
+    18,
+    150,
+    46
+   ],
+   "label": "МӘЗІР",
+   "primary": false,
+   "icon": null,
+   "small": true,
+   "tiny": false,
+   "tab": false,
+   "dis": false,
+   "pause": false
+  }
+ ]
+}

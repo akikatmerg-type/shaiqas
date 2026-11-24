@@ -111,6 +111,8 @@ public class Match
         StartMatch();
     }
     public void StartTrain(int ch) { mode = "train"; chapter = ch; stageIdx = 0; needWins = 1; StartMatch(); }
+    /// <summary>Еркін ұрыс: ашық тараулардан кездейсоқ жау, 1 раунд (веб: quickFight).</summary>
+    public void StartQuick(int ch, int idx) { mode = "quick"; chapter = ch; stageIdx = idx; needWins = 1; StartMatch(); }
 
     public void StartMatch()
     {

@@ -15,6 +15,7 @@ public class FightView : MonoBehaviour
     MeshRenderer rP, rE, rFx, rAdd;
     readonly VMesh vm = new VMesh(), vfx = new VMesh(), vadd = new VMesh();
     Material matAdd;
+    readonly BgWar bgw = new BgWar(); readonly VMesh vbg = new VMesh(); Mesh meshBg;
     int dustCol = Col.Pack(160, 130, 100, 150);
     readonly Intent intent = new Intent();
     bool showTouch;
@@ -87,7 +88,13 @@ public class FightView : MonoBehaviour
         par2 = Spr(b + "layer2", 0, 0, 4, world.transform);
         Spr(b + "fogLow", 0, 540, 5, world.transform);
         actors = new GameObject("Actors").transform; actors.SetParent(world.transform, false);
-        groundT = Spr(b + "ground", 0, 0, 6, actors);
+        groundT = Spr(b + "ground", 0, 0, 7, actors);
+        bgw.Build(m.chapter);
+        {
+            GameObject go = new GameObject("BgWar"); go.transform.SetParent(world.transform, false);
+            meshBg = new Mesh(); meshBg.MarkDynamic(); go.AddComponent<MeshFilter>().sharedMesh = meshBg;
+            MeshRenderer mr = go.AddComponent<MeshRenderer>(); mr.sharedMaterial = mat; mr.sortingOrder = 6;
+        }
         meshFx = NewMesh("FxBack", 9, out rFx);
         meshAdd = NewMesh("FxGlow", 20, out rAdd); rAdd.sharedMaterial = matAdd;
         meshE = NewMesh("Enemy", 10, out rE);
@@ -156,6 +163,8 @@ public class FightView : MonoBehaviour
         par1.localPosition = new Vector3(-m.cam * parK[1], 0, 0);
         par2.localPosition = new Vector3(-m.cam * parK[2], 0, 0);
         actors.localPosition = new Vector3(-m.cam, 0, 0);
+        // фондағы шайқас (экран координатында, параллакс)
+        vbg.Clear(); bgw.Draw(vbg, m.cam, Time.time); Upload(meshBg, vbg);
         // жауынгерлер
         Build(meshE, m.enemy);
         Build(meshP, m.player);
@@ -459,51 +468,96 @@ public class FightView : MonoBehaviour
         if (m.flash > 0) Ui.Fill(0, 0, 1280, 720, new Color(1, 0.92f, 0.75f, Mathf.Min(0.35f, m.flash * 1.2f)));
         if (m.dark > 0) Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.02f, 0.02f, m.dark * 0.5f));
         Fighter P = m.player, E = m.enemy;
-        // денсаулық
-        Ui.Fill(96, 14, 500, 30, new Color(0, 0, 0, 0.6f));
-        Ui.Fill(100, 18, 492 * Mathf.Clamp01(P.hpLag / P.maxHp), 22, new Color(1, 1, 1, 0.6f));
-        Ui.Fill(100, 18, 492 * Mathf.Clamp01(P.hp / P.maxHp), 22, Ui.GOLD);
-        Ui.Fill(684, 14, 500, 30, new Color(0, 0, 0, 0.6f));
-        float ef = Mathf.Clamp01(E.hp / E.maxHp), el = Mathf.Clamp01(E.hpLag / E.maxHp);
-        Ui.Fill(688 + 492 * (1 - el), 18, 492 * el, 22, new Color(1, 1, 1, 0.6f));
-        Ui.Fill(688 + 492 * (1 - ef), 18, 492 * ef, 22, new Color(0.86f, 0.2f, 0.16f));
-        Ui.TextS(P.name, 100, 44, 400, 28, 18, Ui.CREAM, TextAnchor.MiddleLeft);
-        Ui.TextS(E.name, 780, 44, 400, 28, 18, Ui.CREAM, TextAnchor.MiddleRight);
-        // рух
-        Ui.Bar(100, 74, 240, 10, P.rux / 100, P.rux >= 100 ? new Color(1, 0.85f, 0.3f) : new Color(0.55f, 0.8f, 1f), new Color(0, 0, 0, 0.5f));
-        Ui.Bar(940, 74, 240, 10, E.rux / 100, new Color(1, 0.5f, 0.4f), new Color(0, 0, 0, 0.5f));
-        if (P.rux >= 100) Ui.TextS("L — РУХ СОҚҚЫСЫ!", 100, 86, 300, 24, 15, Ui.GOLD, TextAnchor.MiddleLeft);
-        // уақыт пен раунд
-        Ui.Panel(596, 6, 88, 70, new Color(0.08f, 0.05f, 0.14f, 0.9f), Ui.GOLD);
-        Ui.TextS(U.Int(Mathf.CeilToInt(m.timer)), 596, 6, 88, 56, 34, Ui.CREAM, TextAnchor.MiddleCenter);
+        float hk = m.phase == Match.INTRO && m.round == 1 ? Mathf.Clamp01(m.pt * 2.4f) : 1; hk = 1 - (1 - hk) * (1 - hk) * (1 - hk);
+        float oy = -(1 - hk) * 120;
+        HpBar(P, false, oy); HpBar(E, true, oy);
+        Ui.Medal(66, 58 + oy, 42, "2f5f9a"); Ui.Medal(1214, 58 + oy, 42, "a32222");
+        Ui.Portrait(P.heroId != null ? "Art/portraits/" + P.heroId : "Art/ui/por_trainer", 66, 58 + oy, 42);
+        string ep = m.mode == "train" ? "Art/ui/por_trainer" : E.look.StartsWith("e_") ? "Art/ui/por_" + E.look : "Art/ui/por_trainer";
+        Ui.Portrait(ep, 1214, 58 + oy, 42);
+        Ui.TextO(P.name, 128, 68 + oy, 400, 24, 17, new Color32(255, 243, 224, 255), TextAnchor.MiddleLeft, true, 1.5f);
+        Ui.TextO(E.name, 752, 68 + oy, 400, 24, 17, new Color32(255, 243, 224, 255), TextAnchor.MiddleRight, true, 1.5f);
+        // таймер медальоны
+        bool low = m.timer < 10 && m.phase == Match.FIGHT;
+        Ui.Medal(640, 50 + oy, 36, "a32222");
+        Ui.Fill(640 - 26, 50 - 26 + oy, 52, 52, low ? new Color32(74, 14, 14, 235) : new Color32(30, 25, 64, 235));
+        float ts = low ? 1 + 0.1f * Mathf.Max(0, Mathf.Sin(Time.time * 6)) : 1;
+        Ui.TextO(U.Int(Mathf.CeilToInt(m.timer)), 600, 26 + oy, 80, 50, (int)(38 * ts), low ? new Color32(255, 138, 106, 255) : new Color32(255, 214, 120, 255));
+        if (m.needWins > 1) Ui.TextO(m.round + "-РАУНД", 560, 96 + oy, 160, 20, 14, new Color32(255, 227, 160, 255), TextAnchor.MiddleCenter, true, 1.5f);
+        // жеңіс белгілері (раунд)
         for (int i = 0; i < m.needWins; i++)
         {
-            Ui.Fill(560 - i * 22, 52, 14, 14, i < m.pWins ? Ui.GOLD : new Color(0, 0, 0, 0.5f));
-            Ui.Fill(706 + i * 22, 52, 14, 14, i < m.eWins ? new Color(0.86f, 0.2f, 0.16f) : new Color(0, 0, 0, 0.5f));
+            Ui.Img("Art/ui/medal_18", 560 - i * 26 - 15, 70 + oy + 5, 30, 30, i < m.pWins ? 1 : 0.25f);
+            Ui.Img("Art/ui/medal_18", 720 + i * 26 - 15, 70 + oy + 5, 30, 30, i < m.eWins ? 1 : 0.25f);
         }
-        // сөздер
+        if (P.rux >= 100) Ui.TextO("L — РУХ СОҚҚЫСЫ!", 128, 92 + oy, 300, 22, 15, Ui.GOLD, TextAnchor.MiddleLeft, true, 1.5f);
+        // сөздер (пергамент көпіршіктер)
         for (int i = 0; i < m.says.Count(); i++)
         {
-            SayLine s = m.says.Get(i);
-            if (m.sayClock < s.t0 || m.sayClock > s.t1) continue;
-            float x = s.enemy ? 700 : 80;
-            Ui.Panel(x, 150, 500, 96, new Color(0.96f, 0.9f, 0.76f, 0.96f), s.enemy ? new Color(0.86f, 0.2f, 0.16f) : (Color)Ui.GOLD);
-            Ui.Text(s.name, x + 16, 156, 470, 26, 16, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
-            Ui.Text("«" + s.text + "»", x + 16, 182, 470, 60, 18, Ui.INK);
+            SayLine sl = m.says.Get(i);
+            if (m.sayClock < sl.t0 || m.sayClock > sl.t1) continue;
+            float bx = sl.enemy ? 700 : 90, k2 = Mathf.Clamp01((m.sayClock - sl.t0) * 6);
+            Ui.DzPanel(bx, 150, 490, 84, "parch");
+            Ui.Text(sl.name, bx + 18, 156, 454, 22, 15, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
+            Ui.Text(sl.text, bx + 18, 178, 454, 52, Ui.FitBox(sl.text, 454, 52, 18), new Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, k2), TextAnchor.UpperLeft, true);
         }
+        // кіріспе: «n-РАУНД» + бөлгіш + сипаттама (веб)
+        if (m.phase == Match.INTRO)
+        {
+            float k = Mathf.Clamp01(m.pt * 2.5f), k2 = Mathf.Clamp01(m.pt * 2.5f - 0.5f);
+            string ttl = m.needWins > 1 ? m.round + "-РАУНД" : "ҰРЫСҚА ДАЙЫН БОЛ";
+            int sz = (int)((m.needWins > 1 ? 82 : 64) * (1.25f - 0.25f * k));
+            Ui.TextO(ttl, 0, 236 - sz * 0.75f, 1280, sz * 1.1f, sz, new Color(1, 0.84f, 0.47f, k), TextAnchor.MiddleCenter, true, 4);
+            float hw = 230 * k2;
+            Ui.Fill(640 - hw, 262, hw * 2, 2.5f, new Color(0.95f, 0.72f, 0.25f, k2));
+            Ui.Img("Art/ui/ram", 620, 240, 40, 20, k2);
+            JNode C = Db.Ch(m.chapter);
+            string sub = m.mode == "campaign" ? C.S("name") + " · " + (m.stageIdx + 1) + "-ұрыс" + (E.boss ? " · БАС ЖАУ" : "") : (m.mode == "train" ? "Жаттығу" : "Еркін ұрыс") + " · " + C.S("name");
+            Ui.TextO(sub, 0, 282, 1280, 40, 25, new Color(1, 0.83f, 0.42f, k2), TextAnchor.MiddleCenter, true, 3);
+            Ui.TextO(P.name + "   VS   " + E.name, 0, 318, 1280, 30, 18, new Color(1, 0.95f, 0.88f, k2), TextAnchor.MiddleCenter, true, 2);
+        }
+        if (m.phase == Match.INTRO && m.pt > m.introT - 0.5f)
+            Ui.TextO("ҰРЫС!", 0, 330, 1280, 110, 90, Ui.GOLD, TextAnchor.MiddleCenter, true, 5);
         // фаза жазулары
-        if (m.phase == Match.INTRO && m.pt > m.introT - 1.2f)
-            Ui.TextS(m.pt > m.introT - 0.5f ? "ҰРЫС!" : (m.needWins == 3 && m.round == 1 ? "БАС ЖАУ · " : "") + m.round + "-РАУНД", 0, 280, 1280, 100, 64, Ui.GOLD, TextAnchor.MiddleCenter);
         if (m.phase == Match.ROUNDEND)
         {
-            Ui.TextS(m.roundMsg, 0, 250, 1280, 90, 60, Ui.GOLD, TextAnchor.MiddleCenter);
-            Ui.TextS(m.roundWinner, 0, 340, 1280, 40, 26, Ui.CREAM, TextAnchor.MiddleCenter);
+            Ui.TextO(m.roundMsg, 0, 230, 1280, 100, 72, new Color32(255, 214, 120, 255), TextAnchor.MiddleCenter, true, 4);
+            Ui.Fill(410, 334, 460, 2.5f, Ui.GOLD); Ui.Img("Art/ui/ram", 620, 312, 40, 20);
+            Ui.TextO(m.roundWinner, 0, 344, 1280, 40, 26, Ui.CREAM, TextAnchor.MiddleCenter, true, 3);
         }
         if (m.phase == Match.MATCHEND && m.pt > 0.8f) { DrawResult(); return; }
         // үзіліс
         if (m.phase != Match.MATCHEND && Ui.Btn("II", 1214, 92, 52, 48, false, true, 20)) m.paused = true;
         if (m.paused) { DrawPause(); return; }
         if (showTouch) DrawTouch();
+    }
+
+    /// <summary>Веб: bar() — денсаулық тақтасы, зақым ізі, бөліктер, рух ұяшықтары.</summary>
+    void HpBar(Fighter f, bool right, float oy)
+    {
+        const float X = 128, Y = 24, Wd = 440, Hh = 26;
+        float k = Mathf.Clamp01(f.hp / f.maxHp), kl = Mathf.Clamp01(f.hpLag / f.maxHp);
+        if (right) Ui.ImgFlip("Art/ui/hudplate", 1280 - 620, oy, 620, 120); else Ui.Img("Art/ui/hudplate", 0, oy, 620, 120);
+        float full = Wd + 9;
+        float lx = right ? 1280 - X - full * kl : X, fx = right ? 1280 - X - full * k : X;
+        if (kl > k) Ui.Fill(lx, Y + oy, full * kl, Hh, new Color(1, (236 - 40 * Mathf.Abs(Mathf.Sin(Time.time * 10))) / 255f, 0.78f, 0.95f));
+        if (right) Ui.Grad3(fx, Y + oy, full * k, Hh, new Color32(255, 138, 100, 255), new Color32(224, 57, 42, 255), new Color32(122, 18, 16, 255));
+        else Ui.Grad3(fx, Y + oy, full * k, Hh, new Color32(255, 240, 168, 255), new Color32(242, 182, 60, 255), new Color32(154, 90, 16, 255));
+        if (k < 0.25f && k > 0) Ui.Fill(fx, Y + oy, full * k, Hh, new Color(1, 0.16f, 0.12f, 0.25f + 0.25f * Mathf.Sin(Time.time * 9)));
+        Ui.Fill(fx, Y + 2 + oy, full * k, Hh * 0.3f, new Color(1, 1, 1, 0.3f));
+        for (int i = 1; i < 10; i++) Ui.Fill(right ? 1280 - X - Wd * i / 10f : X + Wd * i / 10f, Y + oy, 1.5f, Hh, new Color(0, 0, 0, 0.28f));
+        if (k > 0) Ui.Fill(right ? fx : X + full * k - 2, Y + oy, 2, Hh, new Color(1, 1, 0.94f, 0.9f));
+        // рух: 4 ұяшық
+        float rk = Mathf.Clamp01(f.rux / 100), rw = 236, cw = rw / 4, ry = Y + Hh + 7 + oy;
+        bool fullR = rk >= 1;
+        for (int i = 0; i < 4; i++)
+        {
+            float kk = Mathf.Clamp01(rk * 4 - i); if (kk <= 0) continue;
+            float cx = right ? 1280 - X - (i + 1) * cw + (cw - 2) * (1 - kk) : X + i * cw;
+            float pz = 0.7f + 0.3f * Mathf.Sin(Time.time * 8);
+            Ui.Fill(cx + 1, ry, (cw - 2) * kk, 8, fullR ? new Color(1, (150 + 60 * pz) / 255f, 0.16f) : new Color32(95, 191, 230, 255));
+            Ui.Fill(cx + 1, ry, (cw - 2) * kk, 3, fullR ? new Color32(255, 246, 200, 255) : new Color32(191, 239, 255, 255));
+        }
     }
 
     void DrawTouch()

@@ -7,7 +7,7 @@ public static class Boot
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Start()
     {
-        if (Object.FindFirstObjectByType<GameRoot>() != null) return;
+        if (Object.FindAnyObjectByType<GameRoot>() != null) return;
         GameObject go = new GameObject("SHAIQAS");
         go.AddComponent<GameRoot>();
         Object.DontDestroyOnLoad(go);
@@ -133,11 +133,18 @@ public partial class GameRoot : MonoBehaviour
         fv.Setup(match);
         Go(FIGHT);
     }
+    public void QuickFight()
+    {
+        int last = Progress.LastOpen(), ch = (int)(U.Rand() * (last + 1)); if (ch > last) ch = last;
+        int idx = (int)(U.Rand() * 3);
+        match.StartQuick(ch, idx); fv.Setup(match); Go(FIGHT);
+    }
     public void AfterFight(string next)
     {
         PopMedals(match.medalsNew);
         string r = match.After(next);
         if (r == "fight") { fv.Setup(match); pt = 0; return; }
+        if (match.mode == "quick") { Go(LOBBY); return; }
         if (r == "nextStage") { Campaign(match.chapter, match.stageIdx + 1); return; }
         if (r == "chapterDone") { doneCh = match.chapter; Go(DONE); return; }
         OpenMap(match.chapter);
