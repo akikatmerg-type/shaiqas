@@ -11,9 +11,11 @@ public class FightView : MonoBehaviour
     float[] parK = { 0.15f, 0.35f, 0.6f };
     string stageId;
     Material mat;
-    Mesh meshP, meshE, meshFx;
-    MeshRenderer rP, rE, rFx;
-    readonly VMesh vm = new VMesh(), vfx = new VMesh();
+    Mesh meshP, meshE, meshFx, meshAdd;
+    MeshRenderer rP, rE, rFx, rAdd;
+    readonly VMesh vm = new VMesh(), vfx = new VMesh(), vadd = new VMesh();
+    Material matAdd;
+    int dustCol = Col.Pack(160, 130, 100, 150);
     readonly Intent intent = new Intent();
     bool showTouch;
     float lastL = -9, lastR = -9;
@@ -22,9 +24,6 @@ public class FightView : MonoBehaviour
 
     // ---------------- атлас ----------------
     static Texture2D atlas; static Rect[] rects; static Rect whiteRect; static int packed = -1;
-
-    class Prt { public float x, y, vx, vy, life, max, size, g; public int col, kind; }
-    readonly List<Prt> prts = new List<Prt>();
 
     void Awake()
     {
@@ -35,6 +34,8 @@ public class FightView : MonoBehaviour
             if (sh == null) sh = Shader.Find("Sprites/Default");
             mat = new Material(sh);
         }
+        matAdd = new Material(mat);
+        matAdd.SetFloat("_SrcBlend", 5); matAdd.SetFloat("_DstBlend", 1);
         showTouch = Application.isMobilePlatform;
     }
 
@@ -62,7 +63,7 @@ public class FightView : MonoBehaviour
         rects = new Rect[n];
         for (int i = 0; i < n; i++) rects[i] = r[i + 1];
         packed = n;
-        mat.mainTexture = atlas;
+        mat.mainTexture = atlas; if (matAdd != null) matAdd.mainTexture = atlas;
     }
 
     // ---------------- құру / жою ----------------
@@ -76,6 +77,8 @@ public class FightView : MonoBehaviour
         JNode pk = meta.Get("par");
         for (int i = 0; i < 3 && i < pk.Count(); i++) parK[i] = pk.At(i).F();
         rimCol = Col.Parse(meta.S("rim")); lightX = meta.Get("lightX").F(1080);
+        string dc = meta.S("dustCol"); if (U.Len(dc) > 0) dustCol = Col.Parse(dc + "0.6)");
+        ghosts.Clear();
         string b = "Art/stages/" + stageId + "/";
         Spr(b + "sky", 0, 0, 0, world.transform);
         par0 = Spr(b + "layer0", 0, 0, 1, world.transform);
@@ -85,12 +88,14 @@ public class FightView : MonoBehaviour
         Spr(b + "fogLow", 0, 540, 5, world.transform);
         actors = new GameObject("Actors").transform; actors.SetParent(world.transform, false);
         groundT = Spr(b + "ground", 0, 0, 6, actors);
-        meshFx = NewMesh("Fx", 20, out rFx);
+        meshFx = NewMesh("FxBack", 9, out rFx);
+        meshAdd = NewMesh("FxGlow", 20, out rAdd); rAdd.sharedMaterial = matAdd;
         meshE = NewMesh("Enemy", 10, out rE);
         meshP = NewMesh("Player", 11, out rP);
         prts.Clear();
         Looks.For(m.player); Looks.For(m.enemy);
         EnsureAtlas();
+        Snd.Play("round_start");
     }
 
     Transform Spr(string path, float x, float y, int order, Transform parent)
@@ -134,13 +139,17 @@ public class FightView : MonoBehaviour
         if (m == null || world == null) return;
         ReadIntent();
         if (Inp.Tap(Inp.ESC) && m.phase != Match.MATCHEND) m.paused = !m.paused;
+        int ph0 = m.phase, tc0 = Mathf.CeilToInt(m.timer), r0 = m.round;
         if (!m.paused && !Tut.Active()) m.Update(dt, intent);
+        PhaseSounds(ph0, tc0, r0);
+        FighterSounds(m.player, sP); FighterSounds(m.enemy, sE);
         EatFx();
         StepParticles(m.paused || Tut.Active() ? 0 : dt);
         // камера: зум (W/2, pivY) нүктесінің айналасында, діріл
         float z = m.zoom, pv = m.pivY;
         float sx = m.shake > 0 ? (U.Rand() - 0.5f) * m.shake * 1.6f : 0, sy = m.shake > 0 ? (U.Rand() - 0.5f) * m.shake * 1.6f : 0;
         Camera c = GameRoot.I.cam;
+        z *= 1 + m.punch * 1.4f;
         c.orthographicSize = 360f / z;
         c.transform.position = new Vector3(640 - sx / z, -(pv + (360 - pv) / z) + sy / z, -100);
         par0.localPosition = new Vector3(-m.cam * parK[0], 0, 0);
@@ -195,70 +204,220 @@ public class FightView : MonoBehaviour
         mesh.SetTriangles(tbuf, 0, true);
     }
 
-    // ---------------- әсерлер ----------------
+    // ---------------- дыбыстар (веб: skPost, endRound, endMatch) ----------------
+    class SndSt { public bool og = true; public int st; public float stT, stepT, rux; public Move cm; }
+    readonly SndSt sP = new SndSt(), sE = new SndSt();
+    void FighterSounds(Fighter f, SndSt T)
+    {
+        bool og = f.OnGround(); int st = f.state; float pan = Snd.Pan(f.x, m.cam);
+        if (T.og && !og && f.vy < -200 && st == Fighter.JUMP) Snd.Play("jump", 0.8f, pan);
+        if (!T.og && og && st != Fighter.DOWN && st != Fighter.DEAD) Snd.Play("land", 0.7f, pan);
+        if (st == Fighter.DASH && T.st != Fighter.DASH) Snd.Play("dash", 1, pan);
+        if ((st == Fighter.DOWN || st == Fighter.DEAD) && T.stT < 0.42f && f.st >= 0.42f && T.st == st) Snd.Play("body_fall", 1, pan);
+        if (st == Fighter.WALK && og) { T.stepT -= Time.deltaTime * (f.speed / 300); if (T.stepT <= 0) { T.stepT = 0.34f; Snd.Play("step", 0.35f, pan); } } else T.stepT = 0.12f;
+        if (st == Fighter.ATTACK && f.cm != null && T.cm != f.cm && f.st >= f.cm.w * 0.55f)
+        {
+            T.cm = f.cm; Move mv = f.cm; string w = f.weapon;
+            string n = mv.foot ? "kick" : mv.thr ? "swing_heavy" : (mv.heavy || mv.special || w == "shoqpar" || w == "kurzi" || w == "pernach" || w == "balta" || w == "temirshoq") ? "swing_heavy" : (w == "naiza" || w == "sungi") ? "swing_spear" : "swing_light";
+            Snd.Play(n, 1, pan, f.big ? 0.9f : 1);
+        }
+        if (!f.ai && T.rux < 100 && f.rux >= 100 && m.phase == Match.FIGHT) Snd.Play("spirit_full", 1, pan);
+        T.rux = f.rux; T.og = og; T.st = st; T.stT = f.st;
+    }
+    void PhaseSounds(int ph0, int tc0, int r0)
+    {
+        if (ph0 != Match.INTRO && m.phase == Match.INTRO) Snd.Play("round_start");
+        if (ph0 == Match.INTRO && m.phase == Match.FIGHT) Snd.Play("fight_start");
+        if (ph0 == Match.FIGHT && m.phase == Match.FIGHT) { int tc = Mathf.CeilToInt(m.timer); if (tc < tc0 && tc >= 1 && tc <= 5) Snd.Play("countdown"); }
+        if (ph0 == Match.FIGHT && m.phase == Match.ROUNDEND) Snd.Play("round_bell");
+        if (ph0 != Match.MATCHEND && m.phase == Match.MATCHEND) { Snd.Play(m.won ? "victory" : "defeat"); if (m.reward > 0) Snd.Play("coin", 1, 0, 1); }
+    }
+
+    // ---------------- әсерлер (веб: fxImpact, fxFlash, fxRing, fxP, fxPuff, drawTrail, ghosts) ----------------
+    const int P_HOT = 0, P_GLINT = 1, P_PUFF = 2, P_CHIP = 3, P_FLASH = 4, P_RING = 5, P_EMBER = 6;
+    class Prt { public float x, y, vx, vy, life, max, size, g, rot, vr, r1; public int col, kind; }
+    readonly List<Prt> prts = new List<Prt>();
+    class Ghost { public Fighter f; public float[] pose = new float[Pz.N]; public float x, y, life, max; public int facing, col; }
+    readonly List<Ghost> ghosts = new List<Ghost>();
+    float lastHitT = -9;
+    static int C(int r, int g, int b) { return Col.Pack(r, g, b, 255); }
+    static float Rn(float a, float b) { return a + U.Rand() * (b - a); }
+    void P(int kind, float x, float y, float vx, float vy, float life, int col, float size, float g) { if (prts.Count < 600) prts.Add(new Prt { kind = kind, x = x, y = y, vx = vx, vy = vy, life = life, max = life, col = col, size = size, g = g, rot = Rn(0, 6.28f), vr = Rn(-8, 8) }); }
+    void Flash(float x, float y, float r, int col, float a, float life) { P(P_FLASH, x, y, 0, 0, life, Col.WithA(col, a), r, 0); }
+    void RingFx(float x, float y, float r0, float speed, float life, int col, float w) { Prt p = new Prt { kind = P_RING, x = x, y = y, life = life, max = life, col = col, size = w, r1 = r0, vx = speed }; prts.Add(p); }
+
     void EatFx()
     {
         for (int i = 0; i < m.fx.Count(); i++)
         {
             FxEv e = m.fx.Get(i);
+            float pan = Snd.Pan(e.x, m.cam);
+            if (e.kind == Match.FX_HIT || e.kind == Match.FX_HITSPEC) Snd.Play((e.flags & 4) != 0 ? "hit_heavy" : (e.flags & 2) != 0 ? "hit_crit" : (e.flags & 1) != 0 ? "hit_heavy" : "hit_light", 1, pan);
+            else if (e.kind == Match.FX_BLOCK) Snd.Play((e.flags & 2) != 0 ? "guard_break" : "block", (e.flags & 1) != 0 ? 1 : 0.8f, pan);
+            else if (e.kind == Match.FX_KO) Snd.Play("ko");
+            else if (e.kind == Match.FX_SPECIAL) Snd.Play("special");
+            else if (e.kind == Match.FX_PHASE) Snd.Play("roar");
             switch (e.kind)
             {
-                case Match.FX_HIT: Burst(e.x, e.y, e.dir, Col.Pack(255, 207, 107, 255), e.n, 520); break;
-                case Match.FX_HITSPEC: Burst(e.x, e.y, e.dir, Col.Pack(255, 224, 138, 255), e.n, 700); break;
-                case Match.FX_BLOCK: Burst(e.x, e.y, e.dir, Col.Pack(191, 228, 255, 255), e.n, 480); break;
+                case Match.FX_HIT: Impact(e, e.n >= 20 ? 1 : 0); break;
+                case Match.FX_HITSPEC: Impact(e, 2); break;
+                case Match.FX_BLOCK: Block(e); break;
                 case Match.FX_DUST: Dust(e.x, e.y, e.dir, e.n); break;
-                case Match.FX_KO: Burst(e.x, e.y, 0, Col.Pack(255, 90, 50, 255), 40, 900); break;
-                case Match.FX_SPECIAL: Burst(e.x, e.y, 0, Col.Pack(255, 211, 107, 255), 30, 600); break;
-                case Match.FX_PHASE: Burst(e.x, e.y, 0, Col.Pack(255, 90, 58, 255), 40, 500); break;
+                case Match.FX_GHOST: AddGhost(e.who, 0.22f, e.who.ai ? Col.Parse(e.who.accent) : C(255, 200, 110)); break;
+                case Match.FX_KO:
+                    Flash(e.x, e.y, 360, C(255, 106, 58), 0.55f, 0.35f); Flash(e.x, e.y, 140, C(255, 255, 255), 0.4f, 0.25f);
+                    RingFx(e.x, e.y, 20, 1400, 0.5f, C(255, 255, 255), 6);
+                    for (int k = 0; k < 30; k++) { float a = Rn(0, 6.28f), sp = Rn(300, 900); P(P_HOT, e.x, e.y, Mathf.Cos(a) * sp, Mathf.Sin(a) * sp - 150, Rn(0.25f, 0.5f), k % 3 == 0 ? C(255, 246, 224) : C(255, 120, 60), Rn(2, 4), 1300); }
+                    break;
+                case Match.FX_SPECIAL:
+                    {
+                        int col = e.who != null && e.who.ai ? Col.Parse(e.who.accent) : C(255, 211, 107);
+                        RingFx(e.x, e.y, 30, 900, 0.35f, col, 5); RingFx(e.x, Db.GROUND - 2, 30, 700, 0.5f, col, 4);
+                        Flash(e.x, e.y, 300, col, 0.35f, 0.4f); Flash(e.x, e.y, 160, C(255, 255, 255), 0.25f, 0.3f);
+                        for (int k = 0; k < 30; k++) P(P_EMBER, e.x + Rn(-46, 46), e.y + 160 - Rn(0, 230), Rn(-25, 25), Rn(-240, -90), Rn(0.35f, 0.7f), col, Rn(7, 15), -60);
+                        AddGhost(e.who, 0.3f, col);
+                        break;
+                    }
+                case Match.FX_PHASE:
+                    Flash(e.x, e.y, 320, C(255, 90, 58), 0.4f, 0.5f);
+                    for (int k = 0; k < 40; k++) P(P_EMBER, e.x + Rn(-46, 46), e.y + 120 - Rn(0, 230), Rn(-25, 25), Rn(-240, -90), Rn(0.35f, 0.7f), C(255, 90, 58), Rn(7, 15), -60);
+                    break;
             }
         }
         m.fx.Clear();
+        // рух толы немесе екінші фаза: айналадағы ұшқындар (веб: aura)
+        foreach (Fighter f in new[] { m.player, m.enemy })
+        {
+            if (f.phase2 && U.Rand() < 0.5f) P(P_EMBER, f.x + Rn(-46, 46), f.y - Rn(0, 230), Rn(-25, 25), Rn(-240, -90), Rn(0.35f, 0.7f), C(255, 90, 58), Rn(7, 15), -60);
+            if (f.state == Fighter.ATTACK && f.cm != null && f.cm.special && f.st < f.cm.w + f.cm.a && U.Rand() < 0.45f) P(P_EMBER, f.x + Rn(-46, 46), f.y - Rn(0, 230), Rn(-25, 25), Rn(-240, -90), Rn(0.35f, 0.7f), C(255, 211, 107), Rn(7, 15), -60);
+        }
     }
-    void Burst(float x, float y, float dir, int col, int n, float spd)
+
+    /// <summary>Соққы: 0 — жеңіл, 1 — ауыр, 2 — ерекше (веб: fxImpact).</summary>
+    void Impact(FxEv e, int kind)
     {
+        float x = e.x, y = e.y, ad = -e.dir == 0 ? 1 : -e.dir;
+        float rp = Time.time - lastHitT < 0.15f ? 0.55f : 1; lastHitT = Time.time;
+        bool big = kind > 0, sp = kind == 2;
+        int col = sp ? C(255, 224, 138) : C(255, 178, 74);
+        Flash(x, y, (big ? 190 : 120) * rp, col, (big ? 0.22f : 0.15f) * rp, 0.22f);
+        Flash(x, y, (big ? 66 : 46) * rp, C(255, 255, 255), big ? 0.12f : 0.08f, 0.16f);
+        Flash(x, y, (big ? 140 : 90) * rp, sp ? C(255, 244, 208) : C(255, 255, 255), (big ? 0.16f : 0.1f) * rp, 0.12f);
+        RingFx(x, y, 12, big ? 980 : 620, big ? 0.26f : 0.18f, sp ? col : C(255, 230, 176), big ? 5 : 3);
+        if (big) RingFx(x, y, 4, 560, 0.34f, C(255, 255, 255), 2);
+        float power = big ? 780 : 520;
+        int n = big ? 26 : 14;
         for (int i = 0; i < n; i++)
         {
-            float a = dir == 0 ? U.Rand() * Mathf.PI * 2 : (dir > 0 ? 0 : Mathf.PI) + (U.Rand() - 0.5f) * 2.2f;
-            float s = spd * (0.35f + U.Rand() * 0.65f);
-            prts.Add(new Prt { x = x, y = y, vx = Mathf.Cos(a) * s, vy = Mathf.Sin(a) * s - 120, life = 0.25f + U.Rand() * 0.2f, max = 0.45f, size = 2 + U.Rand() * 2.5f, g = 900, col = col, kind = 0 });
+            bool back = U.Rand() < 0.25f; float a = Rn(-0.85f, 0.85f) + (ad > 0 ? 0 : Mathf.PI) + (back ? Mathf.PI : 0), s = Rn(0.4f, 1) * power * (back ? 0.6f : 1.25f);
+            P(P_HOT, x, y, Mathf.Cos(a) * s, Mathf.Sin(a) * s - Rn(40, 200), Rn(0.16f, 0.4f), sp ? (i % 2 == 1 ? col : C(255, 241, 192)) : (i % 3 != 0 ? C(255, 207, 107) : C(255, 246, 220)), Rn(1.6f, 3.6f), 1500);
         }
+        for (int i = 0; i < (big ? 4 : 2); i++) P(P_GLINT, x + Rn(-30, 30), y + Rn(-30, 30), ad * Rn(40, 200), Rn(-120, 20), Rn(0.14f, 0.28f), sp ? C(255, 244, 208) : C(255, 248, 234), Rn(16, 30), 0);
+        Fighter atk = e.who != null ? e.who.opp : null;
+        bool wood = atk != null && (atk.weapon == "soyil" || atk.weapon == "shoqpar" || atk.weapon == "staff" || atk.weapon == "kurzi");
+        if (wood) for (int i = 0; i < (big ? 9 : 4); i++) P(P_CHIP, x, y, ad * Rn(100, 420), Rn(-420, -120), Rn(0.4f, 0.8f), i % 2 == 0 ? C(176, 122, 69) : C(122, 74, 34), Rn(3, 6), 1600);
+        if (big && e.who != null) Dust(e.who.x, Db.GROUND, ad, 5);
+        m.punch = Mathf.Max(m.punch, sp ? 0.075f : big ? 0.055f : 0.022f);
+    }
+    void Block(FxEv e)
+    {
+        float x = e.x, y = e.y, dir = e.dir;
+        Flash(x, y, 86, C(159, 216, 255), 0.16f, 0.2f); Flash(x, y, 34, C(255, 255, 255), 0.1f, 0.14f); Flash(x, y, 70, C(234, 246, 255), 0.12f, 0.16f);
+        for (int i = 0; i < 18; i++)
+        {
+            float a = Rn(-1.25f, 1.0f) * (U.Rand() < 0.5f ? 1 : 0.6f) - 0.35f + (dir > 0 ? 0 : Mathf.PI), sp = Rn(0.5f, 1.25f) * 700;
+            P(P_HOT, x, y, Mathf.Cos(a) * sp, Mathf.Sin(a) * sp - Rn(60, 240), Rn(0.1f, 0.28f), i % 3 == 0 ? C(255, 255, 255) : i % 3 == 1 ? C(191, 228, 255) : C(255, 231, 168), Rn(1.1f, 2.3f), 1900);
+        }
+        for (int i = 0; i < 3; i++) P(P_GLINT, x + Rn(-18, 18), y + Rn(-18, 18), Rn(-60, 60), Rn(-80, 20), Rn(0.12f, 0.22f), C(232, 246, 255), Rn(14, 26), 0);
+        RingFx(x, y, 8, 520, 0.16f, C(207, 234, 255), 2.5f);
+        m.punch = Mathf.Max(m.punch, 0.012f);
     }
     void Dust(float x, float y, float dir, int n)
     {
         for (int i = 0; i < n; i++)
         {
-            float vx = dir != 0 ? dir * (60 + U.Rand() * 180) + (U.Rand() - 0.5f) * 100 : (i % 2 == 1 ? 1 : -1) * (90 + U.Rand() * 170);
-            prts.Add(new Prt { x = x + (U.Rand() - 0.5f) * 40, y = Mathf.Min(y, Db.GROUND) - U.Rand() * 10, vx = vx, vy = -(15 + U.Rand() * 75), life = 0.45f + U.Rand() * 0.35f, max = 0.8f, size = 9 + U.Rand() * 9, g = 0, col = Col.Pack(170, 150, 120, 150), kind = 1 });
+            float vx = dir != 0 ? dir * Rn(60, 240) + Rn(-50, 50) : (i % 2 == 1 ? 1 : -1) * Rn(90, 260);
+            P(P_PUFF, x + Rn(-20, 20), Mathf.Min(y, Db.GROUND) - Rn(0, 10), vx, Rn(-90, -15), Rn(0.45f, 0.8f), dustCol, Rn(9, 18), 0);
         }
+        if (n >= 6 && y >= Db.GROUND - 2) for (int i = 0; i < (n >= 12 ? 6 : 2); i++) P(P_CHIP, x + Rn(-20, 20), Db.GROUND - 2, Rn(-220, 220), Rn(-420, -160), Rn(0.4f, 0.7f), C(106, 82, 64), Rn(2, 4), 1800);
+        if (dir == 0 && n >= 8) RingFx(x, Db.GROUND - 2, 16, n >= 12 ? 620 : 380, 0.3f, Col.Pack(255, 240, 220, 160), 2.5f);
+    }
+    void AddGhost(Fighter f, float life, int col)
+    {
+        if (f == null || ghosts.Count > 24) return;
+        Ghost g = new Ghost { f = f, x = f.x, y = f.y, life = life, max = life, facing = f.facing, col = col };
+        Pz.Copy(g.pose, f.cur); ghosts.Add(g);
     }
     void StepParticles(float dt)
     {
         for (int i = prts.Count - 1; i >= 0; i--)
         {
             Prt p = prts[i];
-            p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt;
-            if (p.kind == 1) { p.vx *= 1 - 2 * dt; p.size += 14 * dt; }
+            p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+            if (p.kind == P_PUFF) { p.vx *= 1 - 2.2f * dt; p.vy *= 1 - 1.5f * dt; p.size += 16 * dt; }
+            if (p.kind == P_CHIP && p.y > Db.GROUND - 2) { p.y = Db.GROUND - 2; p.vy *= -0.3f; p.vx *= 0.6f; }
+            if (p.kind == P_RING) p.r1 += p.vx * dt * (p.life / p.max);
             if (p.life <= 0) prts.RemoveAt(i);
         }
+        for (int i = ghosts.Count - 1; i >= 0; i--) { ghosts[i].life -= dt; if (ghosts[i].life <= 0) ghosts.RemoveAt(i); }
     }
     static float[] lx = new float[2], ly = new float[2];
     void BuildFx()
     {
+        // мөлдір қабат: көлеңкелер, шаң, жаңқалар, сағым (ghost)
         vfx.Clear();
-        // жердегі көлеңкелер
         Shadow(m.enemy); Shadow(m.player);
         foreach (Prt p in prts)
         {
             float k = Mathf.Clamp01(p.life / p.max);
-            if (p.kind == 0)
-            {
-                vfx.FillC(Col.WithA(p.col, k));
-                lx[0] = p.x; ly[0] = p.y; lx[1] = p.x - p.vx * 0.03f; ly[1] = p.y - p.vy * 0.03f;
-                vfx.Stroke(lx, ly, 2, p.size, true);
-            }
-            else { vfx.FillC(Col.WithA(p.col, k * Col.A(p.col) / 255f)); vfx.Circle(p.x, p.y, p.size); }
+            if (p.kind == P_PUFF) { vfx.FillC(Col.WithA(p.col, k * k * Col.A(p.col) / 255f)); vfx.Circle(p.x, p.y, p.size); }
+            else if (p.kind == P_CHIP) { vfx.FillC(Col.WithA(p.col, Mathf.Min(1, k * 2))); vfx.Save(); vfx.Translate(p.x, p.y); vfx.Rotate(p.rot); lx[0] = -p.size; lx[1] = p.size; ly[0] = 0; ly[1] = 0; vfx.Stroke(lx, ly, 2, p.size * 0.7f, false); vfx.Restore(); }
+        }
+        foreach (Ghost gh in ghosts)
+        {
+            Fighter f = gh.f; float[] keep = new float[Pz.N]; Pz.Copy(keep, f.cur); float kx = f.x, ky = f.y; int kf = f.facing;
+            Pz.Copy(f.cur, gh.pose); f.x = gh.x; f.y = gh.y; f.facing = gh.facing;
+            Painter.Draw(vfx, f, Looks.For(f), Col.WithA(gh.col, Mathf.Clamp01(gh.life / gh.max) * 0.45f), 0, 0);
+            Pz.Copy(f.cur, keep); f.x = kx; f.y = ky; f.facing = kf;
         }
         Upload(meshFx, vfx);
+        // жарық қабаты (additive): жарқыл, сақина, ұшқын, жылт, қару ізі
+        vadd.Clear();
+        Trail(m.enemy); Trail(m.player);
+        foreach (Prt p in prts)
+        {
+            float k = Mathf.Clamp01(p.life / p.max);
+            switch (p.kind)
+            {
+                case P_FLASH: vadd.Glow(p.x, p.y, p.size * (1 + (1 - k) * 0.4f), Col.WithA(p.col, Col.A(p.col) / 255f * k * 2.2f)); break;
+                case P_RING: vadd.FillC(Col.WithA(p.col, k * Col.A(p.col) / 255f)); vadd.Ring(p.x, p.y, p.r1, p.size * k + 0.5f); break;
+                case P_HOT: vadd.FillC(Col.WithA(p.col, k)); lx[0] = p.x; ly[0] = p.y; lx[1] = p.x - p.vx * 0.022f; ly[1] = p.y - p.vy * 0.022f; vadd.Stroke(lx, ly, 2, p.size, true); break;
+                case P_GLINT: vadd.FillC(Col.WithA(p.col, k)); vadd.Star(p.x, p.y, p.size * (0.5f + k * 0.5f), p.rot * 0.2f); break;
+                case P_EMBER: vadd.Glow(p.x, p.y, p.size, Col.WithA(p.col, k * 0.8f)); break;
+            }
+        }
+        Upload(meshAdd, vadd);
+    }
+    void Trail(Fighter f)
+    {
+        int n = f.trail.Count(); if (n < 2) return;
+        Move cm = f.state == Fighter.ATTACK ? f.cm : null;
+        int tint = cm != null && cm.special ? C(255, 224, 150) : cm != null && cm.foot ? C(255, 236, 214) : (f.weapon == "qylysh" || f.weapon == "aibalta" || f.weapon == "naiza" || f.weapon == "semser" || f.weapon == "bulat" || f.weapon == "sungi") ? C(196, 228, 255) : C(255, 206, 140);
+        for (int i = 1; i < n; i++)
+        {
+            float[] a = f.trail.Get(i - 1), b = f.trail.Get(i); if (a[6] != b[6]) continue;
+            float fa = Mathf.Clamp01(a[4] / a[5]), fb = Mathf.Clamp01(b[4] / b[5]);
+            float ia = 0.2f + 0.8f * fa * fa, ib = 0.2f + 0.8f * fb * fb;
+            vadd.FillC(Col.WithA(tint, fb * (b[7] > 0 ? 0.45f : 0.3f)));
+            vadd.Quad(a[0], a[1], b[0], b[1], Mathf.Lerp(b[0], b[2], ib), Mathf.Lerp(b[1], b[3], ib), Mathf.Lerp(a[0], a[2], ia), Mathf.Lerp(a[1], a[3], ia));
+        }
+        for (int i = 1; i < n; i++)
+        {
+            float[] a = f.trail.Get(i - 1), b = f.trail.Get(i); if (a[6] != b[6]) continue;
+            float fb = Mathf.Clamp01(b[4] / b[5]);
+            vadd.FillC(Col.WithA(C(255, 250, 240), fb * 0.75f)); lx[0] = a[0]; ly[0] = a[1]; lx[1] = b[0]; ly[1] = b[1];
+            vadd.Stroke(lx, ly, 2, 0.8f + 3.2f * fb, true);
+        }
     }
     void Shadow(Fighter f)
     {

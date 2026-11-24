@@ -99,16 +99,16 @@ public static class Ui
         Fill(x, y, w, h, primary ? new Color32(120, 70, 10, 255) : new Color32(233, 173, 60, 200));
         Fill(x + 2, y + 2, w - 4, h - 4, bg);
         Text(label, x, y, w, h, size, primary ? (Color)INK : (enabled ? (Color)CREAM : new Color(0.7f, 0.65f, 0.6f)), TextAnchor.MiddleCenter, true);
-        if (!enabled) return false;
+        if (!enabled) { if (GUI.enabled && GUI.Button(r, GUIContent.none, GUIStyle.none)) Snd.Play("ui_error", 0.7f); return false; }
         bool hit = GUI.Button(r, GUIContent.none, GUIStyle.none);
-        if (hit) clicked = true;
+        if (hit) { clicked = true; Snd.Play(primary ? "ui_select" : "ui_move", 0.8f); }
         return hit;
     }
     /// <summary>Мөлдір аймақ-батырма (сурет үстінде).</summary>
     public static bool Hot(float x, float y, float w, float h)
     {
         bool hit = GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none);
-        if (hit) clicked = true;
+        if (hit) { clicked = true; Snd.Play("ui_move", 0.6f); }
         return hit;
     }
 

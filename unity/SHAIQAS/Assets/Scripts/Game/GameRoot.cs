@@ -55,6 +55,7 @@ public partial class GameRoot : MonoBehaviour
         cam = main; cam.orthographic = true; cam.orthographicSize = 360; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Color.black;
         cam.transform.position = new Vector3(640, -360, -100); cam.nearClipPlane = 0.1f; cam.farClipPlane = 1000; cam.depth = 0;
         fv = gameObject.AddComponent<FightView>();
+        gameObject.AddComponent<Snd>();
         mapCh = Progress.LastOpen();
         Go(U.Len(Game.S.name) == 0 ? NAME : LOBBY);
     }
@@ -67,6 +68,22 @@ public partial class GameRoot : MonoBehaviour
         if (medalPop.Count() > 0) { medalT += dt; if (medalT > 2.6f) { medalPop.RemoveAt(0); medalT = 0; } }
         FitCamera();
         if (screen == FIGHT) fv.Tick(dt);
+        PickMusic();
+    }
+
+    /// <summary>Экранға сай музыка (веб: skMusic).</summary>
+    void PickMusic()
+    {
+        string tr = "menu"; int ch = mapCh;
+        if (screen == MAP || screen == STORY || screen == DONE || screen == QUIZ) { tr = "map"; ch = screen == STORY ? storyCh : screen == QUIZ && quiz != null ? quiz.ch : mapCh; }
+        else if (screen == FIGHT && match.player != null)
+        {
+            ch = match.chapter;
+            if (match.phase == Match.MATCHEND) tr = match.won ? "victory" : "defeat";
+            else if (match.enemy != null && match.enemy.boss) tr = "boss";
+            else tr = "battle";
+        }
+        Snd.Music(tr, ch);
     }
 
     void FitCamera()

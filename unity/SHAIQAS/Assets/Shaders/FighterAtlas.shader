@@ -5,6 +5,8 @@ Shader "Shaiqas/FighterAtlas"
     Properties
     {
         _MainTex ("Atlas", 2D) = "white" {}
+        [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src", Float) = 5
+        [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst", Float) = 10
     }
     SubShader
     {
@@ -13,7 +15,7 @@ Shader "Shaiqas/FighterAtlas"
         ZWrite Off
         ZTest Always
         Lighting Off
-        Blend SrcAlpha OneMinusSrcAlpha
+        Blend [_SrcBlend] [_DstBlend]
         Pass
         {
             CGPROGRAM

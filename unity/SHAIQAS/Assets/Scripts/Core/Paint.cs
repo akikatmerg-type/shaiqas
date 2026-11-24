@@ -99,6 +99,36 @@ public class VMesh
         }
         for (int i = 0; i < seg; i++) T(c0, c0 + 1 + i, c0 + 1 + (i + 1) % seg);
     }
+    /// <summary>Радиалды жарқыл: ортасы — түс, шеті — мөлдір (веб: fxFlash).</summary>
+    public void Glow(float x, float y, float r, int argb)
+    {
+        int seg = 20, edge = Col.WithA(argb, 0);
+        int c0 = V(x, y, argb, -1, 0, 0);
+        for (int i = 0; i < seg; i++) { float t = i * Mathf.PI * 2 / seg; V(x + Mathf.Cos(t) * r, y + Mathf.Sin(t) * r, edge, -1, 0, 0); }
+        for (int i = 0; i < seg; i++) T(c0, c0 + 1 + i, c0 + 1 + (i + 1) % seg);
+    }
+    /// <summary>Шеңбер сызығы (сақина).</summary>
+    public void Ring(float x, float y, float r, float w)
+    {
+        int seg = 28, cl = Cur(); float r0 = Mathf.Max(0, r - w / 2), r1 = r + w / 2;
+        int b0 = nv;
+        for (int i = 0; i < seg; i++) { float t = i * Mathf.PI * 2 / seg, cs = Mathf.Cos(t), sn = Mathf.Sin(t); V(x + cs * r0, y + sn * r0, cl, -1, 0, 0); V(x + cs * r1, y + sn * r1, cl, -1, 0, 0); }
+        for (int i = 0; i < seg; i++) { int a0 = b0 + i * 2, a1 = b0 + ((i + 1) % seg) * 2; T(a0, a0 + 1, a1 + 1); T(a0, a1 + 1, a1); }
+    }
+    /// <summary>Төрт сәулелі жұлдыз (жылт).</summary>
+    public void Star(float x, float y, float r, float rot)
+    {
+        float[] xs = new float[8], ys = new float[8];
+        for (int i = 0; i < 8; i++) { float a = rot + i * Mathf.PI / 4, rr = i % 2 == 0 ? r : r * 0.16f; xs[i] = x + Mathf.Cos(a) * rr; ys[i] = y + Mathf.Sin(a) * rr; }
+        Poly(xs, ys, 8);
+    }
+    /// <summary>Төрт нүктелі пішін (із сегменті).</summary>
+    public void Quad(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3)
+    {
+        int cl = Cur(), i0 = V(x0, y0, cl, -1, 0, 0), i1 = V(x1, y1, cl, -1, 0, 0), i2 = V(x2, y2, cl, -1, 0, 0), i3 = V(x3, y3, cl, -1, 0, 0);
+        T(i0, i1, i2); T(i0, i2, i3);
+    }
+
     /// <summary>Веб: capsule(g, x1,y1,r1, x2,y2,r2) — трапеция + екі шеңбер.</summary>
     public void Capsule(float x1, float y1, float r1, float x2, float y2, float r2)
     {

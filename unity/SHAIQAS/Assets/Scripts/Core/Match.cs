@@ -2,7 +2,7 @@
 using UnityEngine;
 public class FxEv
 {
-    public int kind, n;
+    public int kind, n, flags;   // flags: 1 — ауыр, 2 — ерекше (рух), 4 — лақтыру
     public float x, y, dir;
     public Fighter who;
 }
@@ -197,9 +197,10 @@ public class Match
     void Medal(string id) { if (Medals.Give(id)) medalsNew.Add(id); }
 
     // ================= әсер шақырулары (Fighter-ден) =================
-    public void Fx(int kind, float x, float y, float dir, int n, Fighter who)
+    public void Fx(int kind, float x, float y, float dir, int n, Fighter who) { FxF(kind, x, y, dir, n, who, 0); }
+    public void FxF(int kind, float x, float y, float dir, int n, Fighter who, int flags)
     {
-        FxEv e = new FxEv(); e.kind = kind; e.x = x; e.y = y; e.dir = dir; e.n = n; e.who = who;
+        FxEv e = new FxEv(); e.kind = kind; e.x = x; e.y = y; e.dir = dir; e.n = n; e.who = who; e.flags = flags;
         if (fx.Count() < 256) fx.Add(e);
     }
     public void Hitstop(float t, float sh)

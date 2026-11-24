@@ -41,6 +41,12 @@ public class Fighter
     public float[] fp;      // құлап-аунау кезіндегі айналу нүктесі (null — жоқ)
     public float rot;       // ағымдағы құлау бұрышы (сурет үшін)
     public float pw = 1;    // PACE жергілікті уақыт
+    // қару ізі (веб: this.trail): [x, y, bx, by, life, max, seq, special]
+    public Lst<float[]> trail = new Lst<float[]>();
+    public int atkSeq;
+    Move lastCm;
+    float[] tp = new float[Pz.N];
+    static Geo tg2 = new Geo();
 
     public Fighter() { }
 
@@ -265,7 +271,7 @@ public class Fighter
             hp -= m.dmg * pd * (1 - def); flash = 0.15f; hitsTaken++;
             x = Pz.Clamp(from.x - from.facing * 120, 90, Db.ARENA - 90); facing = from.facing;
             state = DOWN; st = 0; push = -from.facing * 200;
-            if (game != null) { game.Hitstop(0.12f, 12); game.punch = 0.06f; }
+            if (game != null) { game.Hitstop(0.12f, 12); game.punch = 0.06f; game.FxF(Match.FX_HIT, x, y - 150, from.facing, 24, this, 5); }
             Fx(Match.FX_DUST, x, Db.GROUND, 0, 14);
             AddRux(6); from.AddRux(10);
             if (hp <= 0) Die();
@@ -281,7 +287,7 @@ public class Fighter
             hp = Mathf.Max(0, hp - m.dmg * pd * chip * (1 - def));
             push = dir * m.knock * 0.5f * pk;
             AddRux(3); blocks++;
-            if (game != null) { game.Fx(Match.FX_BLOCK, cx, cy, -dir, 10, this); game.Hitstop(0.04f, m.heavy ? 4 : 0); }
+            if (game != null) { game.FxF(Match.FX_BLOCK, cx, cy, -dir, 10, this, (m.heavy ? 1 : 0) | (m.special ? 2 : 0)); game.Hitstop(0.04f, m.heavy ? 4 : 0); }
             if (hp <= 0) Die();
             return;
         }
@@ -291,7 +297,7 @@ public class Fighter
         AddRux(6);
         if (from != null) from.AddRux(9);
         aiCombo = 0; lowHit = m.IsLow();
-        if (game != null) { game.Fx(m.special ? Match.FX_HITSPEC : Match.FX_HIT, cx, cy, -dir, m.heavy ? 24 : 14, this); game.Hitstop(m.hitstop, m.heavy ? 10 : 4); }
+        if (game != null) { game.FxF(m.special ? Match.FX_HITSPEC : Match.FX_HIT, cx, cy, -dir, m.heavy ? 24 : 14, this, (m.heavy ? 1 : 0) | (m.special || m.dmg >= 14 ? 2 : 0)); game.Hitstop(m.hitstop, m.heavy ? 10 : 4); }
         if (hp <= 0) Die();
         else if ((m.down && last) || (m.anti && airborne))
         {
@@ -584,6 +590,26 @@ public class Fighter
         if (!og && s0 != DOWN && s0 != DEAD && vy < 0) sq += 0.06f * Pz.Smooth01((-vy - 300) / 500);
         squash = sq;
         rot = FallAngle();
+
+        // --- қару ізі: кадр аралығын бірнеше үлгімен толтырып, иілген із ---
+        for (int i = 0; i < trail.Count(); i++) trail.Get(i)[4] -= dt;
+        while (trail.Count() > 0 && trail.Get(0)[4] <= 0) trail.RemoveAt(0);
+        if (s0 == ATTACK && cm != lastCm) { atkSeq++; lastCm = cm; }
+        if (s0 == ATTACK && cm != null && st > cm.w - 0.05f && st < cm.w + cm.a + 0.07f)
+        {
+            float fv = SpinFacing(), len = wpLen * 1.04f, bl = Mathf.Max(len * 0.35f, len - 64);
+            int ns = (int)Pz.Clamp(Mathf.Ceil(Mathf.Abs(cur[Pz.W] - lastPose[Pz.W]) / 0.07f), 2, 10);
+            for (int i = 1; i <= ns; i++)
+            {
+                Pz.Mix(tp, lastPose, cur, i / (float)ns);
+                tg2.Build(tp);
+                float dx = Mathf.Sin(tp[Pz.W]), dy = Mathf.Cos(tp[Pz.W]);
+                float tx = cm.foot ? tg2.legF.fx : tg2.hFx + dx * len, ty = cm.foot ? tg2.legF.fy : tg2.hFy + dy * len;
+                float bx = cm.foot ? tg2.legF.kx : tg2.hFx + dx * bl, by = cm.foot ? tg2.legF.ky : tg2.hFy + dy * bl;
+                trail.Add(new float[] { x + tx * fv * sc, y + ty * sc, x + bx * fv * sc, y + by * sc, 0.16f, 0.16f, atkSeq, cm.special ? 1 : 0 });
+            }
+            while (trail.Count() > 60) trail.RemoveAt(0);
+        }
 
         prevState = s0; prevSt = st; prevOg = og; prevPush = push;
     }
