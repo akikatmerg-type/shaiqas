@@ -1,0 +1,338 @@
+{
+ "doiyr": {
+  "name": "Дойыр қамшы",
+  "tier": 0,
+  "price": 60,
+  "dmg": 0.86,
+  "spd": 1.3,
+  "len": 112,
+  "shape": "qamshy",
+  "combo": [
+   "l1",
+   "l2",
+   "l1",
+   "l2"
+  ],
+  "special": "sweep",
+  "sname": "Шиырлы қамшы",
+  "mat": {
+   "shaft": "dark",
+   "trail": "255,220,170"
+  },
+  "desc": "Ұшына ауыр түйін салынған өрме қамшы. Жылқышы да, жауынгер де белінен тастамаған.",
+  "lvl": 1,
+  "req": null
+ },
+ "qanzhar": {
+  "name": "Қанжар",
+  "tier": 0,
+  "price": 120,
+  "dmg": 0.86,
+  "spd": 1.45,
+  "len": 64,
+  "shape": "qanzhar",
+  "combo": [
+   "jab",
+   "l1",
+   "jab",
+   "l2"
+  ],
+  "special": "dash",
+  "sname": "Ілезде",
+  "mat": {
+   "blade": "steel",
+   "fit": "silver"
+  },
+  "desc": "Белге тағатын қысқа, екі жүзді пышақ. Ең шапшаң қару, бірақ жауға жақын бару керек.",
+  "lvl": 2,
+  "req": {
+   "lvl": 2
+  }
+ },
+ "balta": {
+  "name": "Балта",
+  "tier": 1,
+  "price": 200,
+  "dmg": 1.11,
+  "spd": 0.98,
+  "len": 80,
+  "shape": "balta",
+  "combo": [
+   "l1",
+   "l2",
+   "l3"
+  ],
+  "special": "quake",
+  "sname": "Жер жару",
+  "mat": {
+   "blade": "dark"
+  },
+  "desc": "Қысқа сапты темір балта. Ауылда ағаш шабуға да, жорықта ұрысқа да жараған.",
+  "lvl": 3,
+  "req": {
+   "lvl": 3
+  }
+ },
+ "semser": {
+  "name": "Семсер",
+  "tier": 2,
+  "price": 560,
+  "dmg": 1.09,
+  "spd": 1.15,
+  "len": 106,
+  "shape": "semser",
+  "combo": [
+   "l1",
+   "l2",
+   "l3"
+  ],
+  "special": "spin",
+  "sname": "Құйын семсер",
+  "mat": {
+   "blade": "steel",
+   "fit": "bronze"
+  },
+  "desc": "Тік, екі жүзді ұзын семсер. Батырлар жырында жиі аталады.",
+  "lvl": 6,
+  "req": {
+   "lvl": 6
+  }
+ },
+ "temirshoq": {
+  "name": "Темір шоқпар",
+  "tier": 2,
+  "price": 900,
+  "dmg": 1.47,
+  "spd": 0.82,
+  "len": 78,
+  "shape": "shoqpar",
+  "combo": [
+   "l1",
+   "l3"
+  ],
+  "special": "quake",
+  "sname": "Темір толқын",
+  "mat": {
+   "blade": "dark",
+   "shaft": "iron",
+   "trail": "220,220,230"
+  },
+  "desc": "Сабы да, басы да темірден соғылған шоқпар. Ауыр болса да, соққысы өте қатты.",
+  "lvl": 8,
+  "req": {
+   "lvl": 8
+  }
+ },
+ "aibalta2": {
+  "name": "Ай балта",
+  "tier": 3,
+  "price": 1100,
+  "dmg": 1.36,
+  "spd": 0.9,
+  "len": 130,
+  "shape": "ai",
+  "combo": [
+   "l2",
+   "l1",
+   "l3"
+  ],
+  "special": "sweep",
+  "sname": "Ай орақ",
+  "mat": {
+   "blade": "steel",
+   "shaft": "red",
+   "fit": "gold"
+  },
+  "req": {
+   "lvl": 9
+  },
+  "desc": "Жүзі жарты айға ұқсаған ұзын сапты балта. Атты жауынгерге ыңғайлы болған.",
+  "lvl": 9
+ },
+ "sungi": {
+  "name": "Сүңгі",
+  "tier": 3,
+  "price": 1350,
+  "dmg": 1.27,
+  "spd": 1,
+  "len": 162,
+  "shape": "sungi",
+  "combo": [
+   "jab",
+   "thrust"
+  ],
+  "special": "dash",
+  "sname": "Шабуыл",
+  "mat": {
+   "blade": "steel",
+   "shaft": "dark"
+  },
+  "desc": "Ұшы жіңішке, сабы ұзын найза түрі. Атпен шауып келіп түйреуге арналған.",
+  "lvl": 10,
+  "req": {
+   "lvl": 10
+  }
+ },
+ "bulat": {
+  "name": "Бұлат қылыш",
+  "tier": 3,
+  "price": 1600,
+  "dmg": 1.18,
+  "spd": 1.32,
+  "len": 102,
+  "shape": "qylysh",
+  "combo": [
+   "l1",
+   "l2",
+   "l1",
+   "l3"
+  ],
+  "special": "dash",
+  "sname": "Бұлат екпіні",
+  "mat": {
+   "blade": "damask",
+   "fit": "silver",
+   "trail": "200,215,240"
+  },
+  "req": {
+   "lvl": 11
+  },
+  "desc": "Бетінде толқын өрнегі бар бұлат болаттан соғылған қылыш. Мұндай болат берік әрі өткір болған.",
+  "lvl": 11
+ },
+ "pernach": {
+  "name": "Қырлы күрзі",
+  "tier": 4,
+  "price": 2200,
+  "dmg": 1.59,
+  "spd": 0.9,
+  "len": 86,
+  "shape": "pernach",
+  "combo": [
+   "l1",
+   "l2",
+   "l3"
+  ],
+  "special": "crush",
+  "sname": "Қыр соққы",
+  "mat": {
+   "blade": "steel",
+   "shaft": "dark",
+   "fit": "bronze"
+  },
+  "req": {
+   "lvl": 13
+  },
+  "desc": "Басында алты темір қыры бар күрзі. Қатты сауыттың өзін мыжып жіберетін.",
+  "lvl": 13
+ },
+ "aqnaiza": {
+  "name": "Ақ найза",
+  "tier": 4,
+  "price": 2600,
+  "dmg": 1.32,
+  "spd": 1.14,
+  "len": 156,
+  "shape": "naiza",
+  "combo": [
+   "jab",
+   "jab",
+   "jab",
+   "thrust"
+  ],
+  "special": "rain",
+  "sname": "Ақ жаңбыр",
+  "mat": {
+   "blade": "white",
+   "shaft": "white",
+   "fit": "silver",
+   "trail": "240,248,255"
+  },
+  "req": {
+   "lvl": 14
+  },
+  "desc": "Сабы ақ, ұшы күмістей жарқыраған найза. Жырларда батырлар «ақ найзалы» деп мадақталады.",
+  "lvl": 14
+ },
+ "almas": {
+  "name": "Алмас қылыш",
+  "tier": 5,
+  "price": 3400,
+  "dmg": 1.32,
+  "spd": 1.35,
+  "len": 106,
+  "shape": "qylysh",
+  "combo": [
+   "l1",
+   "l2",
+   "l1",
+   "l3"
+  ],
+  "special": "dash",
+  "sname": "Алмас жүз",
+  "mat": {
+   "blade": "white",
+   "fit": "gold",
+   "trail": "220,240,255"
+  },
+  "req": {
+   "lvl": 16
+  },
+  "desc": "Жырлардағы «алмас қылыш» — ең өткір, жарқыраған жүз. Нағыз батырға лайық.",
+  "lvl": 16
+ },
+ "altynkurzi": {
+  "name": "Алтын күрзі",
+  "tier": 5,
+  "price": 4400,
+  "dmg": 1.84,
+  "spd": 0.86,
+  "len": 92,
+  "shape": "kurzi",
+  "combo": [
+   "l1",
+   "l3"
+  ],
+  "special": "crush",
+  "sname": "Алтын тау",
+  "mat": {
+   "blade": "gold",
+   "shaft": "red",
+   "fit": "gold",
+   "trail": "255,210,110"
+  },
+  "req": {
+   "lvl": 18
+  },
+  "desc": "Алтынмен әшекейленген ауыр күрзі. Әшекейлі қару иесінің абыройын көрсеткен.",
+  "lvl": 18
+ },
+ "batyrsemser": {
+  "name": "Батыр семсері",
+  "tier": 5,
+  "price": 5600,
+  "dmg": 1.55,
+  "spd": 1.2,
+  "len": 112,
+  "shape": "semser",
+  "combo": [
+   "l1",
+   "l2",
+   "l1",
+   "l3"
+  ],
+  "special": "spin",
+  "sname": "Ата аруағы",
+  "mat": {
+   "blade": "white",
+   "shaft": "red",
+   "fit": "gold",
+   "trail": "255,226,150"
+  },
+  "req": {
+   "lvl": 20
+  },
+  "desc": "Барлық тарауды жеңген батырға арналған семсер. Ата-бабамыздың ерлігін еске салады.",
+  "lvl": 20
+ }
+}

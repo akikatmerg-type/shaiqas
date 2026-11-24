@@ -1,0 +1,80 @@
+{
+ "1": {
+  "L": [
+   "KeyA"
+  ],
+  "R": [
+   "KeyD"
+  ],
+  "U": [
+   "KeyW",
+   "Space"
+  ],
+  "D": [
+   "KeyS"
+  ],
+  "J": [
+   "KeyJ"
+  ],
+  "K": [
+   "KeyK"
+  ],
+  "X": [
+   "KeyL"
+  ]
+ },
+ "2": {
+  "L": [
+   "ArrowLeft"
+  ],
+  "R": [
+   "ArrowRight"
+  ],
+  "U": [
+   "ArrowUp"
+  ],
+  "D": [
+   "ArrowDown"
+  ],
+  "J": [
+   "Numpad1",
+   "Comma"
+  ],
+  "K": [
+   "Numpad2",
+   "Period"
+  ],
+  "X": [
+   "Numpad3",
+   "Slash"
+  ]
+ },
+ "solo": {
+  "L": [
+   "KeyA",
+   "ArrowLeft"
+  ],
+  "R": [
+   "KeyD",
+   "ArrowRight"
+  ],
+  "U": [
+   "KeyW",
+   "ArrowUp",
+   "Space"
+  ],
+  "D": [
+   "KeyS",
+   "ArrowDown"
+  ],
+  "J": [
+   "KeyJ"
+  ],
+  "K": [
+   "KeyK"
+  ],
+  "X": [
+   "KeyL"
+  ]
+ }
+}

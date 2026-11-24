@@ -1,0 +1,57 @@
+{
+ "kebenek": {
+  "base": "robe",
+  "col": "#8a7a5c",
+  "trim": "#5a4632"
+ },
+ "ton": {
+  "base": "fur",
+  "col": "#9a6a3a",
+  "trim": "#e8dcc4",
+  "fur": "#f2ead8"
+ },
+ "syrma": {
+  "base": "chapan",
+  "col": "#7a2a26",
+  "trim": "#e9c46a",
+  "orn": "quilt"
+ },
+ "bylgary": {
+  "base": "lamellar",
+  "col": "#6a4022",
+  "trim": "#c89a5a",
+  "orn": "studs"
+ },
+ "torsauyt": {
+  "base": "kobe",
+  "col": "#5e6873",
+  "trim": "#d9a23a",
+  "orn": "brass"
+ },
+ "kireuke": {
+  "base": "sauyt",
+  "col": "#4e5864",
+  "trim": "#b8231a",
+  "orn": "rivets"
+ },
+ "beren": {
+  "base": "sharaina",
+  "col": "#3e4a5c",
+  "trim": "#c8d4e0",
+  "orn": "silver"
+ },
+ "altynkir": {
+  "base": "sauyt",
+  "col": "#b08a3a",
+  "trim": "#fff0b0",
+  "orn": "gold",
+  "pauldron": "#e0b850"
+ },
+ "batyrsauyt": {
+  "base": "sharaina",
+  "col": "#4a3a3a",
+  "trim": "#e9ad3c",
+  "orn": "cape",
+  "pauldron": "#d9a23a"
+ }
+}

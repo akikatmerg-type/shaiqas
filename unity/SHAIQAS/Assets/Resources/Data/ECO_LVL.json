@@ -1,0 +1,52 @@
+{
+ "weapon": {
+  "soyil": 1,
+  "doiyr": 1,
+  "qanzhar": 2,
+  "shoqpar": 2,
+  "balta": 3,
+  "qylysh": 4,
+  "aibalta": 5,
+  "semser": 6,
+  "naiza": 7,
+  "temirshoq": 8,
+  "aibalta2": 9,
+  "sungi": 10,
+  "bulat": 11,
+  "kurzi": 12,
+  "pernach": 13,
+  "aqnaiza": 14,
+  "almas": 16,
+  "altynkurzi": 18,
+  "batyrsemser": 20
+ },
+ "armor": {
+  "chapan": 1,
+  "kebenek": 1,
+  "ton": 2,
+  "kobe": 3,
+  "syrma": 4,
+  "bylgary": 5,
+  "torsauyt": 7,
+  "sauyt": 8,
+  "kireuke": 10,
+  "sharaina": 12,
+  "beren": 14,
+  "altynkir": 17,
+  "batyrsauyt": 20
+ },
+ "helm": {
+  "kalpak": 1,
+  "borik": 1,
+  "tymaq": 2,
+  "senseng": 3,
+  "kamshat": 5,
+  "susar": 6,
+  "dulyga": 7,
+  "temir": 9,
+  "shoshak": 11,
+  "altyn": 13,
+  "ukili": 15,
+  "khan": 18
+ }
+}

@@ -1,0 +1,196 @@
+{
+ "sharua": {
+  "coat": "#2f5f9a",
+  "trim": "#e9ad3c",
+  "beard": null,
+  "must": null,
+  "hat": "kalpak",
+  "age": 0
+ },
+ "nauryzbay": {
+  "coat": "#2f7a4a",
+  "trim": "#e9ad3c",
+  "beard": null,
+  "must": "#2a1a10",
+  "hat": "kalpak",
+  "age": 0
+ },
+ "raiymbek": {
+  "coat": "#8a2222",
+  "trim": "#f2c230",
+  "beard": "#1e140c",
+  "must": "#1e140c",
+  "hat": "tymaq",
+  "age": 1
+ },
+ "olzhabay": {
+  "coat": "#6a4a2a",
+  "trim": "#d9a23a",
+  "beard": "#4a2e18",
+  "must": "#3a2210",
+  "hat": "borik",
+  "age": 1
+ },
+ "qabanbay": {
+  "coat": "#5a6470",
+  "trim": "#c9d2dc",
+  "beard": "#141010",
+  "must": "#141010",
+  "hat": "dulyga",
+  "age": 1,
+  "mail": true
+ },
+ "bogenbay": {
+  "coat": "#6a5a3a",
+  "trim": "#f2c230",
+  "beard": "#cfcac2",
+  "must": "#d8d4cc",
+  "hat": "plume",
+  "age": 2,
+  "mail": true
+ },
+ "malshy": {
+  "coat": "#8a7a5c",
+  "trim": "#5a4632",
+  "beard": null,
+  "must": null,
+  "hat": "borik",
+  "age": 0,
+  "hc": "#5a4a3a",
+  "fur": "#7a5a3a",
+  "prop": "crook"
+ },
+ "anshy": {
+  "coat": "#9a6a3a",
+  "trim": "#e8dcc4",
+  "beard": null,
+  "must": "#2a1a10",
+  "hat": "furhat",
+  "age": 0,
+  "fur": "#4a3020",
+  "prop": "bow"
+ },
+ "qusbegi": {
+  "coat": "#3a6a4a",
+  "trim": "#e9c46a",
+  "beard": "#2a1a10",
+  "must": "#2a1a10",
+  "hat": "tymaq",
+  "age": 1,
+  "hc": "#2e5a3a",
+  "fur": "#c08040",
+  "prop": "falcon"
+ },
+ "zhylqyshy": {
+  "coat": "#7a2a26",
+  "trim": "#e9c46a",
+  "beard": null,
+  "must": "#2a1a10",
+  "hat": "tymaq",
+  "age": 0,
+  "hc": "#2e4a7a",
+  "fur": "#efe6d6",
+  "prop": "qamshy"
+ },
+ "sarbaz": {
+  "coat": "#6a4022",
+  "trim": "#c89a5a",
+  "beard": null,
+  "must": "#2a1a10",
+  "hat": "dulyga",
+  "age": 0
+ },
+ "sadaqshy": {
+  "coat": "#2a5a6a",
+  "trim": "#f2c230",
+  "beard": null,
+  "must": "#1e140c",
+  "hat": "borik",
+  "age": 0,
+  "hc": "#a3223a",
+  "fur": "#2a1e18",
+  "prop": "bow"
+ },
+ "zhuzbasy": {
+  "coat": "#5e6873",
+  "trim": "#d9a23a",
+  "beard": "#1e140c",
+  "must": "#1e140c",
+  "hat": "dulyga",
+  "age": 1,
+  "mail": true
+ },
+ "myngbasy": {
+  "coat": "#5e6873",
+  "trim": "#d9a23a",
+  "beard": "#2a1a10",
+  "must": "#2a1a10",
+  "hat": "dulyga",
+  "age": 1,
+  "mail": true,
+  "tall": true
+ },
+ "malaisary": {
+  "coat": "#4e5864",
+  "trim": "#b8231a",
+  "beard": "#2a1a10",
+  "must": "#2a1a10",
+  "hat": "dulyga",
+  "age": 1,
+  "mail": true,
+  "feather": true
+ },
+ "zhanibek": {
+  "coat": "#3e4a5c",
+  "trim": "#e9ad3c",
+  "beard": "#1e140c",
+  "must": "#1e140c",
+  "hat": "dulyga",
+  "age": 1,
+  "mail": true,
+  "feather": true,
+  "gold": true
+ },
+ "syrym": {
+  "coat": "#1e3a6a",
+  "trim": "#e9ad3c",
+  "beard": "#2a1a10",
+  "must": "#2a1a10",
+  "hat": "borik",
+  "age": 1,
+  "hc": "#a3223a",
+  "fur": "#2a1e18"
+ },
+ "zhankozha": {
+  "coat": "#6a4a2a",
+  "trim": "#d9a23a",
+  "beard": "#e0dcd4",
+  "must": "#e0dcd4",
+  "hat": "tymaq",
+  "age": 2,
+  "hc": "#5a2a1a",
+  "fur": "#f2ead8"
+ },
+ "isatay": {
+  "coat": "#2a4a3a",
+  "trim": "#e9ad3c",
+  "beard": "#1a1210",
+  "must": "#1a1210",
+  "hat": "borik",
+  "age": 1,
+  "mail": true,
+  "hc": "#1e5a3a",
+  "fur": "#3a2618"
+ },
+ "makhambet": {
+  "coat": "#6a1e1e",
+  "trim": "#f2c230",
+  "beard": "#1a1210",
+  "must": "#1a1210",
+  "hat": "tymaq",
+  "age": 1,
+  "hc": "#2e4a7a",
+  "fur": "#efe6d6",
+  "prop": "dombyra"
+ }
+}

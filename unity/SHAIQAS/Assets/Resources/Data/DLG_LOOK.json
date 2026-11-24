@@ -1,0 +1,120 @@
+{
+ "kasym": {
+  "name": "Қасым хан",
+  "hat": "altyn",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "qylysh"
+ },
+ "aksakal": {
+  "name": "Сығанақ ақсақалы",
+  "hat": "tymaq",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "staff"
+ },
+ "haqnazar": {
+  "name": "Хақназар хан",
+  "hat": "kamshat",
+  "coat": "sauyt",
+  "beard": true,
+  "weapon": "qylysh"
+ },
+ "edil": {
+  "foe": [
+   1,
+   1
+  ]
+ },
+ "fisher": {
+  "name": "Ертіс балықшысы",
+  "hat": "tymaq",
+  "coat": "chapan",
+  "beard": false,
+  "weapon": "naiza"
+ },
+ "hunter": {
+  "name": "Қарт аңшы",
+  "hat": "tymaq",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "naiza"
+ },
+ "bogenbay": {
+  "name": "Бөгенбай батыр",
+  "hat": "plume",
+  "coat": "lamellar",
+  "beard": true,
+  "weapon": "kurzi"
+ },
+ "tole": {
+  "name": "Төле би",
+  "hat": "senseng",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "staff"
+ },
+ "trader": {
+  "name": "Әулиеата саудагері",
+  "hat": "kalpak",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "staff"
+ },
+ "kenesary": {
+  "name": "Кенесары хан",
+  "hat": "dulyga",
+  "coat": "sauyt",
+  "beard": true,
+  "weapon": "qylysh"
+ },
+ "aral": {
+  "name": "Арал балықшысы",
+  "hat": "tymaq",
+  "coat": "chapan",
+  "beard": false,
+  "weapon": "naiza"
+ },
+ "zhankozha": {
+  "name": "Жанқожа батыр",
+  "hat": "kalpak",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "naiza"
+ },
+ "abylai": {
+  "name": "Абылай хан",
+  "hat": "plume",
+  "coat": "lamellar",
+  "beard": true,
+  "weapon": "qylysh"
+ },
+ "olzhabay": {
+  "name": "Олжабай батыр",
+  "hat": "dulyga",
+  "coat": "sauyt",
+  "beard": true,
+  "weapon": "naiza"
+ },
+ "nauryzbay": {
+  "name": "Наурызбай батыр",
+  "hat": "kalpak",
+  "coat": "sauyt",
+  "beard": false,
+  "weapon": "qylysh"
+ },
+ "elder": {
+  "name": "Ауыл ақсақалы",
+  "hat": "tymaq",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "staff"
+ },
+ "amangeldy": {
+  "name": "Амангелді Иманов",
+  "hat": "tymaq",
+  "coat": "chapan",
+  "beard": true,
+  "weapon": "naiza"
+ }
+}
