@@ -54,7 +54,7 @@ public class VMesh
     }
     public void Fill(string css) { color = Col.Parse(css); }
     public void FillC(int argb) { color = argb; }
-    int Cur() { return solid != 0 ? Col.WithA(solid, Col.A(color) / 255f) : color; }
+    int Cur() { return solid != 0 ? Col.WithA(solid, Col.A(solid) / 255f * Col.A(color) / 255f) : color; }
 
     void Grow()
     {
