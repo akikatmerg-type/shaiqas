@@ -1,4 +1,5 @@
 // SHAIQAS Core · Қарапайым тізім (C# және призрачный Java-да бірдей жұмыс істейді)
+using UnityEngine;
 public class Lst<T>
 {
     object[] a = new object[8];

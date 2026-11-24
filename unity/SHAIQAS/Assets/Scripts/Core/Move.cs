@@ -1,4 +1,5 @@
 // SHAIQAS Core · Соққылар (MOVES) және ойыншының ниеті (Intent)
+using UnityEngine;
 public class Intent
 {
     public int move, dash;

@@ -1,4 +1,5 @@
 // SHAIQAS Core · Ұрыс: раундтар, уақыт, нокаут, марапат, камера. Веб-нұсқадағы game.startMatch/startRound/endRound/endMatch/update.
+using UnityEngine;
 public class FxEv
 {
     public int kind, n;

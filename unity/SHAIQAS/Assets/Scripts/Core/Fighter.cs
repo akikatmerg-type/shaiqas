@@ -1,5 +1,6 @@
 // SHAIQAS Core · Жауынгер: күйлер, соққылар, қорғаныс, лақтыру, құлау, жасанды ақыл және серіппелі анимация.
 // Веб-нұсқадағы Fighter класының тікелей аудармасы (әдістер жүйесі мен бас жау қабілеттері — келесі кезеңде).
+using UnityEngine;
 public class Fighter
 {
     public const int IDLE = 0, WALK = 1, JUMP = 2, CROUCH = 3, DASH = 4, ATTACK = 5, HIT = 6, DOWN = 7, DEAD = 8, VICTORY = 9;

@@ -120,6 +120,8 @@ def lint_file(path, core, is_core):
     if not path.endswith('U.cs'):
         for i, (tt, v, ln) in enumerate(T):
             if v == 'Math' and T[i+1][1] == '.' and (i == 0 or T[i-1][1] != '.'): E(path, ln, 'System.Math қолданылған — Mathf керек')
+    # 3б) Mathf → using UnityEngine керек (призракта Mathf — заглушка, сондықтан Java мұны көрмейді)
+    if any(v == 'Mathf' for _, v, _ in T) and 'using UnityEngine;' not in src: E(path, 1, 'Mathf бар, бірақ "using UnityEngine;" жоқ')
     # 4) CS0136 және 5) switch
     scope_check(path, T)
     switch_check(path, T)

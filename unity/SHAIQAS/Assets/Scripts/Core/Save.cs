@@ -1,4 +1,5 @@
 // SHAIQAS Core · Сақтау: веб-нұсқадағы SAVE құрылымы + қосымша кілттер (аты, викторина, медальдар...)
+using UnityEngine;
 public interface IStore
 {
     string Get(string key);

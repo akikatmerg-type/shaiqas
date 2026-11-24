@@ -1,4 +1,5 @@
 // SHAIQAS Core · Тараулардың ашылуы: алдыңғы тараудың 4 ұрысы + викторинадан өту (веб-нұсқадағыдай)
+using UnityEngine;
 public static class Progress
 {
     public static bool TestUnlockAll = false;

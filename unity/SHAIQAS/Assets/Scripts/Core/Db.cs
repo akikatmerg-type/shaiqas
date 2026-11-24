@@ -1,4 +1,5 @@
 // SHAIQAS Core · Ойын деректері (веб-нұсқадан шығарылған JSON). Unity-де Resources/Data, призракта — файлдар.
+using UnityEngine;
 public interface ISource
 {
     /// <summary>name.json мәтінін қайтарады (жоқ болса null).</summary>

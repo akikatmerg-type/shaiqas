@@ -1,4 +1,5 @@
 // SHAIQAS Core · Жауынгердің сыртқы түрі (Look) және оны VMesh-ке салу (веб: drawBody, arm, leg, drawCoat).
+using UnityEngine;
 public class Look
 {
     public string id, coat = "chapan";

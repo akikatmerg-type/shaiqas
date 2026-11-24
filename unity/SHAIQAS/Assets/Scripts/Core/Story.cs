@@ -1,4 +1,5 @@
 // SHAIQAS Core · Сюжет беттері: тарау тарихы, ұрыс алдындағы/кейінгі сахналар, тарихи кейіпкерлермен диалог, эпилог
+using UnityEngine;
 public class Page
 {
     public string id;          // сурет кілті (art: scenes/<pic>.jpg)

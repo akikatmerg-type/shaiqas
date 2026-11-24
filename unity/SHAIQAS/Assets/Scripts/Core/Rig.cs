@@ -1,5 +1,6 @@
 // SHAIQAS Core · Қаңқа: позалар (P), араластыру, геометрия және IK — веб-нұсқадан сөзбе-сөз көшірілген.
 // Координаттар — канвас жүйесі (y төмен қарай), жамбас нүктесі (0,0) — табан деңгейі.
+using UnityEngine;
 public static class Pz
 {
     public const int HX = 0, HY = 1, T = 2, FFX = 3, FFY = 4, BFX = 5, BFY = 6, FA1 = 7, FA2 = 8, BA1 = 9, BA2 = 10, W = 11, N = 12;

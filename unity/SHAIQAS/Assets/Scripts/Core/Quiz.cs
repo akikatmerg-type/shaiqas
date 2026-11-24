@@ -1,4 +1,5 @@
 // SHAIQAS Core · Тарих викторинасы: әр тараудан 8 сұрақ, 3 жауап нұсқасы; 6-дан (балалар режимінде 5-тен) — келесі тарау ашылады
+using UnityEngine;
 public class Quiz
 {
     public int ch, i, picked = -1, score, reward;

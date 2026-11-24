@@ -1,5 +1,6 @@
 // SHAIQAS Core · Жауынгерді салу: дене бөліктері — үшбұрыштар, бас/бас киім/қару — атластағы суреттер.
 // Нәтиже — бір тор (VMesh): Unity оны бір Mesh етіп бір рет салады. Қабаттардың реті вебтегідей.
+using UnityEngine;
 public static class Col
 {
     public static int Parse(string s)

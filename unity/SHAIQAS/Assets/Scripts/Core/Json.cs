@@ -1,4 +1,5 @@
 // SHAIQAS Core · Шағын JSON (оқу/жазу). Unity-ге тәуелді емес: деректер мен сақтау осы арқылы.
+using UnityEngine;
 using System;
 public class JNode
 {
