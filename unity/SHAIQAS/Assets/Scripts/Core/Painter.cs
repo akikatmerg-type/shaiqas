@@ -82,8 +82,13 @@ public static class Painter
     static float Lp(float a, float b, float k) { return a + (b - a) * k; }
 
     /// <summary>Жауынгерді салу. solid≠0 — бір түсті өту (көлеңке/жиек), ox/oy — әлемдік ығысу.</summary>
+    /// <summary>Мата тізбектерін салу (тек тірі жауынгердің ағымдағы позасы үшін; сағым/көлеңке көшірмелерінде — жоқ).</summary>
+    public static bool Live;
+    static float[] cx = new float[8], cy = new float[8];
+    static bool live; static Fighter lf;
     public static void Draw(VMesh m, Fighter f, Look L, int solid, float ox, float oy)
     {
+        live = Live && f.belt1 != null && f.belt1.ok && f.hem.ok; lf = f;
         m.solid = solid;
         float[] p = f.cur;
         m.Save();
@@ -97,6 +102,13 @@ public static class Painter
 
         Arm(m, G.Sbx, G.Sby, G.eBx, G.eBy, G.hBx, G.hBy, 0.92f, L.aBup, L.aBfore, L.aBsk, L);
         LegDraw(m, G.legB, p[Pz.HX] - 3, p[Pz.HY], L.lBpants, L.lBboot);
+        if (live)
+        {
+            // белбеудің артқы ұштары — желбіреген екі таспа (веб: drawSash)
+            int n = Cloth.Local(f, f.belt1, cx, cy); m.FillC(L.cTrim); Cloth.Ribbon(m, cx, cy, n, 7, 3);
+            n = Cloth.Local(f, f.belt2, cx, cy); m.FillC(L.cBelt); Cloth.Ribbon(m, cx, cy, n, 6, 2.5f);
+            m.FillC(L.cTrim); m.Circle(cx[n - 1], cy[n - 1], 2.2f);
+        }
 
         // кеуде
         float[] lvS = { 0, 0.4f, 0.78f, 1 }, lvF = { 15, 13, 21, 17 }, lvB = { 15, 12, 15, 14 };
@@ -201,6 +213,15 @@ public static class Painter
     {
         float sway = Pz.Clamp(-f.vx * 0.02f, -8, 8) + Mathf.Sin(f.at * 2.6f) * 1.5f;
         float Hx = G.Hx, Hy = G.Hy; string c = f.coat;
+        // етек тізбегінен: алдыңғы шет ортаңғы буынға, артқы шет ұшына ереді — мата қисайып желбірейді
+        float swF = sway, swB = sway, liF = 0, liB = 0;
+        if (live && lf == f)
+        {
+            int n0 = Cloth.Local(f, f.hem, cx, cy); float ax = Hx - 4, ay = Hy + 2, Lh = f.hem.seg / f.sc * 2;
+            swB = Pz.Clamp(cx[n0 - 1] - ax, -Lh * 0.8f, Lh * 0.8f); liB = Pz.Clamp(ay + Lh - cy[n0 - 1], -4, Lh * 0.55f);
+            swF = Pz.Clamp((cx[1] - ax) * 2, -Lh * 0.8f, Lh * 0.8f); liF = Pz.Clamp((ay + Lh * 0.5f - cy[1]) * 2, -4, Lh * 0.55f);
+            sway = (swF + swB) * 0.5f;
+        }
         bool cloth = U.Eq(c, "chapan") || U.Eq(c, "robe") || U.Eq(c, "robe2") || U.Eq(c, "kobe") || U.Eq(c, "fur");
         if (cloth)
         {
@@ -211,9 +232,9 @@ public static class Painter
             P(n++, Hx + 22, Hy);
             if (U.Eq(c, "fur"))
             {
-                for (int i = 0; i <= 7; i++) P(n++, Hx + 28 + sway - i * (58f / 7), Hy + len + (i % 2 == 1 ? 8 : 0));
+                for (int i = 0; i <= 7; i++) { float k = i / 7f; P(n++, Hx + 28 + Lp(swF, swB, k) - i * (58f / 7), Hy + len - Lp(liF, liB, k) + (i % 2 == 1 ? 8 : 0)); }
             }
-            else { P(n++, Hx + 28 + sway, Hy + len); P(n++, Hx + 1 + sway, Hy + len + 2); P(n++, Hx - 30 + sway, Hy + len + 3); }
+            else { P(n++, Hx + 28 + swF, Hy + len - liF); P(n++, Hx + 1 + (swF + swB) * 0.5f, Hy + len + 2 - (liF + liB) * 0.5f); P(n++, Hx - 30 + swB, Hy + len + 3 - liB); }
             P(n++, Hx - 21, Hy);
             P(n++, G.AtX(Db.TOR * 0.45f) - G.nx * 15, G.AtY(Db.TOR * 0.45f) - G.ny * 15);
             P(n++, G.Sx - G.nx * 16, G.Sy - G.ny * 16);
@@ -235,7 +256,7 @@ public static class Painter
             bool lam = U.Eq(c, "lamellar"); float len = lam ? 52 : 42;
             int n = 0;
             P(n++, Hx + 22, Hy - 6);
-            for (int i = 0; i <= 6; i++) P(n++, Hx + 24 - i * 8 + sway * 0.45f, Hy + len + (i % 2) * 6);
+            for (int i = 0; i <= 6; i++) P(n++, Hx + 24 - i * 8 + Lp(swF, swB, i / 6f) * 0.45f, Hy + len + (i % 2) * 6 - Lp(liF, liB, i / 6f) * 0.4f);
             P(n++, Hx - 24, Hy - 6);
             m.FillC(L.cSkirt); m.Poly(px, py, n);
             if (m.solid == 0)
@@ -243,7 +264,7 @@ public static class Painter
                 m.FillC(BLACK25);
                 for (int i = 1; i < 6; i++)
                 {
-                    float[] lx = { Hx + 24 - i * 8, Hx + 24 - i * 8 + sway * 0.45f }, ly = { Hy - 4, Hy + len };
+                    float[] lx = { Hx + 24 - i * 8, Hx + 24 - i * 8 + Lp(swF, swB, i / 6f) * 0.45f }, ly = { Hy - 4, Hy + len - Lp(liF, liB, i / 6f) * 0.4f };
                     m.Stroke(lx, ly, 2, 1.2f, false);
                 }
             }

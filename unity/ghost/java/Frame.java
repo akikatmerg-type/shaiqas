@@ -34,6 +34,7 @@ public class Frame {
       float lift = Math.max(0, Math.min(1, (Db.GROUND - f.y) / 260)); float r = (58 - lift * 18) * f.sc;
       g.setColor(new Color(10, 4, 4, (int) ((0.45f - lift * 0.25f) * 255))); g.fill(new Ellipse2D.Float(f.x - r, Db.GROUND - r * .18f, 2 * r, 2 * r * .18f));
       VMesh v = new VMesh(); Look L = Looks.For(f); float side = meta.Get("lightX").F() + m.cam >= f.x ? 1 : -1;
+      Painter.Live = a.length > 3;
       Painter.Draw(v, f, L, Col.Pack(20, 12, 10, 255), -side * 1.8f, 1.2f);
       Painter.Draw(v, f, L, rim, side * 2.6f, -1.6f);
       Painter.Draw(v, f, L, 0, 0, 0);

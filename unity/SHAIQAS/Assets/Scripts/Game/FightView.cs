@@ -200,11 +200,13 @@ public partial class FightView : MonoBehaviour
         EnsureAtlas();
         vm.Clear();
         float side = lightX + m.cam >= f.x ? 1 : -1;
+        Painter.Live = true;
         Painter.Draw(vm, f, L, Col.Pack(20, 12, 10, 255), -side * 1.8f, 1.2f);
         Painter.Draw(vm, f, L, rimCol, side * 2.6f, -1.6f);
         Painter.Draw(vm, f, L, 0, 0, 0);
         if (f.flash > 0) Painter.Draw(vm, f, L, Col.Pack(255, 70, 40, (int)(Mathf.Clamp01(f.flash / 0.15f) * 0.5f * 255)), 0, 0);
         if (f.phase2) Painter.Draw(vm, f, L, Col.Pack(255, 60, 30, (int)((0.22f + 0.14f * Mathf.Sin(f.at * 12)) * 255)), 0, 0);
+        Painter.Live = false;
         Upload(mesh, vm);
     }
 

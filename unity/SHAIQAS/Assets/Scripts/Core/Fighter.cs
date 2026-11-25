@@ -44,6 +44,7 @@ public class Fighter
     int reactH; bool reactHeavy, downRoll;
     float[] rollHw;
     public float[] fp;      // құлап-аунау кезіндегі айналу нүктесі (null — жоқ)
+    public Chain belt1, belt2, hem;   // мата тізбектері (Cloth)
     public float rot;       // ағымдағы құлау бұрышы (сурет үшін)
     public float pw = 1;    // PACE жергілікті уақыт
     // қару ізі (веб: this.trail): [x, y, bx, by, life, max, seq, special]
@@ -196,6 +197,7 @@ public class Fighter
         x = Pz.Clamp(x, 90, Db.ARENA - 90);
         Separate();
         Animate(dt);
+        Cloth.Update(this, dt);
     }
 
     static Intent emptyIt = new Intent();

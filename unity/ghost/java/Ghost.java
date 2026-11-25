@@ -129,6 +129,12 @@ public class Ghost {
       for (int f = 0; f < 240; f++) { am.Update(1f / 60, null); am.fx.Clear(); }
       check(am.player.hp > h0 + 10 && am.phase == Match.FIGHT && am.timer > 90, "алаң: денсаулық қалпына келеді, уақыт шексіз (" + h0 + "→" + am.player.hp + ")");
       System.out.println("[arena] өлмейді, қалпына келеді: " + h0 + " → " + am.player.hp); }
+    { U.Seed(5); Match cm = new Match(); cm.StartCampaign(2, 1); cm.player.ai = true; boolean okc = true; float maxd = 0;
+      for (int f = 0; f < 60 * 40 && cm.phase != Match.MATCHEND; f++) { cm.Update(1f / 60, null); cm.fx.Clear();
+        for (Fighter fq : new Fighter[] { cm.player, cm.enemy }) for (Chain c : new Chain[] { fq.belt1, fq.belt2, fq.hem }) { if (c == null) continue;
+          for (int i = 0; i < c.n; i++) { if (Float.isNaN(c.x[i]) || Float.isNaN(c.y[i])) okc = false; maxd = Math.max(maxd, Math.abs(c.x[i] - fq.x)); } } }
+      check(okc && maxd < 400, "мата: NaN жоқ, тізбек денеден алыс кетпейді (max " + (int) maxd + ")");
+      System.out.println("[cloth] 40 с ұрыс: тізбектер тұрақты, ең алыс ауытқу " + (int) maxd + " px"); }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---
     Geo g = new Geo(); g.Build(Pz.Get("idle"));
