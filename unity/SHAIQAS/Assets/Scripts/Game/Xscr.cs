@@ -53,9 +53,9 @@ public partial class GameRoot
         if (Ui.DzBtn(S.sound ? "ДЫБЫС ҚОСУЛЫ" : "ДЫБЫС ӨШІК", 110, 200, 230, 50, false, true, null, true, true, false, S.sound)) { S.sound = !S.sound; Game.Persist(); Snd.Play("ui_select"); }
         T("Дыбысты қосу/өшіру", 360, 232, 14, H("#b8a8c8"), true, false);
         T("Әуен", 180, 311, 18, H("#fff3dc"), true);
-        SetBar(240, 296, 240, S.volMusic);
+        SetBar(232, 296, 200, S.volMusic);
         T("Әсерлер", 180, 375, 18, H("#fff3dc"), true);
-        SetBar(260, 360, 220, S.volSfx);
+        SetBar(252, 360, 180, S.volSfx);
         if (Ui.DzBtn("−", 110, 280, 54, 46, false, true, null, true)) { S.volMusic = Mathf.Clamp01(Mathf.Round((S.volMusic - 0.1f) * 10) / 10f); Game.Persist(); }
         if (Ui.DzBtn("+", 500, 280, 54, 46, false, true, null, true)) { S.volMusic = Mathf.Clamp01(Mathf.Round((S.volMusic + 0.1f) * 10) / 10f); Game.Persist(); }
         if (Ui.DzBtn("−", 110, 344, 54, 46, false, true, null, true)) { S.volSfx = Mathf.Clamp01(Mathf.Round((S.volSfx - 0.1f) * 10) / 10f); Game.Persist(); Snd.Play("ui_move"); }
@@ -79,13 +79,13 @@ public partial class GameRoot
             S.tutOff = !S.tutOff; if (!S.tutOff) { S.tutDone.Clear(); Toast("Бұқар жырау қайтадан басынан үйретеді"); } else Toast("Ұстаздың сабақтары өшірілді");
             Game.Persist(); Snd.Play("ui_select");
         }
-        Ui.Text("Кішкентай балаларға арналған: жау баяу әрі әлсіз соғады, викторинада 5 дұрыс жауап жеткілікті, рух тезірек толады.", 440, 514, 750, 120, 16, H("#fff3dc"), TextAnchor.UpperLeft, true);
+        Ui.Text("Кішкентай балаларға арналған: жау баяу әрі әлсіз соғады, викторинада 5 дұрыс жауап жеткілікті, рух тезірек толады.", 440, 514, 720, 120, 16, H("#fff3dc"), TextAnchor.UpperLeft, true);
     }
     /// <summary>Дыбыс деңгейі жолағы (веб: setBar).</summary>
     static void SetBar(float x, float y, float w, float v)
     {
         Ui.Fill(x, y, w, 16, new Color32(0, 0, 0, 115)); Ui.Frame(x, y, w, 16, new Color32(244, 197, 92, 100), 1);
         Ui.Grad3(x + 2, y + 2, (w - 4) * Mathf.Clamp01(v), 12, new Color32(255, 232, 150, 255), new Color32(242, 184, 64, 255), new Color32(168, 110, 30, 255));
-        Ui.TextS(Mathf.RoundToInt(v * 100) + "%", x + w + 6, y - 4, 60, 24, 14, new Color32(255, 227, 160, 255), TextAnchor.MiddleLeft, true);
+        Ui.TextS(Mathf.RoundToInt(v * 100) + "%", x + w + 4, y - 4, 56, 24, 14, new Color32(255, 227, 160, 255), TextAnchor.MiddleLeft, true);
     }
 }

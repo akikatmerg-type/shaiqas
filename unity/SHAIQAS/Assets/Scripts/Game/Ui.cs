@@ -109,6 +109,18 @@ public static class Ui
         foreach (string key in rm) { if (cache[key] != null) Resources.UnloadAsset(cache[key]); cache.Remove(key); }
     }
 
+    static Texture2D fadeTex;
+    /// <summary>Көлденең бәсеңдеу: сол жақта c, оң жаққа қарай мөлдір (жолақсыз тегіс градиент).</summary>
+    public static void FadeH(float x, float y, float w, float h, Color c)
+    {
+        if (fadeTex == null)
+        {
+            fadeTex = new Texture2D(256, 1, TextureFormat.RGBA32, false); fadeTex.wrapMode = TextureWrapMode.Clamp;
+            for (int i = 0; i < 256; i++) fadeTex.SetPixel(i, 0, new Color(1, 1, 1, 1 - i / 255f));
+            fadeTex.Apply();
+        }
+        Color o = GUI.color; GUI.color = c; GUI.DrawTexture(R(x, y, w, h), fadeTex); GUI.color = o;
+    }
     public static void Fill(float x, float y, float w, float h, Color c)
     {
         Color o = GUI.color; GUI.color = c; GUI.DrawTexture(R(x, y, w, h), white); GUI.color = o;
@@ -202,11 +214,13 @@ public static class Ui
         float[] xs = { x, x + bl, x + w - br, x + w }, ys = { y, y + bt, y + h - bb, y + h };
         float[] us = { 0, bl / tw, 1 - br / tw, 1 }, vs = { 1, 1 - bt / th, bb / th, 0 };
         for (int q = 0; q < 4; q++) { us[q] = uvr.x + us[q] * uvr.width; vs[q] = uvr.y + vs[q] * uvr.height; }
+        // жиектерді экран пикселіне тураймыз — әйтпесе бөліктер арасында 1 px саңылау (тік сызық) көрінеді
+        for (int q = 0; q < 4; q++) { xs[q] = Mathf.Round(ox + xs[q] * k); ys[q] = Mathf.Round(oy + ys[q] * k); }
         Color o = GUI.color; GUI.color = new Color(o.r, o.g, o.b, o.a * alpha);
         for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++)
         {
             float rw = xs[i + 1] - xs[i], rh = ys[j + 1] - ys[j]; if (rw <= 0 || rh <= 0) continue;
-            GUI.DrawTextureWithTexCoords(R(xs[i], ys[j], rw, rh), t, new Rect(us[i], vs[j + 1], us[i + 1] - us[i], vs[j] - vs[j + 1]), true);
+            GUI.DrawTextureWithTexCoords(new Rect(xs[i], ys[j], rw, rh), t, new Rect(us[i], vs[j + 1], us[i + 1] - us[i], vs[j] - vs[j + 1]), true);
         }
         GUI.color = o;
     }

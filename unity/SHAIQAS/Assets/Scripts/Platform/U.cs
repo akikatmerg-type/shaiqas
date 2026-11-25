@@ -27,7 +27,8 @@ public static class U
     public static string Num(double v)
     {
         if (Math.Abs(v - Math.Round(v)) < 1e-9 && Math.Abs(v) < 1e15) return ((long)Math.Round(v)).ToString(CultureInfo.InvariantCulture);
-        return v.ToString("R", CultureInfo.InvariantCulture);
+        // float → double шуын кесеміз: 1.4f «1.3999999761581421» емес, «1.4» болып шығады
+        return Math.Round(v, 5).ToString("R", CultureInfo.InvariantCulture);
     }
     public static string Int(int v) { return v.ToString(CultureInfo.InvariantCulture); }
     public static float Rand() { lock (rng) return (float)rng.NextDouble(); }

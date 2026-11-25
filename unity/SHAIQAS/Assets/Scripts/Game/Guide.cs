@@ -86,7 +86,7 @@ public partial class GameRoot
         Ui.Circle(jx + kx, jy + ky, 14, Ui.GOLD); Ui.Circle(jx + kx, jy + ky, 10, new Color32(142, 29, 28, 255));
         for (int i = 0; i < 3; i++) Glyph(bt[i], px + 118 + i * 34, jy, 28, tok == bt[i], false);
         SeqDraw(d, px + 230, jy, 24, step < 0 ? -1 : step + 1, !open, true);
-        Ui.Text("Тәжірибе жеңістен және әр әдісті алғаш қолданғаннан жиналады. Деңгей өскен сайын жаңа әдіс ашылады.", px + 24, py + 548, pw - 48, 40, 13, new Color32(90, 58, 26, 255), TextAnchor.UpperLeft, true);
+        Ui.Text("Тәжірибе жеңістен және әр әдісті алғаш қолданғаннан жиналады. Деңгей өскен сайын жаңа әдіс ашылады.", px + 24, py + 536, pw - 48, 50, 13, new Color32(90, 58, 26, 255), TextAnchor.UpperLeft, true);
 
         // --- оң жақ: әдіс карталары (бетке 6) ---
         int pg = guideSel / 6, pages = (n + 5) / 6;

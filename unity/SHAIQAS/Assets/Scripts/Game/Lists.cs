@@ -361,7 +361,7 @@ public partial class GameRoot
         Ui.Text(RAR_N[ra] + " " + new string('•', Mathf.Min(6, it.Get("tier").I(0) + 1)), nx, y + 30, 160, 18, 12, new Color(rc.r, rc.g, rc.b, 0.95f), TextAnchor.MiddleLeft, true);
         string meta = shopTab == "weapon" ? "Зақым " + Mathf.RoundToInt(it.Fk("dmg") * 100) + "% · Жылд. " + Mathf.RoundToInt(it.Fk("spd") * 100) + "%" : "Қорғаныс −" + Mathf.RoundToInt(it.Fk("def") * 100) + "%";
         Ui.Text(meta, nx, y + 50, 200, 18, 12, new Color(0.91f, 0.84f, 0.72f, 0.85f), TextAnchor.MiddleLeft, true);
-        PriceCol(x + w - 12, y + 2, own, on, price, lvl, "КИІЛГЕН");
+        PriceCol(x + w - 30, y + 2, own, on, price, lvl, "КИІЛГЕН");   // панельдің бұрыш өрнегіне тимейді
         GUI.color = o;
     }
 }

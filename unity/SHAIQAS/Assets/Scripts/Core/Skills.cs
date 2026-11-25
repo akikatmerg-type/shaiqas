@@ -104,7 +104,7 @@ public static class Skills
     static void Push(SkBuf B, float now, string d, string b) { B.Push(now, d, b); }
 
     /// <summary>Тізбекті буфердің соңынан іздейді (веб: skMatch). Табылса — уақыт аралығы, әйтпесе −1.</summary>
-    public static float Match(SkBuf E, string[] seq)
+    public static float SeqMatch(SkBuf E, string[] seq)
     {
         int n = seq.Length, L = E.n;
         if (L == 0) return -1;
@@ -250,7 +250,7 @@ public static class Skills
             {
                 SkDef d = sorted[i];
                 if (!Unlocked(d) || !Castable(f, d)) continue;
-                float span = Match(B, d.seq); if (span < 0) continue;
+                float span = SeqMatch(B, d.seq); if (span < 0) continue;
                 if (pass == 0) { if (firstC == null || d.seq.Length > firstC.seq.Length || (d.seq.Length == firstC.seq.Length && span < bestSpan)) { firstC = d; bestSpan = span; } continue; }
                 if (T.cd[d.idx] > 0 || f.rux < d.cost) continue;
                 if (best == null || d.seq.Length > best.seq.Length) best = d;

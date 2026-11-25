@@ -21,7 +21,7 @@ final class U {
     static double ParseNum(String s) { return Double.parseDouble(s); }
     static String Num(double v) {
         if (Math.abs(v - Math.rint(v)) < 1e-9 && Math.abs(v) < 1e15) return Long.toString(Math.round(v));
-        return Double.toString(v);
+        return Double.toString(Math.round(v * 1e5) / 1e5);
     }
     static String Int(int v) { return Integer.toString(v); }
     static float Rand() { return rng.nextFloat(); }

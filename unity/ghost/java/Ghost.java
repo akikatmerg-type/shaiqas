@@ -104,7 +104,7 @@ public class Ghost {
           if (btn) Skills.Feed(B, tt, "N", qq.equals("J"), qq.equals("K"), qq.equals("L")); else { Skills.Feed(B, tt, qq, false, false, false); tt += 0.04f; Skills.Feed(B, tt, "N", false, false, false); }
           tt += 0.08f;
         }
-        if (Skills.Match(B, sk.seq) >= 0) okSeq++; else bad.append(" seq:" + sk.id);
+        if (Skills.SeqMatch(B, sk.seq) >= 0) okSeq++; else bad.append(" seq:" + sk.id);
         // әсер
         Match m = new Match(); m.StartTrain(0); m.phase = Match.FIGHT; m.player.active = true; m.enemy.active = true;
         Fighter P = m.player, E = m.enemy; E.ai = false; E.x = P.x + 160; E.facing = -1; P.facing = 1; P.rux = 100; P.hp = P.maxHp * 0.5f;

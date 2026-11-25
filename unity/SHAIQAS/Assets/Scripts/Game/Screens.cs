@@ -12,7 +12,7 @@ public partial class GameRoot
         Ui.Img("Art/lobby/zhyrau", 980, 250 + br, 300, 420);
         Ui.Img("Art/lobby/front_" + Game.S.hero, 550, 110 + Mathf.Sin(Time.time * 2.4f) * 1.2f, 420, 560);
         // сол жақ көлеңке (веб: LOBSH)
-        for (int i = 0; i < 132; i++) Ui.Fill(i * 4, 0, 4.5f, 720, new Color(0.047f, 0.031f, 0.11f, 0.82f * Mathf.Clamp01(1 - i / 131f)));
+        Ui.FadeH(0, 0, 528, 720, new Color(0.047f, 0.031f, 0.11f, 0.82f));
         Ui.Fill(0, 600, 1280, 120, new Color(0.04f, 0.024f, 0.08f, 0.35f));
         Ui.TopBar(null, true);
         // логотип
