@@ -113,6 +113,7 @@ public partial class GameRoot : MonoBehaviour
     {
         if (screen == STORY && s != STORY) Ui.Forget("Art/scenes/");
         if (screen == FIGHT && s != FIGHT) fv.Teardown();
+        if (s == ALBUM && screen != ALBUM) AlbumEnter();
         screen = s; pt = 0;
         Tut.Enter(s);
     }

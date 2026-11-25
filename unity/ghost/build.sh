@@ -11,6 +11,6 @@ javac -nowarn -encoding UTF-8 -d "$OUT/cls" "$OUT"/src/*.java 2>&1 | grep -v -e 
 [ -f "$OUT/cls/Ghost.class" ] || { echo "КОМПИЛЯЦИЯ СӘТСІЗ"; exit 1; }
 [ "$1" = "compile" ] && exit 0
 J="java -Dstdout.encoding=UTF-8 -cp $OUT/cls"
-echo "== lint (Unity қабаты)"; python3 "$G/lint.py"
+echo "== lint (Unity қабаты)"; python3 "$G/lint.py"; python3 "$G/refcheck.py" || true
 echo "== логика, сюжет, сақтау, 36 ұрыс"; $J Ghost 2>&1 | grep -v JAVA_TOOL
 echo "== файлдар мен обликтер"; $J Assets 2>&1 | grep -v JAVA_TOOL

@@ -303,6 +303,8 @@ public static class Ui
         return DzBtn(label, x, y, w, h, primary, enabled, null, size < 22, false, size < 17);
     }
     /// <summary>Мөлдір аймақ-батырма (сурет үстінде).</summary>
+    /// <summary>Көрінбейтін батырма: тіктөртбұрышқа басылса true.</summary>
+    public static bool Click(float x, float y, float w, float h) { return GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none); }
     public static bool Hot(float x, float y, float w, float h)
     {
         bool hit = GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none);

@@ -19,7 +19,7 @@ public partial class GameRoot
         float lk = Mathf.Clamp01(pt / 0.7f), le = 1 - (1 - lk) * (1 - lk) * (1 - lk);
         Ui.Img("Art/ui/logo", 48 - 350 - (1 - le) * 60, 108 - 120, 700, 320, le);
         // батырмалар (вебтегі орындар)
-        if (Ui.DzBtn("МАРАПАТТАР", 392, 16, 172, 46, false, true, null, true, true)) Go(MEDALS);
+        if (Ui.DzBtn("МАРАПАТТАР", 392, 16, 172, 46, false, true, null, true, true)) { medalsFrom = LOBBY; Go(MEDALS); }
         if (Ui.DzBtn("ТАРИХ АЛЬБОМЫ", 574, 16, 222, 46, false, true, null, true, true)) { albumSel = -1; Go(ALBUM); }
         if (Ui.DzBtn("⚙ БАПТАУЛАР", 806, 16, 222, 46, false, true, null, true, true)) Go(SETTINGS);
         if (Ui.DzBtn("ЖОРЫҚ", 48, 284, 344, 68, true, true, "map")) { mapSite = 0; OpenMapHub(Progress.LastOpen()); }
@@ -171,79 +171,13 @@ public partial class GameRoot
     }
 
     // ================= АЛЬБОМ =================
-    void DrawAlbum()
-    {
-        bool ru = Ru();
-        Ui.Fill(0, 0, 1280, 720, new Color32(34, 26, 20, 255));
-        Ui.TopBar("ТАРИХ АЛЬБОМЫ · " + Medals.CardsOpen() + "/" + Db.Hist.Count());
-        int n = Db.Hist.Count();
-        for (int i = 0; i < n; i++)
-        {
-            int cx = i % 9, cy = i / 9;
-            float x = 40 + cx * 74, y = 90 + cy * 140;
-            bool open = Medals.CardOpen(i);
-            Ui.Img("Art/icons/hist" + i + (open ? "" : "_locked"), x, y, 70, 70);
-            Ui.Text(open ? Db.Hist.At(i).S("title") : "?", x - 4, y + 72, 78, 60, 12, open ? Ui.CREAM : new Color(0.5f, 0.5f, 0.5f), TextAnchor.UpperCenter);
-            if (open && Ui.Hot(x, y, 70, 130)) albumSel = i;
-        }
-        Ui.Panel(720, 90, 530, 560, new Color(0.96f, 0.88f, 0.7f, 0.97f), Ui.GOLD);
-        if (albumSel < 0) Ui.Text("Картаны таңда. Әр жеңілген ұрыс — бір жаңа тарих картасы!", 750, 300, 470, 120, 22, Ui.INK, TextAnchor.MiddleCenter);
-        else
-        {
-            JNode h = Db.Hist.At(albumSel), r = Db.RuCards.At(albumSel);
-            Ui.Img("Art/icons/hist" + albumSel, 745, 110, 110, 110);
-            Ui.Text(ru ? r.At(0).Str() : h.S("title"), 870, 112, 360, 60, 28, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
-            Ui.Text(h.S("date"), 870, 172, 360, 36, 18, Ui.INK, TextAnchor.MiddleLeft);
-            float y = 236;
-            JNode facts = ru ? r.At(1) : h.Get("facts");
-            for (int k = 0; k < facts.Count(); k++)
-            {
-                string t = "• " + facts.At(k).Str();
-                float th = Ui.TextHeight(t, 470, 19);
-                Ui.Text(t, 750, y, 470, th + 6, 19, Ui.INK);
-                y += th + 12;
-            }
-            string fun = ru ? r.At(2).Str() : h.S("fun");
-            if (U.Len(fun) > 0) { Ui.Text((ru ? "Интересно: " : "Қызық дерек: ") + fun, 750, y + 10, 470, 120, 18, new Color32(125, 23, 25, 255), TextAnchor.UpperLeft, true); }
-        }
-        if (Ui.Btn("◀ ЛОББИ", 30, 662, 180, 48, false, true, 18)) Go(LOBBY);
-    }
+
 
     // ================= МАРАПАТТАР =================
-    void DrawMedals()
-    {
-        bool ru = Ru();
-        Ui.Fill(0, 0, 1280, 720, new Color32(30, 22, 40, 255));
-        Ui.TopBar("МАРАПАТТАР");
-        for (int i = 0; i < Db.Medals.Count(); i++)
-        {
-            JNode m = Db.Medals.At(i); string id = m.S("id"); bool got = Medals.Has(id);
-            float x = 60 + (i % 4) * 295, y = 90 + (i / 4) * 140;
-            Ui.Fill(x, y, 280, 128, new Color(0, 0, 0, 0.3f));
-            Ui.Img("Art/icons/medal_" + id + (got ? "" : "_off"), x + 6, y + 14, 100, 100);
-            JNode rm = Db.RuMed.Get(id);
-            Ui.TextS(ru && rm.IsArr() ? rm.At(0).Str() : m.S("name"), x + 112, y + 10, 162, 50, 17, got ? Ui.GOLD : new Color(0.6f, 0.6f, 0.6f), TextAnchor.UpperLeft);
-            Ui.Text(ru && rm.IsArr() ? rm.At(1).Str() : m.S("desc"), x + 112, y + 60, 162, 66, 14, Ui.CREAM);
-        }
-        if (Ui.Btn("◀ ЛОББИ", 30, 662, 180, 48, false, true, 18)) Go(LOBBY);
-    }
+
 
     // ================= БАПТАУЛАР =================
-    void DrawSettings()
-    {
-        Ui.Img("Art/lobby/backdrop", 0, 0, 1280, 720);
-        Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.03f, 0.1f, 0.65f));
-        Ui.TopBar("БАПТАУЛАР");
-        Ui.Panel(340, 110, 600, 500, new Color(0.1f, 0.07f, 0.17f, 0.96f), Ui.GOLD);
-        SaveData S = Game.S;
-        if (Ui.Btn("ОРЫСША АУДАРМА: " + (S.ru ? "ҚОСУЛЫ" : "ӨШІК"), 380, 140, 520, 56)) { S.ru = !S.ru; Game.Persist(); }
-        if (Ui.Btn("БАЛАЛАР РЕЖИМІ: " + (S.kid ? "ҚОСУЛЫ" : "ӨШІК"), 380, 210, 520, 56)) { S.kid = !S.kid; Game.Persist(); }
-        if (Ui.Btn("ҰСТАЗ: " + (S.tutOff ? "ӨШІК" : "ҚОСУЛЫ"), 380, 280, 520, 56)) { S.tutOff = !S.tutOff; if (!S.tutOff) S.tutDone.Clear(); Game.Persist(); }
-        if (Ui.Btn("✎ АТЫМДЫ ӨЗГЕРТУ", 380, 350, 520, 56)) AskName();
-        Ui.Text("Балалар режимі: жау әлсіздеу, викторинада 5 дұрыс жауап жеткілікті.", 380, 420, 520, 60, 16, Ui.CREAM, TextAnchor.UpperCenter);
-        Ui.Text("SHAIQAS · Unity нұсқасы (алғашқы порт)", 380, 520, 520, 30, 14, new Color(0.7f, 0.7f, 0.8f), TextAnchor.MiddleCenter);
-        if (Ui.Btn("◀ ЛОББИ", 30, 662, 180, 48, false, true, 18)) Go(LOBBY);
-    }
+
 
     // ================= ДҮКЕН =================
     string shopTab = "weapon"; int shopScroll;
