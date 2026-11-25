@@ -7,6 +7,9 @@ public class Fighter
 
     // --- баптау ---
     public string name = "", weapon = "soyil", hat = "kalpak", coat = "chapan", accent = "#f2b840", heroId = null, look = "";
+    public string bossAb, abInfo;   // бас жаудың ерекше қабілеті (веб: BOSS_AB)
+    public float abT, abWind, twinT;
+    public bool charging, chargeHit;
     public bool ai, active, npc, boss, big, slim, beard, canPhase3, phase2, phase3;
     public float speed = 300, maxHp = 100, dmgMul = 1, def = 0, atkSpd = 1, ruxMul = 1, regen = 0;
     public float aiAggr = 0.5f, aiBlock = 0.3f, aiCrouch = 0.2f, aiComboP = 0.3f, aiSpecial = 0.5f;
@@ -99,6 +102,12 @@ public class Fighter
             aiAggr = Mathf.Min(1, aiAggr + 0.2f); aiBlock = Mathf.Min(0.85f, aiBlock + 0.15f); aiComboP = Mathf.Min(1, aiComboP + 0.2f);
             if (game != null) game.PhaseFx(this);
         }
+        if (canPhase3 && phase2 && !phase3 && hp > 0 && hp < maxHp * 0.25f)
+        {
+            phase3 = true; speed *= 1.12f; atkSpd *= 1.12f; dmgMul *= 1.15f; rux = 100;
+            bossAb = "evade"; abT = 0; if (game != null) game.Phase3Fx(this);
+        }
+        if (bossAb != null && active && hp > 0 && opp != null && opp.hp > 0) UpdAbility(rdt);
         bool og = OnGround();
         guard = false;
         switch (state)
@@ -107,6 +116,21 @@ public class Fighter
             case DOWN: vx = 0; if (st > 1.25f) Set(IDLE); break;
             case HIT: vx = 0; if (st > 0.3f) Set(IDLE); break;
             case DASH:
+                if (charging)
+                {
+                    vx = facing * 1150;
+                    ghostT -= dt; if (ghostT <= 0) { ghostT = 0.04f; Fx(Match.FX_GHOST, x, y, facing, 0); }
+                    if (U.Rand() < 0.5f) Fx(Match.FX_DUST, x, Db.GROUND, -facing, 2);
+                    Fighter o = opp;
+                    if (o != null && !chargeHit && Mathf.Abs(o.x - x) < 80 && Mathf.Abs(o.y - y) < 110)
+                    {
+                        chargeHit = true;
+                        Move cmv = new Move(); cmv.dmg = 13 * dmgMul; cmv.height = "mid"; cmv.knock = 520; cmv.heavy = true; cmv.down = true; cmv.hitstop = 0.08f;
+                        o.TakeHit(cmv, facing, true, this);
+                    }
+                    if (st > 0.62f || x <= 92 || x >= Db.ARENA - 92) { charging = false; Set(IDLE); }
+                    break;
+                }
                 vx = dashDir * (dashDir * facing > 0 ? 640 : 560) * (1 - st / 0.26f);
                 if (st > 0.24f) Set(IDLE);
                 break;
@@ -151,7 +175,7 @@ public class Fighter
                     }
                     else
                     {
-                        vx = it.move * speed * Db.PaceK("move") * (back ? 0.62f : 1f);
+                        vx = it.move * speed * Db.PaceK("move") * (back ? 0.62f : 1f) * (game != null && game.weatherT > 0 && U.Eq(game.weatherKind, "snow") && game.weatherOwner != this ? 0.62f : 1f);
                         guard = back;
                         if (it.up) { vy = -920; airUsed = false; og = false; Set(JUMP); }
                         else Set(it.move != 0 ? WALK : IDLE);
@@ -176,9 +200,46 @@ public class Fighter
 
     void Fx(int kind, float fx, float fy, float dir, int n) { if (game != null) game.Fx(kind, fx, fy, dir, n, this); }
 
+    // ---------------- бас жаудың қабілеттері (веб: updAbility / fireAbility / evade) ----------------
+    void UpdAbility(float dt)
+    {
+        abT -= dt * (phase2 ? 1.5f : 1);
+        if (twinT > 0) twinT -= dt;
+        if (abWind > 0)
+        {
+            abWind -= dt;
+            if (abWind <= 0) FireAbility();
+            return;
+        }
+        bool free = OnGround() && (state == IDLE || state == WALK);
+        if (!U.Eq(bossAb, "evade") && abT <= 0 && free) { abWind = 0.55f; abT = Pz.Rand(5.5f, 7.5f); if (game != null) game.AbilityCall(this); }
+    }
+    void FireAbility()
+    {
+        string ab = bossAb;
+        if (U.Eq(ab, "arrow"))
+        {
+            if (game != null) { game.Shoot(this, 160, 0); if (phase2) game.Shoot(this, 40, 0.45f); }
+            StartAttack("thrust", -1);
+        }
+        else if (U.Eq(ab, "horse")) { charging = true; chargeHit = false; dashDir = facing; Set(DASH); st = 0; Fx(Match.FX_DUST, x, Db.GROUND, -facing, 14); }
+        else if (U.Eq(ab, "blizzard")) { if (game != null) game.SetWeather("snow", this); }
+        else if (U.Eq(ab, "sand")) { if (game != null) game.SetWeather("sand", this); }
+        else if (U.Eq(ab, "twin")) { twinT = 6; if (game != null) game.Fx(Match.FX_PHASE, x, y - 200, facing, 18, this); }
+    }
+    void Evade(int dir)
+    {
+        abT = phase3 ? 2.2f : 3; inv = 0.32f;
+        dashDir = dir; Set(DASH); st = 0; x = Pz.Clamp(x + dir * 70, 90, Db.ARENA - 90);
+        for (int i = 0; i < 4; i++) Fx(Match.FX_GHOST, x - dir * i * 26, y, facing, 0);
+        Fx(Match.FX_DUST, x, Db.GROUND, dir, 8);
+        if (U.Rand() < 0.4f && game != null) game.EnemySay(this, "Ұстай алмайсың!", 1.2f);
+    }
+
     void Separate()
     {
         Fighter o = opp;
+        if (charging || (o != null && o.charging)) return;
         if (o == null || o.state == DEAD || state == DEAD) return;
         float dx = o.x - x, ad = Mathf.Abs(dx), sg = dx >= 0 ? 1 : -1;
         // денелер бір-біріне кірмейді — жамбастың нақты орнымен
@@ -191,10 +252,11 @@ public class Fighter
     public void StartAttack(string id, int ci)
     {
         Move bs = Move.Base(id);
-        float spd = wpSpd * atkSpd;
+        bool tw = twinT > 0;
+        float spd = wpSpd * atkSpd * (tw ? 1.25f : 1f);
         Move m = bs.Copy();
         m.w = bs.w / spd; m.a = bs.a / spd; m.r = bs.r / spd;
-        m.dmg = bs.dmg * (bs.foot ? 1 : wpDmg) * dmgMul;
+        m.dmg = bs.dmg * (bs.foot ? 1 : wpDmg) * dmgMul * (tw ? 1.2f : 1f);
         m.reach = bs.reach * (sc / Db.S) + (bs.foot ? 0 : (wpLen - 92) * sc * 0.75f);
         cm = m; comboIdx = ci;
         hitDone = false; hitIdx = 0; queued = false; lunged = false; waved = false;
@@ -265,6 +327,7 @@ public class Fighter
     {
         if (state == DEAD || state == DOWN) return;
         if (inv > 0) return;
+        if (U.Eq(bossAb, "evade") && active && abT <= 0 && !m.thr && !m.special && OnGround() && U.Rand() < (phase2 ? 0.6f : 0.45f)) { Evade(dir); return; }
         float pd = Db.PaceK("dmg"), pk = Db.PaceK("knock");
         if (m.thr)
         {

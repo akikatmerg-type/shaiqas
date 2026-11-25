@@ -41,9 +41,20 @@ public static class Ui
     // ---- интерфейс атласы (Art/uiatlas.png + Data/meta_uiatlas.json): "Art/ui/<аты>" жолдары осыдан ----
     static Texture2D uiAtlas; static JNode uiMeta;
     /// <summary>Сурет көзі: текстура және оның ішіндегі UV тіктөртбұрышы.</summary>
+    static Texture2D campAtlas; static JNode campMeta;
     public static bool Src(string path, out Texture2D t, out Rect uv, out float pw, out float ph)
     {
         uv = new Rect(0, 0, 1, 1); pw = 0; ph = 0;
+        if (path.StartsWith("Art/camp/"))
+        {
+            if (campAtlas == null) { campAtlas = Resources.Load<Texture2D>("Art/campatlas"); campMeta = Db.J("meta_campatlas"); }
+            t = campAtlas;
+            JNode cr = campMeta.Get("r").Get(path.Substring(9));
+            if (t == null || cr.IsNull()) return false;
+            float CW = campMeta.Fk("w"), CH = campMeta.Fk("h"), cx = cr.At(0).F(), cy = cr.At(1).F(); pw = cr.At(2).F(); ph = cr.At(3).F();
+            uv = new Rect(cx / CW, 1 - (cy + ph) / CH, pw / CW, ph / CH);
+            return true;
+        }
         if (path.StartsWith("Art/ui/"))
         {
             if (uiAtlas == null) { uiAtlas = Resources.Load<Texture2D>("Art/uiatlas"); uiMeta = Db.J("meta_uiatlas"); }
@@ -84,6 +95,27 @@ public static class Ui
         Texture2D t; Rect uv; float pw, ph;
         if (!Src(path, out t, out uv, out pw, out ph)) return;
         Color o = GUI.color; GUI.color = new Color(o.r, o.g, o.b, o.a * alpha); GUI.DrawTextureWithTexCoords(R(x, y, w, h), t, uv, true); GUI.color = o;
+    }
+    /// <summary>Түске боялған сурет (ақ сызықтар/сақиналар үшін).</summary>
+    public static void ImgC(string path, float x, float y, float w, float h, Color c)
+    {
+        Texture2D t; Rect uv; float pw, ph;
+        if (!Src(path, out t, out uv, out pw, out ph)) return;
+        Color o = GUI.color; GUI.color = new Color(c.r, c.g, c.b, c.a * o.a); GUI.DrawTextureWithTexCoords(R(x, y, w, h), t, uv, true); GUI.color = o;
+    }
+    /// <summary>Орталықты айналып бұрылған сурет (градус).</summary>
+    public static void ImgRot(string path, float cx, float cy, float w, float h, float deg, Color c)
+    {
+        Matrix4x4 m = GUI.matrix;
+        GUIUtility.RotateAroundPivot(deg, new Vector2(ox + cx * k, oy + cy * k));
+        ImgC(path, cx - w / 2, cy - h / 2, w, h, c);
+        GUI.matrix = m;
+    }
+    /// <summary>Мәтін ені (виртуал пиксельмен).</summary>
+    public static float TextW(string s, int size, bool bold = true)
+    {
+        st.font = bold ? fontBold : font; st.fontSize = Mathf.Max(6, Mathf.RoundToInt(size * k));
+        return st.CalcSize(new GUIContent(s)).x / k;
     }
     /// <summary>Көлденең айнадағы сурет.</summary>
     public static void ImgFlip(string path, float x, float y, float w, float h)
@@ -127,6 +159,11 @@ public static class Ui
         return st.CalcHeight(new GUIContent(s), w * k) / k;
     }
 
+    /// <summary>Тек жиек (іші бос).</summary>
+    public static void Frame(float x, float y, float w, float h, Color c, float t = 2)
+    {
+        Fill(x, y, w, t, c); Fill(x, y + h - t, w, t, c); Fill(x, y + t, t, h - 2 * t, c); Fill(x + w - t, y + t, t, h - 2 * t, c);
+    }
     public static void Panel(float x, float y, float w, float h, Color bg, Color border)
     {
         Fill(x, y, w, h, border); Fill(x + 3, y + 3, w - 6, h - 6, bg);

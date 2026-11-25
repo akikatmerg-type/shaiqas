@@ -118,7 +118,16 @@ public partial class GameRoot : MonoBehaviour
     public void PopMedals(Lst<string> fresh) { for (int i = 0; i < fresh.Count(); i++) medalPop.Add(fresh.Get(i)); fresh.Clear(); }
 
     // ================= жорық тізбегі =================
-    public void OpenMap(int ch) { mapCh = Mathf.Clamp(ch, 0, Db.NCH - 1); mapStage = Mathf.Clamp(Game.S.prog[mapCh], 0, 3); Go(MAP); }
+    /// <summary>Картаға оралу (веб: campMapEnter): жорықтан — кезеңдер көрінісі, басқадан — режимдер картасы.</summary>
+    public void OpenMap(int ch)
+    {
+        mapCh = Mathf.Clamp(ch, 0, Db.NCH - 1); mapStage = Mathf.Clamp(Game.S.prog[mapCh], 0, 3); mapPop = null;
+        bool camp = (screen == FIGHT || screen == STORY) && match.mode == "campaign";
+        mapView = camp ? "stages" : "map";
+        int si = System.Array.IndexOf(SITE_ID, match.mode == "campaign" ? "story" : match.mode);
+        mapSite = screen != LOBBY && si >= 0 ? si : 0;
+        Go(MAP);
+    }
 
     public void StartStory(Lst<Page> list, string mode, int ch, int si)
     {
@@ -158,6 +167,8 @@ public partial class GameRoot : MonoBehaviour
         PopMedals(match.medalsNew);
         string r = match.After(next);
         if (r == "fight") { fv.Setup(match); pt = 0; return; }
+        if (r == "bracket") { Go(BRACKET); return; }
+        if (r == "duelsel") { Go(DUELSEL); return; }
         if (match.mode == "quick") { Go(LOBBY); return; }
         if (r == "nextStage") { Campaign(match.chapter, match.stageIdx + 1); return; }
         if (r == "chapterDone") { doneCh = match.chapter; Go(DONE); return; }
@@ -191,6 +202,9 @@ public partial class GameRoot : MonoBehaviour
             case MAP: DrawMap(); break;
             case STORY: DrawStory(); break;
             case FIGHT: fv.DrawHud(); break;
+            case BRACKET: DrawBracket(); break;
+            case VS: DrawVs(); break;
+            case DUELSEL: DrawDuelSel(); break;
             case DONE: DrawDone(); break;
             case QUIZ: DrawQuiz(); break;
             case ALBUM: DrawAlbum(); break;

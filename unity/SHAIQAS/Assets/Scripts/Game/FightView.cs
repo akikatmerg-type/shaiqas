@@ -390,11 +390,26 @@ public class FightView : MonoBehaviour
         for (int i = ghosts.Count - 1; i >= 0; i--) { ghosts[i].life -= dt; if (ghosts[i].life <= 0) ghosts.RemoveAt(i); }
     }
     static float[] lx = new float[2], ly = new float[2];
+    void DrawArrows(VMesh v)
+    {
+        for (int i = 0; i < m.arrows.Count(); i++)
+        {
+            float[] a = m.arrows.Get(i); if (a[4] > 0) continue;
+            v.Save(); v.Translate(a[0], a[1]); v.Scale(a[2], 1);
+            v.FillC(Col.Parse("#7a4a22")); v.Quad(-50, -1.5f, 14, -1.5f, 14, 1.5f, -50, 1.5f);
+            v.FillC(Col.Parse("#c8d0d8")); v.Quad(12, -5, 26, 0, 26, 0, 12, 5);
+            v.FillC(Col.Parse("#e8e0d0")); v.Quad(-50, 0, -40, -7, -34, 0, -34, 0); v.Quad(-50, 0, -40, 7, -34, 0, -34, 0);
+            v.FillC(Col.Pack(255, 230, 180, 90)); v.Quad(-90, -3, -50, -3, -50, 3, -90, 3);
+            v.Restore();
+        }
+    }
+
     void BuildFx()
     {
         // мөлдір қабат: көлеңкелер, шаң, жаңқалар, сағым (ghost)
         vfx.Clear();
         Shadow(m.enemy); Shadow(m.player);
+        DrawArrows(vfx);
         foreach (Prt p in prts)
         {
             float k = Mathf.Clamp01(p.life / p.max);
@@ -520,8 +535,19 @@ public class FightView : MonoBehaviour
             Ui.Text(sl.name, bx + 18, 156, 454, 22, 15, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
             Ui.Text(sl.text, bx + 18, 178, 454, 52, Ui.FitBox(sl.text, 454, 52, 18), new Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, k2), TextAnchor.UpperLeft, true);
         }
+        // ауа райы (бас жау қабілеті: боран / құм дауылы)
+        if (m.weatherT > 0) DrawWeather();
+        // фаза хабары (2-фаза / 3-фаза)
+        if (m.phaseMsgT < 2.2f && m.phaseMsgN > 0)
+        {
+            float a = Mathf.Clamp01(Mathf.Min(m.phaseMsgT * 4, (2.2f - m.phaseMsgT) * 3)); bool p3 = m.phaseMsgN == 3;
+            Brush(p3 ? "3-ФАЗА: КӨЛЕҢКЕ!" : "2-ФАЗА: ҚАҺАР!", 220, p3 ? "p3" : "p2", p3 ? new Color32(216, 176, 255, 255) : new Color32(255, 176, 138, 255), a);
+            Ui.TextO(m.phaseMsgName + (p3 ? " көлеңкеге айналды!" : " ашуланды!"), 0, 280, 1280, 30, 22, new Color(1, 0.95f, 0.88f, a), TextAnchor.MiddleCenter, true, 3);
+        }
+        // бастар шабуылы: бас жау таныстыруы (веб: bossIntro)
+        if (m.phase == Match.INTRO && m.bossIntro) { DrawBossIntro(); }
         // кіріспе: «n-РАУНД» + бөлгіш + сипаттама (веб)
-        if (m.phase == Match.INTRO)
+        else if (m.phase == Match.INTRO)
         {
             float k = Mathf.Clamp01(m.pt * 2.5f), k2 = Mathf.Clamp01(m.pt * 2.5f - 0.5f);
             string ttl = m.needWins > 1 ? m.round + "-РАУНД" : "ҰРЫСҚА ДАЙЫН БОЛ";
@@ -531,7 +557,7 @@ public class FightView : MonoBehaviour
             Ui.Fill(640 - hw, 262, hw * 2, 2.5f, new Color(0.95f, 0.72f, 0.25f, k2));
             Ui.Img("Art/ui/ram", 620, 240, 40, 20, k2);
             JNode C = Db.Ch(m.chapter);
-            string sub = m.mode == "campaign" ? C.S("name") + " · " + (m.stageIdx + 1) + "-ұрыс" + (E.boss ? " · БАС ЖАУ" : "") : (m.mode == "train" ? "Жаттығу" : "Еркін ұрыс") + " · " + C.S("name");
+            string sub = m.mode == "campaign" ? C.S("name") + " · " + (m.stageIdx + 1) + "-ұрыс" + (E.boss ? " · БАС ЖАУ" : "") : m.ModeLabel() + " · " + C.S("name");
             Ui.TextO(sub, 0, 282, 1280, 40, 25, new Color(1, 0.83f, 0.42f, k2), TextAnchor.MiddleCenter, true, 3);
             Ui.TextO(P.name + "   VS   " + E.name, 0, 318, 1280, 30, 18, new Color(1, 0.95f, 0.88f, k2), TextAnchor.MiddleCenter, true, 2);
         }
@@ -546,7 +572,7 @@ public class FightView : MonoBehaviour
         }
         if (m.phase == Match.MATCHEND && m.pt > 0.8f) { DrawResult(); return; }
         // үзіліс
-        if (m.phase != Match.MATCHEND && Ui.Btn("II", 1214, 92, 52, 48, false, true, 20)) m.paused = true;
+        if (m.phase != Match.MATCHEND && !m.paused && Ui.Btn("II", 1214, 92, 52, 48, false, true, 20)) { m.paused = true; pauseT = Time.unscaledTime; }
         if (m.paused) { DrawPause(); return; }
         if (showTouch) DrawTouch();
     }
@@ -591,37 +617,148 @@ public class FightView : MonoBehaviour
         Ui.TextS(label, r.x, r.y, r.width, r.height, 22, new Color(1, 1, 1, 0.9f), TextAnchor.MiddleCenter);
     }
 
+    float pauseT;
+    /// <summary>Қылқалам жолақ (веб: brushBanner) — y: мәтін сызығы.</summary>
+    public static void Brush(string msg, float y, string style, Color txt, float a)
+    {
+        float w = Mathf.Max(420, Ui.TextW(msg, msg.Length > 14 ? 68 : 84) + 150) * 651f / 600f;
+        Ui.Nine("Art/camp/brush_" + style, 640 - w / 2 + 10, y - 84, w, 142, 120, 0, 120, 0, a);
+        int sz = Ui.Fit(msg, 450, msg.Length > 14 ? 68 : 84);
+        Ui.TextO(msg, 0, y - sz * 0.95f, 1280, sz * 1.15f, sz, new Color(txt.r, txt.g, txt.b, a), TextAnchor.MiddleCenter, true, 4);
+    }
+
     void DrawPause()
     {
-        Ui.Fill(0, 0, 1280, 720, new Color(0, 0, 0, 0.6f));
-        Ui.Panel(440, 180, 400, 360, new Color(0.1f, 0.07f, 0.17f, 0.97f), Ui.GOLD);
-        Ui.TextS("ҮЗІЛІС", 440, 196, 400, 60, 40, Ui.GOLD, TextAnchor.MiddleCenter);
-        if (Ui.Btn("ЖАЛҒАСТЫРУ", 480, 280, 320, 60, true)) m.paused = false;
-        if (Ui.Btn("ҚАЙТА БАСТАУ", 480, 354, 320, 56)) { m.paused = false; m.StartMatch(); Setup(m); }
-        if (Ui.Btn("КАРТАҒА", 480, 424, 320, 56)) { m.paused = false; m.live = false; GameRoot.I.OpenMap(m.chapter); }
-        Ui.Text("A/D — жүру · W — секіру · S — отыру · кері — қорғану\nJ — қару · K — тебу · L — күшті соққы", 440, 548, 400, 80, 14, Ui.CREAM, TextAnchor.UpperCenter);
+        float pk = Mathf.Clamp01((Time.unscaledTime - pauseT) / 0.35f);
+        Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.024f, 0.08f, 0.62f));
+        Color o = GUI.color; GUI.color = new Color(1, 1, 1, Mathf.Clamp01(pk * 5));
+        Ui.DzPanel(400, 196, 480, 318, "felt", true);
+        Ui.TextO("ҮЗІЛІС", 400, 240, 480, 70, 60, Ui.GOLD, TextAnchor.MiddleCenter, true, 3);
+        Ui.Fill(520, 304, 240, 2, Ui.GOLD); Ui.Img("Art/ui/ram", 620, 304, 40, 20);
+        GUI.color = o;
+        if (Ui.DzBtn("ЖАЛҒАСТЫРУ", 460, 338, 360, 62, true)) m.paused = false;
+        bool tourOut = m.mode == "tour" && m.run != null && !m.run.outd;
+        string ex = tourOut ? "ШЫҒУ · ЖЕҢІЛІС" : m.mode == "campaign" ? "КАРТАҒА ШЫҒУ" : "МӘЗІРГЕ ШЫҒУ";
+        if (Ui.DzBtn(ex, 460, 418, 360, 58))
+        {
+            m.paused = false; m.live = false;
+            if (tourOut) { m.run.outd = true; Game.S.tour[m.chapter] = Mathf.Max(Game.S.tour[m.chapter], m.run.stage); Game.Persist(); GameRoot.I.OpenMapHub(m.chapter); }
+            else if (m.mode == "campaign") GameRoot.I.OpenMap(m.chapter);
+            else if (m.mode == "quick") GameRoot.I.Go(GameRoot.LOBBY);
+            else GameRoot.I.OpenMapHub(m.chapter);
+        }
+        Ui.Text("A/D — жүру · W — секіру · S — отыру · кері — қорғану\nJ — қару · K — тебу · L — күшті соққы", 400, 530, 480, 80, 14, Ui.CREAM, TextAnchor.UpperCenter);
     }
 
     void DrawResult()
     {
-        bool won = m.won;
-        Ui.Fill(0, 0, 1280, 720, new Color(0, 0, 0, 0.55f));
-        Ui.Panel(330, 110, 620, 500, new Color(0.96f, 0.88f, 0.7f, 0.97f), won ? (Color)Ui.GOLD : new Color(0.6f, 0.2f, 0.2f));
-        Ui.Text(won ? "ЖЕҢІС!" : "ЖЕҢІЛІС", 330, 126, 620, 70, 54, won ? new Color32(125, 23, 25, 255) : new Color32(70, 40, 40, 255), TextAnchor.MiddleCenter, true);
-        float y = 200;
-        if (won && m.mode == "campaign")
+        bool won = m.won; float pt2 = m.pt - 0.8f, T = Time.unscaledTime;
+        float fa = Mathf.Clamp01(pt2 * 3), pkq = Mathf.Clamp01((pt2 - 0.1f) / 0.45f);
+        Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.024f, 0.08f, 0.55f * fa));
+        if (won) Ui.ImgRot("Art/camp/rays", 640, 330, 1100, 1100, T * 0.15f * Mathf.Rad2Deg, new Color(1, 0.81f, 0.42f, 0.25f * fa));
+        float sc = 0.85f + 0.15f * EaseBack(pkq);
+        Color o = GUI.color; GUI.color = new Color(1, 1, 1, fa);
+        Ui.DzPanel(640 - 310 * sc, 400 - 240 * sc, 620 * sc, 490 * sc, won ? "felt" : "dark", true);
+        GUI.color = o;
+        string title = won ? (m.mode == "tour" && m.runOver ? "ЧЕМПИОН!" : "ЖЕҢІС!") : "ЖЕҢІЛДІҢ...";
+        Brush(title, 250, won ? "red" : "dark", won ? new Color32(255, 226, 160, 255) : new Color32(232, 220, 203, 255), fa);
+        float y = 352;
+        if (m.mode == "campaign" && won)
         {
-            string st = ""; for (int k = 0; k < 3; k++) st += (m.starsGot & (1 << k)) != 0 ? "★ " : "☆ ";
-            Ui.Text(st, 330, y, 620, 50, 40, new Color32(200, 140, 20, 255), TextAnchor.MiddleCenter, true); y += 54;
-            Ui.Text(m.zhWin, 360, y, 560, 60, 19, Ui.INK, TextAnchor.MiddleCenter); y += 62;
+            string[] SN = { "Жеңіс", "Жылдам (60 с)", "Мінсіз" };
+            for (int k = 0; k < 3; k++)
+            {
+                bool on = (m.starsGot & (1 << k)) != 0; float pop = Mathf.Clamp01((pt2 - 0.5f - k * 0.25f) * 4), cx = 640 - 150 + k * 150;
+                float r = on ? 22 * (pop < 1 ? 0.4f + EaseBack(pop) * 0.6f : 1) : 18;
+                if (on && pop > 0) Ui.ImgC("Art/camp/glow", cx - 40, 326 - 40, 80, 80, new Color(1, 0.82f, 0.43f, 0.55f));
+                Ui.Img("Art/camp/star_" + (on && pop > 0 ? 1 : 0), cx - r * 16 / 14f, 326 - r * 16 / 14f, r * 32 / 14f, r * 32 / 14f);
+                if ((m.starsNew & (1 << k)) != 0 && pop >= 1) Ui.TextO("ЖАҢА", cx + 28, 300, 80, 20, 13, new Color32(159, 224, 138, 255), TextAnchor.MiddleLeft, true, 2);
+                Ui.TextS(SN[k], cx - 100, 352, 200, 22, 15, on ? new Color32(255, 226, 160, 255) : new Color32(154, 138, 154, 255), TextAnchor.MiddleCenter, true);
+            }
+            y = 394;
         }
-        if (m.reward > 0) { Ui.Text("+" + m.reward + " теңге", 330, y, 620, 40, 26, Ui.INK, TextAnchor.MiddleCenter, true); y += 42; }
-        Ui.Text("+" + m.xpGot + " тәжірибе" + (m.lvlCoins > 0 ? " · ЖАҢА ДЕҢГЕЙ! +" + m.lvlCoins + " теңге" : ""), 330, y, 620, 32, 19, Ui.INK, TextAnchor.MiddleCenter); y += 36;
-        if (U.Len(m.runMsg) > 0) Ui.Text(m.runMsg, 330, y, 620, 32, 18, Ui.INK, TextAnchor.MiddleCenter);
-        if (!won) Ui.Text("Ештеңе етпейді! Қорғанып (кері басып), сосын соқ.", 360, 330, 560, 60, 19, Ui.INK, TextAnchor.MiddleCenter);
-        bool camp = m.mode == "campaign";
-        if (won && camp && Ui.Btn(m.stageIdx == 3 ? "ТАРАУ СОҢЫ ▶" : "КЕЛЕСІ ҰРЫС ▶", 480, 440, 320, 64, true, true, 24)) GameRoot.I.AfterFight("next");
-        if (Ui.Btn("ҚАЙТА", 380, 524, 240, 56, !won || !camp)) GameRoot.I.AfterFight("retry");
-        if (Ui.Btn("КАРТАҒА", 660, 524, 240, 56)) GameRoot.I.AfterFight("map");
+        if (U.Len(m.runMsg) > 0) { Ui.TextS(m.runMsg, 340, y - 20, 600, 26, Ui.Fit(m.runMsg, 590, 20), new Color32(255, 211, 107, 255), TextAnchor.MiddleCenter, true); y += 32; }
+        if (m.reward > 0)
+        {
+            string rs = "+" + m.reward + " теңге"; float rw = Ui.TextW(rs, 26) + 60;
+            Ui.Nine("Art/camp/pill", 640 - rw / 2 - 6, y - 33, rw + 12, 50, 20, 20, 20, 20);
+            Ui.Img("Art/camp/coin", 640 - rw / 2 + 13, y - 21, 26, 26);
+            Ui.TextO(rs, 640 - rw / 2 + 46, y - 26, rw - 46, 36, 26, new Color32(255, 214, 120, 255), TextAnchor.MiddleLeft);
+            y += 34;
+        }
+        else if (!won) { Ui.TextS("Бұқар жырау: «Қайта тұр, балам. Батыр бір жеңілістен сынбайды.»", 370, y - 20, 540, 56, 19, new Color32(240, 228, 208, 255), TextAnchor.UpperCenter, false); y += 52; }
+        Ui.TextS("+" + m.xpGot + " тәжірибе" + (m.lvlCoins > 0 ? " · ЖАҢА ДЕҢГЕЙ! +" + m.lvlCoins + " теңге" : ""), 340, y - 10, 600, 24, 16, Ui.CREAM, TextAnchor.MiddleCenter, false);
+        if (m.mode == "campaign" && won && U.Len(m.zhWin) > 0) Ui.TextS("Бұқар жырау: " + m.zhWin, 360, 600, 560, 44, 16, new Color32(232, 220, 203, 255), TextAnchor.UpperCenter, false);
+        // батырмалар (веб: buildUI matchEnd)
+        if (pt2 < 0.4f) return;
+        bool multi = m.mode == "tour" || m.mode == "surv" || m.mode == "boss";
+        if (m.mode == "tour")
+        {
+            if (Ui.DzBtn("ТУРНИР КЕСТЕСІ", 450, 452, 380, 62, true)) GameRoot.I.AfterFight("next");
+            if (Ui.DzBtn("КАРТАҒА ҚАЙТУ", 470, 530, 340, 54)) { m.live = false; GameRoot.I.OpenMapHub(m.chapter); }
+            return;
+        }
+        if (m.mode == "campaign" && won && m.stageIdx < 3) { if (Ui.DzBtn("КЕЛЕСІ ҰРЫС", 450, 452, 380, 62, true)) GameRoot.I.AfterFight("next"); }
+        else if (m.mode == "campaign" && won) { if (Ui.DzBtn("ЖАЛҒАСТЫРУ", 450, 452, 380, 62, true)) GameRoot.I.AfterFight("next"); }
+        else if (multi && !m.runOver) { if (Ui.DzBtn("КЕЛЕСІ ҰРЫС", 450, 452, 380, 62, true)) GameRoot.I.AfterFight("next"); }
+        else if (Ui.DzBtn(multi ? "ҚАЙТА БАСТАУ" : "ҚАЙТА ҰРЫСУ", 450, 452, 380, 62, true)) GameRoot.I.AfterFight("retry");
+        if (Ui.DzBtn(m.mode == "quick" ? "ЛОББИГЕ ҚАЙТУ" : m.mode == "duel" ? "ТАҢДАУ ЭКРАНЫ" : "КАРТАҒА ҚАЙТУ", 470, 530, 340, 54)) GameRoot.I.AfterFight("map");
     }
+    static float EaseBack(float k) { float c1 = 1.70158f, c3 = c1 + 1; return 1 + c3 * Mathf.Pow(k - 1, 3) + c1 * Mathf.Pow(k - 1, 2); }
+
+    void DrawBossIntro()
+    {
+        Fighter E = m.enemy; Run rn = m.run;
+        Brush(E.name, 236, "boss", new Color32(255, 226, 160, 255), Mathf.Clamp01(m.pt * 4));
+        float k2 = Mathf.Clamp01((m.pt - 0.5f) * 3);
+        JNode info = E.abInfo != null ? Db.J("AB_INFO").Get(E.abInfo) : null;
+        if (info != null && !info.IsNull())
+        {
+            Ui.TextO("Қабілеті: " + info.S("name"), 0, 292, 1280, 34, 26, new Color(1, 0.83f, 0.42f, k2), TextAnchor.MiddleCenter, true, 3);
+            Ui.TextO(info.S("tip"), 0, 330, 1280, 26, 19, new Color(1, 0.95f, 0.88f, k2), TextAnchor.MiddleCenter, true, 2);
+        }
+        if (rn != null && rn.list.Count() > 0)
+        {
+            int n = rn.list.Count(); float gap = 82, x0 = 640 - (n - 1) * gap / 2;
+            Color o = GUI.color; GUI.color = new Color(1, 1, 1, k2);
+            for (int i = 0; i < n; i++)
+            {
+                float cx = x0 + i * gap, cy = 414; bool done = i < rn.i, cur = i == rn.i;
+                FoeCfg fc = rn.list.Get(i);
+                GUI.color = new Color(1, 1, 1, k2 * (done ? 0.4f : 1));
+                Ui.Medal(cx, cy, 28, cur ? "a32222" : "3a3270");
+                if (fc.special == "shadow" && !cur) Ui.TextO("?", cx - 20, cy - 20, 40, 40, 28, new Color32(154, 74, 255, 255));
+                else Ui.Portrait("Art/ui/por_e_" + fc.ch + "_" + fc.idx, cx, cy, 28);
+                GUI.color = new Color(1, 1, 1, k2);
+                if (cur) Ui.ImgC("Art/camp/ring", cx - 42, cy - 42, 84, 84, new Color(1, 0.84f, 0.47f, 0.6f + 0.4f * Mathf.Sin(m.pt * 8)));
+                if (done) Ui.TextO("✕", cx - 20, cy - 22, 40, 40, 34, new Color32(224, 83, 58, 255));
+            }
+            GUI.color = o;
+            Ui.TextO((rn.i + 1) + "/" + n + " бас жау · уақыт " + Match.FmtTime(rn.time), 0, 466, 1280, 24, 17, new Color(0.91f, 0.86f, 0.8f, k2), TextAnchor.MiddleCenter, true, 2);
+        }
+    }
+
+    void DrawWeather()
+    {
+        float fade = Mathf.Clamp01(Mathf.Min(m.weatherT, m.weatherMax - m.weatherT) * 2), t = Time.time;
+        if (m.weatherKind == "snow")
+        {
+            Ui.Fill(0, 0, 1280, 720, new Color(0.86f, 0.92f, 1, 0.16f * fade));
+            for (int i = 0; i < 140; i++)
+            {
+                float x = ((i * 137.3f + t * (380 + (i % 5) * 60)) % 1480) - 100, y = (i * 71.7f + t * (300 + (i % 7) * 40)) % 720, l = 6 + (i % 4) * 4;
+                Ui.Fill(x - l, y - l * 0.35f, l * 1.4f, 1.5f + (i % 3), new Color(1, 1, 1, 0.8f * fade));
+            }
+        }
+        else
+        {
+            Ui.Fill(0, 0, 1280, 720, new Color(0.78f, 0.55f, 0.24f, 0.28f * fade));
+            for (int i = 0; i < 90; i++)
+            {
+                float x = 1280 - ((i * 151.7f + t * (700 + (i % 6) * 90)) % 1580), y = 120 + (i * 53.3f) % 600, l = 30 + (i % 5) * 18;
+                Ui.Fill(x, y, l, 1 + (i % 3), new Color(0.94f, 0.75f, 0.43f, 0.55f * fade));
+            }
+        }
+    }
+
 }

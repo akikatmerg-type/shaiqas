@@ -22,7 +22,7 @@ public partial class GameRoot
         if (Ui.DzBtn("МАРАПАТТАР", 392, 16, 172, 46, false, true, null, true, true)) Go(MEDALS);
         if (Ui.DzBtn("ТАРИХ АЛЬБОМЫ", 574, 16, 222, 46, false, true, null, true, true)) { albumSel = -1; Go(ALBUM); }
         if (Ui.DzBtn("⚙ БАПТАУЛАР", 806, 16, 222, 46, false, true, null, true, true)) Go(SETTINGS);
-        if (Ui.DzBtn("ЖОРЫҚ", 48, 284, 344, 68, true, true, "map")) OpenMap(Progress.LastOpen());
+        if (Ui.DzBtn("ЖОРЫҚ", 48, 284, 344, 68, true, true, "map")) { mapSite = 0; OpenMapHub(Progress.LastOpen()); }
         if (Ui.DzBtn("БАТЫРЛАР", 48, 366, 330, 62, false, true, "batyr")) Go(HEROES);
         if (Ui.DzBtn("ҚАРУ-ЖАРАҚ", 48, 442, 330, 62, false, true, "arms")) { shopTab = "weapon"; Go(SHOP); }
         if (Ui.DzBtn("ЕРКІН ҰРЫС", 48, 518, 330, 62, false, true, "fight")) QuickFight();
@@ -46,62 +46,6 @@ public partial class GameRoot
     }
 
     // ================= КАРТА =================
-    void DrawMap()
-    {
-        JNode C = Db.Ch(mapCh);
-        Ui.Fill(0, 0, 1280, 720, new Color32(24, 18, 34, 255));
-        Ui.TopBar(Db.Roman(mapCh) + " ТАРАУ · " + U.Upper(C.S("name")));
-        Ui.Img("Art/maps/chapter" + mapCh, 30, 92, 820, 560);
-        bool open = Progress.Unlocked(mapCh);
-        JNode nodes = C.Get("nodes");
-        for (int i = 0; i < nodes.Count(); i++)
-        {
-            float nx = 30 + nodes.At(i).Fk("x"), ny = 92 + nodes.At(i).Fk("y");
-            bool can = open && Game.S.prog[mapCh] >= i;
-            bool sel = i == mapStage;
-            Ui.Fill(nx - 22, ny - 22, 44, 44, sel ? Ui.GOLD : can ? new Color32(125, 23, 25, 255) : new Color(0.3f, 0.3f, 0.3f));
-            Ui.TextS(U.Int(i + 1), nx - 22, ny - 22, 44, 44, 22, sel ? Ui.INK : Ui.CREAM, TextAnchor.MiddleCenter);
-            Ui.TextS(nodes.At(i).S("n"), nx - 90, ny + 24, 180, 26, 15, Ui.CREAM, TextAnchor.UpperCenter);
-            if (can && Ui.Hot(nx - 30, ny - 30, 60, 60)) mapStage = i;
-        }
-        // оң жақ панель
-        Ui.Panel(870, 92, 380, 560, new Color(0.1f, 0.07f, 0.17f, 0.95f), Ui.GOLD);
-        Ui.TextS(Db.Years.At(mapCh).Str(), 890, 104, 340, 30, 20, Ui.GOLD, TextAnchor.MiddleCenter);
-        if (!open)
-        {
-            Ui.TextS(Progress.LockMsg(mapCh), 890, 160, 340, 120, 22, Ui.CREAM, TextAnchor.MiddleCenter);
-            if (Progress.QuizGate(mapCh) && Ui.Btn(Db.Roman(mapCh - 1) + " ТАРАУ ВИКТОРИНАСЫ ▶", 890, 300, 340, 58, true, true, 20)) StartQuiz(mapCh - 1, true);
-        }
-        else
-        {
-            for (int i = 0; i < 4; i++)
-            {
-                float y = 146 + i * 62;
-                bool can = Game.S.prog[mapCh] >= i, sel = i == mapStage;
-                JNode e = C.Get("enemies").At(i);
-                Ui.Fill(886, y, 348, 54, sel ? new Color(0.95f, 0.72f, 0.25f, 0.25f) : new Color(0, 0, 0, 0.25f));
-                Ui.TextS((i + 1) + ". " + (can ? e.S("name") : "???"), 896, y + 2, 250, 50, 17, can ? Ui.CREAM : new Color(0.6f, 0.6f, 0.6f), TextAnchor.MiddleLeft, e.Bk("boss"));
-                int stars = Game.S.stars[mapCh][i];
-                string ss = ""; for (int k = 0; k < 3; k++) ss += (stars & (1 << k)) != 0 ? "★" : "☆";
-                Ui.TextS(ss, 1150, y + 2, 80, 50, 20, Ui.GOLD, TextAnchor.MiddleRight);
-                if (can && Ui.Hot(886, y, 348, 54)) mapStage = i;
-            }
-            JNode foe = C.Get("enemies").At(mapStage);
-            string sub = mapStage == 3 ? "БАС ЖАУ · 3 раундта жең" : "2 раундта жең";
-            Ui.TextS(sub, 890, 400, 340, 28, 17, mapStage == 3 ? new Color(1, 0.5f, 0.4f) : Ui.CREAM, TextAnchor.MiddleCenter, false);
-            if (Ui.Btn("ЖОРЫҚҚА ▶", 890, 436, 340, 62, true, true, 26)) Campaign(mapCh, mapStage);
-            if (Ui.Btn("ТАРИХЫН ОҚУ", 890, 508, 165, 48, false, true, 17)) StartStory(Story.Episodes(mapCh), "back", mapCh, 0);
-            if (Ui.Btn("ЖАТТЫҒУ", 1065, 508, 165, 48, false, true, 17)) StartTrain(mapCh);
-            bool qOpen = Progress.ChapterDone(mapCh);
-            string ql = qOpen ? "ВИКТОРИНА · " + Game.S.quizBest[mapCh] + "/" + Db.QZ_N : "Викторина: тарауды аяқта";
-            if (Ui.Btn(ql, 890, 566, 340, 48, false, qOpen, 17)) StartQuiz(mapCh, false);
-        }
-        if (Ui.Btn("◀ ЛОББИ", 30, 662, 180, 48, false, true, 18)) Go(LOBBY);
-        if (Ui.Btn("◀", 600, 662, 60, 48, false, mapCh > 0, 22)) { mapCh--; mapStage = Mathf.Clamp(Game.S.prog[mapCh], 0, 3); }
-        Ui.TextS((mapCh + 1) + " / " + Db.NCH, 660, 662, 100, 48, 20, Ui.CREAM, TextAnchor.MiddleCenter);
-        if (Ui.Btn("▶", 760, 662, 60, 48, false, mapCh < Db.NCH - 1, 22)) { mapCh++; mapStage = Mathf.Clamp(Game.S.prog[mapCh], 0, 3); }
-    }
-
     // ================= СЮЖЕТ (веб: drawPrologue) =================
     void DrawStory()
     {
