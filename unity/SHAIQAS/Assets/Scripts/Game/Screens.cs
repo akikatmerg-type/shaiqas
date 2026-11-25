@@ -133,42 +133,7 @@ public partial class GameRoot
     }
 
     // ================= ВИКТОРИНА =================
-    void DrawQuiz()
-    {
-        bool ru = Ru(); Quiz q = quiz;
-        Ui.Fill(0, 0, 1280, 720, new Color32(30, 22, 40, 255));
-        Ui.TopBar("ТАРИХ ВИКТОРИНАСЫ");
-        Ui.TextS(Db.Roman(q.ch) + " тарау · " + Db.ChName(q.ch), 0, 76, 1280, 34, 20, Ui.CREAM, TextAnchor.MiddleCenter);
-        if (q.done)
-        {
-            Ui.Panel(340, 150, 600, 420, new Color(0.96f, 0.88f, 0.7f, 0.97f), Ui.GOLD);
-            Ui.Text(q.Verdict(), 340, 170, 600, 60, 44, new Color32(125, 23, 25, 255), TextAnchor.MiddleCenter, true);
-            Ui.Text(q.score + " / " + q.Total(), 340, 240, 600, 70, 54, Ui.INK, TextAnchor.MiddleCenter, true);
-            if (q.reward > 0) Ui.Text("Жаңа рекорд! +" + q.reward + " теңге", 340, 316, 600, 36, 22, Ui.INK, TextAnchor.MiddleCenter);
-            bool pass = q.Passed();
-            string msg = quizFromDone ? (pass ? (q.ch == Db.NCH - 1 ? "Барлық тарау аяқталды!" : Db.Roman(q.ch + 1) + " тарау ашылды!") : "Келесі тарау үшін кемі " + Progress.QzPassMin() + " дұрыс жауап керек")
-                                      : (pass ? "Жарайсың!" : "Тағы байқап көр!");
-            Ui.Text(msg, 360, 360, 560, 60, 21, pass ? new Color(0.15f, 0.45f, 0.15f) : new Color32(125, 23, 25, 255), TextAnchor.MiddleCenter, true);
-            if (!pass && Ui.Btn("ҚАЙТА ТАПСЫРУ", 370, 470, 260, 60, true, true, 20)) StartQuiz(q.ch, quizFromDone);
-            if (Ui.Btn(pass && quizFromDone ? "ӘРІ ҚАРАЙ ▶" : "КАРТАҒА", pass ? 490 : 650, 470, pass ? 300 : 260, 60, pass, true, 20)) QuizExit();
-            return;
-        }
-        Ui.TextS((q.i + 1) + " / " + q.Total() + "   ·   ұпай: " + q.score, 0, 116, 1280, 30, 18, Ui.GOLD, TextAnchor.MiddleCenter, false);
-        Ui.Panel(180, 156, 920, 150, new Color(0.96f, 0.88f, 0.7f, 0.97f), Ui.GOLD);
-        Ui.Text(q.Question(ru), 210, 166, 860, 130, 27, Ui.INK, TextAnchor.MiddleCenter, true);
-        for (int k = 0; k < 3; k++)
-        {
-            float y = 330 + k * 86;
-            if (q.picked >= 0)
-            {
-                if (q.IsRight(k)) Ui.Fill(276, y - 4, 728, 76, new Color(0.25f, 0.7f, 0.3f));
-                else if (k == q.picked) Ui.Fill(276, y - 4, 728, 76, new Color(0.8f, 0.2f, 0.15f));
-            }
-            if (Ui.Btn(q.Option(k, ru), 280, y, 720, 68, false, q.picked < 0, 22)) q.Pick(k);
-        }
-        if (q.picked >= 0 && Ui.Btn(q.i < q.Total() - 1 ? "КЕЛЕСІ ▶" : "НӘТИЖЕ ▶", 490, 610, 300, 60, true, true, 22)) q.Next();
-        if (Ui.Btn("◀ ШЫҒУ", 30, 662, 160, 48, false, true, 16)) OpenMap(q.ch);
-    }
+
 
     // ================= АЛЬБОМ =================
 

@@ -137,4 +137,71 @@ public partial class GameRoot
             if (Ui.DzBtn("КЕЛЕСІ ▶", 190 + 180, 96 + 520 - 66, 150, 46, false, true, null, true)) { albumSel = L.Get((p + 1) % L.Count()); albumOt = 0; Snd.Play("ui_move"); }
         }
     }
+
+    // ================= ВИКТОРИНА (веб: drawQuiz, QZ_BTN) =================
+    void DrawQuiz()
+    {
+        bool ru = Game.S.ru; Quiz q = quiz; int N = q.Total();
+        if (Event.current.type == EventType.Layout)
+        {
+            if (Inp.Tap(Inp.ESC)) { Snd.Play("ui_back"); QuizLeave(); return; }
+            if (q.picked >= 0 && !q.done && (Inp.Tap(Inp.ENTER) || Inp.Tap(Inp.SPACE))) q.Next();
+        }
+        JNode C = Db.Ch(q.ch);
+        Ui.Img("Art/campwide/thumb_" + C.S("stage"), 0, 0, 1280, 720);
+        Ui.Fill(0, 0, 1280, 720, new Color32(14, 10, 30, 199));
+        Ui.TopBar("ТАРИХ ВИКТОРИНАСЫ");
+        if (Ui.DzBtn(quizFromDone ? "КАРТА" : "АЛЬБОМ", 24, 18, 150, 46, false, true, null, true)) { QuizLeave(); return; }
+        TO(C.S("roman") + " тарау · " + C.S("name"), 640, 128, 20, H("#ffe3a0"));
+        if (q.done)
+        {
+            Ui.DzPanel(340, 180, 600, 380, "parch", true);
+            TO(q.Verdict(), 640, 268, 44, Ui.GOLD);
+            int stars = q.score >= N ? 3 : q.Passed() ? 2 : q.score > 0 ? 1 : 0;
+            for (int s2 = 0; s2 < 3; s2++) Ui.Img("Art/camp/star_" + (s2 < stars ? 1 : 0), 640 - 60 + s2 * 60 - 26, 330 - 26, 52, 52);
+            T(q.score + " / " + N + " дұрыс жауап", 640, 400, 24, H("#2a1a10"));
+            T(q.reward > 0 ? "Сыйлық: +" + q.reward + " теңге" : "Сыйлық тек жаңа рекорд үшін беріледі", 640, 444, q.reward > 0 ? 22 : 17, q.reward > 0 ? H("#2a7a2a") : H("#7a5a3a"));
+            bool pass = q.Passed();
+            if (quizFromDone)
+            {
+                string msg = pass ? (q.ch == Db.NCH - 1 ? "Барлық тарау аяқталды!" : Db.Roman(q.ch + 1) + " тарау ашылды!") : "Келесі тарау үшін кемі " + Progress.QzPassMin() + " дұрыс жауап керек";
+                T(msg, 640, 478, 18, pass ? H("#2a7a2a") : H("#7a1a12"));
+            }
+            if (Ui.DzBtn("ҚАЙТА", 440, 486 + 20, 190, 54, !pass, true, null, true)) { StartQuiz(q.ch, quizFromDone); return; }
+            if (Ui.DzBtn(quizFromDone ? (pass ? "ӘРІ ҚАРАЙ ▶" : "КАРТАҒА") : "АЛЬБОМ", 650, 486 + 20, 190, 54, pass || !quizFromDone, true, null, true)) { QuizLeave(); return; }
+            return;
+        }
+        T("Сұрақ " + (q.i + 1) + " / " + N, 640, 178, 18, H("#c8b8d8"));
+        Ui.DzPanel(190, 196, 900, 110, "parch");
+        string qt = q.Question(ru);
+        Ui.Text(qt, 220, 202, 840, 98, Ui.FitBox(qt, 840, 98, 30), H("#2a1a10"), TextAnchor.MiddleCenter, true);
+        string[] lt = { "А", "Ә", "Б" };
+        for (int k = 0; k < 3; k++)
+        {
+            float x = 290, y = 334 + k * 86, w = 700, h = 72; bool right = q.IsRight(k), hv = q.picked < 0 && Ui.Hot(x, y, w, h);
+            Color fill = hv ? H("#3a3170") : H("#1f1a3e"), edge = H("#e9ad3c");
+            if (q.picked >= 0) { if (right) { fill = H("#2a6a3a"); edge = H("#9dffb0"); } else if (k == q.picked) { fill = H("#7a2020"); edge = H("#ff8a7a"); } }
+            Ui.Fill(x, y, w, h, fill); Ui.Frame(x, y, w, h, edge, 3);
+            Ui.Text(lt[k], x + 14, y, 40, h, 26, H("#ffd36b"), TextAnchor.MiddleCenter, true);
+            string op = q.Option(k, ru);
+            Ui.TextS(op, x + 70, y, w - 110, h, Ui.Fit(op, w - 110, 26), H("#fff3dc"), TextAnchor.MiddleLeft, true);
+            if (q.picked >= 0 && right) Ui.Text("✓", x + w - 54, y, 40, h, 30, H("#9dffb0"), TextAnchor.MiddleCenter, true);
+            if (q.picked == k && !right) Ui.Text("✗", x + w - 54, y, 40, h, 30, H("#ffb0a0"), TextAnchor.MiddleCenter, true);
+            if (q.picked < 0 && Ui.Click(x, y, w, h)) QPick(q, k);
+        }
+        if (q.picked >= 0)
+        {
+            bool ok = q.IsRight(q.picked);
+            TO(ok ? "Дұрыс! Жарайсың!" : "Дұрыс жауап: " + q.Option(q.RightIndex(), ru), 640, 616, 22, ok ? H("#9dffb0") : H("#ffd0a0"));
+            if (Ui.DzBtn(q.i < N - 1 ? "КЕЛЕСІ ▶" : "НӘТИЖЕ", 640 - 120, 640, 240, 52, true)) q.Next();
+        }
+        else T("Келесі тарау үшін: кемінде " + Progress.QzPassMin() + " дұрыс жауап · қазір: " + q.score, 32, 690, 15, H("#ffe3a0"), true);
+    }
+    void QPick(Quiz q, int k) { bool ok = q.Pick(k); Snd.Play(ok ? "coin" : "ui_error"); }
+    void QuizLeave()
+    {
+        if (quizFromDone) { QuizExit(); return; }
+        if (quiz.done) PopMedals(CheckMedals());
+        albumCh = quiz.ch; Go(ALBUM); albumCh = quiz.ch;
+    }
 }
