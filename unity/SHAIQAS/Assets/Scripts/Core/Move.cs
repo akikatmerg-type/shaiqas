@@ -12,7 +12,7 @@ public class Move
     public string id = "", pw = "guard", ps = "guard", alt = "", height = "mid";
     public float w, a, r, dmg, reach, knock, hitstop, lunge, leap;
     public int hits = 1;
-    public bool heavy, down, foot, low, air, spin, after, special, wave, anti, thr;
+    public bool heavy, down, foot, low, air, spin, after, special, wave, anti, thr, sk, unblock;
 
     public static Move Base(string id)
     {
@@ -33,7 +33,7 @@ public class Move
         Move o = new Move();
         o.id = id; o.pw = pw; o.ps = ps; o.alt = alt; o.height = height;
         o.w = w; o.a = a; o.r = r; o.dmg = dmg; o.reach = reach; o.knock = knock; o.hitstop = hitstop; o.lunge = lunge; o.leap = leap; o.hits = hits;
-        o.heavy = heavy; o.down = down; o.foot = foot; o.low = low; o.air = air; o.spin = spin; o.after = after; o.special = special; o.wave = wave; o.anti = anti; o.thr = thr;
+        o.heavy = heavy; o.down = down; o.foot = foot; o.low = low; o.air = air; o.spin = spin; o.after = after; o.special = special; o.wave = wave; o.anti = anti; o.thr = thr; o.sk = sk; o.unblock = unblock;
         return o;
     }
     public bool IsHigh() { return U.Eq(height, "high"); }

@@ -93,6 +93,34 @@ public class Ghost {
       check(d0.label.equals("ҚАЛЫПТЫ") && d9.stars >= 4, "қиындық: I.1 жеңіл (" + d0.label + "), IX.4 қиын (" + d9.label + ")");
       check(Eco.Kit(20) > Eco.Kit(1) && Eco.GearLevel(Eco.Kit(5)) > 4.9f && Eco.GearLevel(Eco.Kit(5)) < 5.1f, "жабдық деңгейі кері функция");
       System.out.println("[eco] I.1: " + d0.label + " · IX.4: " + d9.label + " · кеңес: " + Eco.Tip(8, 3)); }
+    // --- әдістер: тізбекті тану және әр әдістің әсері (манекенге қарсы) ---
+    { Skills.Init(); Skills.TestUnlock = true; int okSeq = 0, okFx = 0; StringBuilder bad = new StringBuilder();
+      for (int i = 0; i < Skills.All.Count(); i++) {
+        SkDef sk = Skills.All.Get(i);
+        // тізбекті енгізу: әр қадам 0.08 с
+        SkBuf B = new SkBuf(); float tt = 10;
+        for (int k = 0; k < sk.seq.length; k++) {
+          String qq = sk.seq[k]; boolean btn = qq.equals("J") || qq.equals("K") || qq.equals("L");
+          if (btn) Skills.Feed(B, tt, "N", qq.equals("J"), qq.equals("K"), qq.equals("L")); else { Skills.Feed(B, tt, qq, false, false, false); tt += 0.04f; Skills.Feed(B, tt, "N", false, false, false); }
+          tt += 0.08f;
+        }
+        if (Skills.Match(B, sk.seq) >= 0) okSeq++; else bad.append(" seq:" + sk.id);
+        // әсер
+        Match m = new Match(); m.StartTrain(0); m.phase = Match.FIGHT; m.player.active = true; m.enemy.active = true;
+        Fighter P = m.player, E = m.enemy; E.ai = false; E.x = P.x + 160; E.facing = -1; P.facing = 1; P.rux = 100; P.hp = P.maxHp * 0.5f;
+        if (sk.air) { P.y = Db.GROUND - 200; P.vy = -100; P.state = Fighter.JUMP; }
+        if (sk.id.equals("qalqan")) { Skills.Start(P, sk, false); Move hit = Move.Base("l1"); E.TakeHit(hit, 1, true, P); P.TakeHit(hit, -1, true, E); }
+        else Skills.Start(P, sk, false);
+        float e0 = E.hp, p0 = P.hp; boolean eff = false;
+        for (int f = 0; f < 240; f++) { m.Update(1f / 60, null); m.fx.Clear(); if (m.phase != Match.FIGHT) break;
+          if (E.hp < e0 - 0.5f || P.hp > p0 + 0.5f || Skills.S(P).cloneT > 0 || Skills.S(P).parry > 0 || m.weatherT > 0) eff = true;
+          if (Float.isNaN(P.x) || Float.isNaN(E.x)) { check(false, "NaN әдіс " + sk.id); break; } }
+        if (sk.id.equals("aruaq")) { P.StartAttack("l1", 0); for (int f = 0; f < 60; f++) { m.Update(1f / 60, null); m.fx.Clear(); } eff = eff || E.hp < e0; }
+        if (eff) okFx++; else bad.append(" fx:" + sk.id);
+      }
+      check(okSeq == 18 && okFx == 18, "әдістер: тізбек " + okSeq + "/18, әсер " + okFx + "/18" + bad);
+      System.out.println("[skills] тізбек " + okSeq + "/18 · әсер " + okFx + "/18" + bad);
+      Skills.TestUnlock = false; }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---
     Geo g = new Geo(); g.Build(Pz.Get("idle"));

@@ -41,7 +41,7 @@ public class Run
 public class Match
 {
     public const int INTRO = 0, FIGHT = 1, ROUNDEND = 2, MATCHEND = 3;
-    public const int FX_DUST = 0, FX_HIT = 1, FX_HITSPEC = 2, FX_BLOCK = 3, FX_GHOST = 4, FX_KO = 5, FX_SPECIAL = 6, FX_PHASE = 7, FX_WAVE = 8;
+    public const int FX_DUST = 0, FX_HIT = 1, FX_HITSPEC = 2, FX_BLOCK = 3, FX_GHOST = 4, FX_KO = 5, FX_SPECIAL = 6, FX_PHASE = 7, FX_WAVE = 8, FX_SKILL = 9;
     public const string GOLD = "#f2b840";
 
     // --- режим ---
@@ -51,6 +51,13 @@ public class Match
     public Lst<float[]> arrows = new Lst<float[]>();
     public string weatherKind; public float weatherT, weatherMax; public Fighter weatherOwner;
     public bool bossIntro;
+    // әдістер: снарядтар, тас найзалар [x,h,w,lean,life,t], найзағай [x,t,seed,kind], енгізу буфері, нақты уақыт сағаты, дыбыс кезегі
+    public Lst<SkProj> skProj = new Lst<SkProj>();
+    public Lst<float[]> spikes = new Lst<float[]>(), bolts = new Lst<float[]>();
+    public SkBuf skBuf = new SkBuf();
+    public float clock;
+    public Lst<string> sndQ = new Lst<string>();
+    public string skFirstName; public float skFirstT = 9;
     public float phaseMsgT = 9; public int phaseMsgN; public string phaseMsgName; public bool runOver = true;
     public const float ECO_K = 2;
     public int chapter, stageIdx, needWins = 2, round = 1, pWins, eWins;
@@ -298,7 +305,8 @@ public class Match
         slow = 0; freeze = 0; flash = 0; dark = 0; loser = null;
         zoom = 1.22f; lb = 60;
         cam = Pz.Clamp(enemy.x - Db.W / 2, 0, Db.ARENA - Db.W);
-        phaseMsgT = 9; waves.Clear(); fx.Clear(); arrows.Clear(); weatherT = 0; weatherKind = null;
+        phaseMsgT = 9; waves.Clear(); fx.Clear(); arrows.Clear(); skProj.Clear(); spikes.Clear(); bolts.Clear(); skBuf.Clear();
+        Skills.AssignAi(enemy, this, cfg != null ? cfg : FoeCfg.Of(chapter, stageIdx)); weatherT = 0; weatherKind = null;
         if (U.Eq(mode, "tour") && run != null)
         {
             string ru = run.rule; TourSlot sl = run.slots.Get(run.lv.Get(run.stage)[1]);
@@ -456,6 +464,23 @@ public class Match
         float pj = Db.PaceK("proj");
         arrows.Add(new float[] { f.x + f.facing * 70 * f.sc, f.y - h * f.sc, f.facing, (1.8f + dl) / pj, dl, 1000 * pj, 10 * f.dmgMul, h > 100 ? 1 : 0, 0, f == player ? 1 : 0 });
     }
+    public void ShootRaw(Fighter f, float x, float y, float life, float delay, float speed, float dmg, bool high)
+    {
+        arrows.Add(new float[] { x, y, f.facing, life, delay, speed, dmg, high ? 1 : 0, 0, f == player ? 1 : 0 });
+        sndQ.Add("arrow");
+    }
+    public void Bolt(float x, int kind) { bolts.Add(new float[] { x, 0, U.Rand() * 1000, kind }); flash = Mathf.Max(flash, 0.16f); shake = Mathf.Max(shake, 9); sndQ.Add("skill_thunder"); FxF(FX_SKILL, x, Db.GROUND - 30, 1, 100, player, 2); }
+    public void Spike(float x, float h, float w, float lean) { spikes.Add(new float[] { x, h, w, lean, 0.62f, 0 }); }
+    public void SkillCast(Fighter f, SkDef d, bool isAi)
+    {
+        sndQ.Add("skill_cast"); sndQ.Add("skill_" + d.kind);
+        if (U.Eq(d.id, "tulpar")) sndQ.Add("horse");
+        if (U.Eq(d.id, "boran")) sndQ.Add("blizzard");
+        if (!isAi && f == player && Skills.FirstUse(d)) { skFirstName = d.name; skFirstT = 0; }
+    }
+    public void SkillFail(Fighter f) { sndQ.Add("skill_fail"); }
+    public void SkillParry(Fighter f) { sndQ.Add("parry"); }
+    public void SkillRoar(Fighter f) { sndQ.Add("roar"); }
     public void SetWeather(string kind, Fighter owner) { weatherKind = kind; weatherT = 5; weatherMax = 5; weatherOwner = owner; }
 
     public void PhaseFx(Fighter f)
@@ -488,7 +513,7 @@ public class Match
         flash = Mathf.Max(0, flash - rdt);
         punch = Mathf.Max(0, punch - rdt * (0.06f + punch * 7));
         sayClock += rdt * (phase == INTRO ? pacePt : 1);
-        phaseMsgT += rdt;
+        phaseMsgT += rdt; clock += rdt; skFirstT += rdt;
 
         float dt = rdt;
         if (slow > 0) { slow -= rdt; dt *= 0.28f; }
@@ -510,6 +535,7 @@ public class Match
         if (dt > 0)
         {
             player.Update(dt, input); enemy.Update(dt, null);
+            Skills.Step(this, dt);
             for (int i = arrows.Count() - 1; i >= 0; i--)
             {
                 float[] a = arrows.Get(i);

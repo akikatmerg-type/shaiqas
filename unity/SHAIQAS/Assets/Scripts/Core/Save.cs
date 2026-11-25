@@ -19,6 +19,7 @@ public class SaveData
     // қосымша (вебте бөлек localStorage кілттері)
     public string name = "";
     public int[] quizBest;
+    public Lst<string> skUsed = new Lst<string>();
     public Lst<string> dlgDone = new Lst<string>(), medals = new Lst<string>(), tutDone = new Lst<string>(), cards = new Lst<string>();
     public bool ru, kid, tutOff, sound = true;
     public float volMusic = 0.8f, volSfx = 1f;
@@ -54,7 +55,7 @@ public class SaveData
         o.Set("xp", JNode.Of(xp)).Set("lvlPaid", JNode.Of(lvlPaid)).Set("tourTier", JNode.Of(tourTier)).Set("diff", JNode.Of(diff)).Set("rating", JNode.Of(rating)).Set("bossRec", JNode.Of(bossRec));
         // қосымша
         o.Set("name", JNode.Of(name)).Set("quizBest", IntArr(quizBest)).Set("dlgDone", StrArr(dlgDone)).Set("medals", StrArr(medals));
-        o.Set("tutDone", StrArr(tutDone)).Set("cards", StrArr(cards));
+        o.Set("tutDone", StrArr(tutDone)).Set("cards", StrArr(cards)).Set("skUsed", StrArr(skUsed));
         o.Set("ru", JNode.OfBool(ru)).Set("kid", JNode.OfBool(kid)).Set("tutOff", JNode.OfBool(tutOff)).Set("sound", JNode.OfBool(sound));
         o.Set("volMusic", JNode.Of(volMusic)).Set("volSfx", JNode.Of(volSfx));
         return o.Dump();
@@ -82,7 +83,7 @@ public class SaveData
         s.tourTier = Mathf.Clamp(d.Ik("tourTier"), 0, 2); s.diff = Mathf.Clamp(d.Get("diff").I(1), 0, 2);
         s.rating = d.Get("rating").I(1000); s.bossRec = d.Ik("bossRec"); s.xp = d.Ik("xp"); s.lvlPaid = d.Get("lvlPaid").I(1);
         s.name = d.S("name");
-        ReadStrs(d.Get("dlgDone"), s.dlgDone); ReadStrs(d.Get("medals"), s.medals); ReadStrs(d.Get("tutDone"), s.tutDone); ReadStrs(d.Get("cards"), s.cards);
+        ReadStrs(d.Get("dlgDone"), s.dlgDone); ReadStrs(d.Get("medals"), s.medals); ReadStrs(d.Get("tutDone"), s.tutDone); ReadStrs(d.Get("cards"), s.cards); ReadStrs(d.Get("skUsed"), s.skUsed);
         s.ru = d.Bk("ru"); s.kid = d.Bk("kid"); s.tutOff = d.Bk("tutOff"); s.sound = !d.Has("sound") || d.Bk("sound");
         s.volMusic = d.Get("volMusic").F(0.8f); s.volSfx = d.Get("volSfx").F(1f);
         return s;

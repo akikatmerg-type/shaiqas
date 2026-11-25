@@ -10,6 +10,8 @@ public class Fighter
     public string bossAb, abInfo;   // бас жаудың ерекше қабілеті (веб: BOSS_AB)
     public float abT, abWind, twinT;
     public bool charging, chargeHit;
+    // әдістер (веб: f.sk, f._sk, f.skAi)
+    public SkState sks; public SkRun sk; public string[] skAi; public float skAiP = 0.1f; public string skWant, skRes = "none";
     public bool ai, active, npc, boss, big, slim, beard, canPhase3, phase2, phase3;
     public float speed = 300, maxHp = 100, dmgMul = 1, def = 0, atkSpd = 1, ruxMul = 1, regen = 0;
     public float aiAggr = 0.5f, aiBlock = 0.3f, aiCrouch = 0.2f, aiComboP = 0.3f, aiSpecial = 0.5f;
@@ -89,6 +91,7 @@ public class Fighter
     /// <summary>Бір қадам. it — ойыншының ниеті (ЖИ үшін null).</summary>
     public void Update(float dt0, Intent it0)
     {
+        if (!npc && game != null && game.live) Skills.Pre(this, dt0);
         pw = PaceWarp();
         float dt = dt0 * pw, rdt = dt0;
         st += dt; at += dt;
@@ -259,6 +262,7 @@ public class Fighter
         m.dmg = bs.dmg * (bs.foot ? 1 : wpDmg) * dmgMul * (tw ? 1.2f : 1f);
         m.reach = bs.reach * (sc / Db.S) + (bs.foot ? 0 : (wpLen - 92) * sc * 0.75f);
         cm = m; comboIdx = ci;
+        Skills.OnAttack(this);
         hitDone = false; hitIdx = 0; queued = false; lunged = false; waved = false;
         if (OnGround() && !m.air) vx = 0;
         if (ai && ci == 0)
@@ -312,6 +316,7 @@ public class Fighter
 
     void TryHit(Move m, bool last)
     {
+        if (m.sk) return;
         Fighter o = opp;
         if (o == null || o.state == DEAD || o.state == DOWN) return;
         float dx = o.x - x;
@@ -323,7 +328,24 @@ public class Fighter
         hitDone = true;
     }
 
+    /// <summary>Соққы қабылдау + әдістер: қайтару (parry), қорғанысты бұзу (unblock), нәтиже (skRes).</summary>
     public void TakeHit(Move m, int dir, bool last, Fighter from)
+    {
+        skRes = "none";
+        if (m == null || state == DEAD || state == DOWN || inv > 0 || game == null || !game.live) { TakeHitCore(m, dir, last, from); return; }
+        SkState T = Skills.S(this);
+        if (T.parry > 0 && dir == -facing && !m.thr) { Skills.Parry(this, from); skRes = "parry"; return; }
+        float hp0 = hp; int st0 = state; bool crouched = st0 == CROUCH;
+        bool wouldBlock = !m.unblock && !m.thr && guard && dir == -facing && (crouched ? !m.IsHigh() : !m.IsLow());
+        bool g0 = guard; if (m.unblock) guard = false;
+        TakeHitCore(m, dir, last, from);
+        if (m.unblock && state != HIT && state != DOWN && state != DEAD) guard = g0;
+        if (state == DASH && st0 != DASH && U.Eq(bossAb, "evade")) skRes = "evade";
+        else if (wouldBlock && state != HIT && state != DOWN && state != DEAD) skRes = "block";
+        else if (hp < hp0 - 1e-6f || state == HIT || state == DOWN || state == DEAD) skRes = "hit";
+    }
+
+    void TakeHitCore(Move m, int dir, bool last, Fighter from)
     {
         if (state == DEAD || state == DOWN) return;
         if (inv > 0) return;
@@ -435,6 +457,7 @@ public class Fighter
 
     void AiChoose(float d)
     {
+        if (skAi != null && Skills.AiTry(this, d)) { aiA = "wait"; aiT = Pz.Rand(0.35f, 0.6f); return; }
         float reach = 205 * (sc / Db.S) + (wpLen - 92) * sc * 0.75f;
         aiT = Pz.Rand(0.18f, 0.5f) * (1.3f - aiAggr * 0.6f);
         float r = U.Rand(), fz = Fierce();
