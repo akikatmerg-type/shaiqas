@@ -35,6 +35,8 @@ public class Fighter
     public float aiT;
     public string aiA = "wait";
     public int aiCombo;
+    public bool kid;                       // балалар режимі (веб: f.kid)
+    string[] aiHist = new string[4]; int aiHistN;
     bool reacted, punished;
 
     // --- анимация ---
@@ -264,6 +266,8 @@ public class Fighter
         m.dmg = bs.dmg * (bs.foot ? 1 : wpDmg) * dmgMul * (tw ? 1.2f : 1f);
         m.reach = bs.reach * (sc / Db.S) + (bs.foot ? 0 : (wpLen - 92) * sc * 0.75f);
         cm = m; comboIdx = ci;
+        // балалар режимі: жау соққы алдында ұзағырақ дайындалады — бала қорғануға үлгереді
+        if (kid && ai && !m.special && sk == null) m.w *= 1.45f;
         Skills.OnAttack(this);
         hitDone = false; hitIdx = 0; queued = false; lunged = false; waved = false;
         if (OnGround() && !m.air) vx = 0;
@@ -462,7 +466,28 @@ public class Fighter
     static readonly string[] ACTS = { "j", "k", "round", "ck", "cj", "l", "guard", "retreat", "wait", "dodge" };
     static readonly float[] ACTW = { 0.28f, 0.09f, 0.06f, 0.10f, 0.07f, 0.08f, 0.12f, 0.07f, 0.10f, 0.03f };
 
+    static readonly string[] AI_ATK = { "j", "k", "round", "ck", "cj", "l", "throw" };
+    static bool IsAtk(string a) { for (int i = 0; i < AI_ATK.Length; i++) if (U.Eq(AI_ATK[i], a)) return true; return false; }
+    /// <summary>Веб: aiChoose орамы — бір соққыны үш рет қатарынан қайталамайды; балалар режимінде жиірек кідіреді.</summary>
     void AiChoose(float d)
+    {
+        AiChoose0(d);
+        if (IsAtk(aiA))
+        {
+            if (aiHistN >= 2 && U.Eq(aiHist[aiHistN - 1], aiA) && U.Eq(aiHist[aiHistN - 2], aiA)) AiChoose0(d);
+            if (IsAtk(aiA))
+            {
+                if (aiHistN == aiHist.Length) { for (int i = 1; i < aiHist.Length; i++) aiHist[i - 1] = aiHist[i]; aiHistN--; }
+                aiHist[aiHistN++] = aiA;
+            }
+        }
+        if (kid)
+        {
+            aiT *= 1.35f;
+            if (IsAtk(aiA) && U.Rand() < 0.25f) { aiA = "wait"; aiT = Pz.Rand(0.35f, 0.6f); }
+        }
+    }
+    void AiChoose0(float d)
     {
         if (skAi != null && Skills.AiTry(this, d)) { aiA = "wait"; aiT = Pz.Rand(0.35f, 0.6f); return; }
         float reach = 205 * (sc / Db.S) + (wpLen - 92) * sc * 0.75f;

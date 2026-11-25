@@ -24,7 +24,7 @@ public partial class FightView : MonoBehaviour
     readonly Intent intent = new Intent();
     bool showTouch;
     float lastL = -9, lastR = -9;
-    bool prevTL, prevTR, prevTU, prevTJ, prevTK, prevTX;
+    bool prevTL, prevTR, prevTU, prevTJ, prevTK, prevTX, prevTB;
     int rimCol; float lightX = 1080;
 
     // ---------------- атлас ----------------
@@ -481,6 +481,7 @@ public partial class FightView : MonoBehaviour
 
     // ---------------- енгізу ----------------
     static readonly Rect TL = new Rect(30, 560, 120, 120), TR = new Rect(170, 560, 120, 120), TU = new Rect(100, 430, 120, 110), TD = new Rect(310, 600, 100, 90);
+    static readonly Rect TB = new Rect(1006, 468, 80, 80);   // балалар режимі: U — бір батырмамен әдіс (веб: x1046 y508 r40)
     static readonly Rect TJ = new Rect(1130, 570, 120, 120), TK = new Rect(1000, 600, 110, 100), TX = new Rect(1130, 440, 120, 110);
     bool T(Rect r) { return showTouch && Inp.AnyTouchIn(Ui.R(r)); }
 
@@ -499,6 +500,8 @@ public partial class FightView : MonoBehaviour
         intent.j = Inp.Tap(Inp.J) || (tj && !prevTJ);
         intent.k = Inp.Tap(Inp.K) || (tk && !prevTK);
         intent.l = Inp.Tap(Inp.L) || (tx && !prevTX);
+        bool tb = m != null && m.KidActive() && T(TB);
+        intent.u = Inp.Tap(Inp.U) || (tb && !prevTB); prevTB = tb;
         SkFeed(Inp.Down(Inp.W) || Inp.Down(Inp.UP) || Inp.Down(Inp.SPACE) || tu);
         prevTL = tl; prevTR = tr; prevTU = tu; prevTJ = tj; prevTK = tk; prevTX = tx;
     }
@@ -537,6 +540,7 @@ public partial class FightView : MonoBehaviour
         if (P.rux >= 100) Ui.TextO("L — РУХ СОҚҚЫСЫ!", 128, 92 + oy, 300, 22, 15, Ui.GOLD, TextAnchor.MiddleLeft, true, 1.5f);
         // сөздер (пергамент көпіршіктер)
         SkHud();
+        KidWarnHud();
         if (m.mode == "arena") ArenaHud();
         for (int i = 0; i < m.says.Count(); i++)
         {
@@ -621,6 +625,12 @@ public partial class FightView : MonoBehaviour
     {
         Btn(TL, "◀"); Btn(TR, "▶"); Btn(TU, "▲"); Btn(TD, "▼");
         Btn(TJ, "J\nқару"); Btn(TK, "K\nтебу"); Btn(TX, "L\nкүш");
+        if (m != null && m.KidActive())
+        {
+            bool on = T(TB); Vector2 c = TB.center;
+            Ui.Circle(c.x, c.y, 40, new Color(0.55f, 1f, 0.6f, on ? 0.55f : 0.3f));
+            Ui.TextO("★\nU", TB.x, TB.y, TB.width, TB.height, 20, Color.white, TextAnchor.MiddleCenter, true, 2);
+        }
     }
     void Btn(Rect r, string label)
     {

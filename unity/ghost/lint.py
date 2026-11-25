@@ -83,7 +83,7 @@ UNITY = {
  'Debug': 'Log LogWarning LogError',
  'GUIContent': 'none',
  'GUIStyle': 'none',
- 'KeyCode': 'A D W S J K L LeftArrow RightArrow UpArrow DownArrow Space Return Escape F12 F11 F10',
+ 'KeyCode': 'A D W S J K L LeftArrow RightArrow UpArrow DownArrow Space Return Escape F12 F11 F10 U',
  'TouchPhase': 'Ended Canceled',
  'Keyboard': 'current', 'Touchscreen': 'current', 'Mouse': 'current',
  'Texture2D': 'whiteTexture',

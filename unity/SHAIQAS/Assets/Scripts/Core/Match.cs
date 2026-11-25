@@ -337,6 +337,7 @@ public class Match
         cam = Pz.Clamp(enemy.x - Db.W / 2, 0, Db.ARENA - Db.W);
         phaseMsgT = 9; waves.Clear(); fx.Clear(); arrows.Clear(); skProj.Clear(); spikes.Clear(); bolts.Clear(); skBuf.Clear();
         Skills.AssignAi(enemy, this, cfg != null ? cfg : FoeCfg.Of(chapter, stageIdx)); weatherT = 0; weatherKind = null;
+        KidApply();
         if (U.Eq(mode, "tour") && run != null)
         {
             string ru = run.rule; TourSlot sl = run.slots.Get(run.lv.Get(run.stage)[1]);
@@ -534,6 +535,41 @@ public class Match
 
     static Move waveMove;
 
+    // ================= балалар режимі (веб: kidApply) =================
+    public float kidFailT;
+    public static bool KidOn() { return Game.S != null && Game.S.kid; }
+    public bool KidActive() { return KidOn() && !U.Eq(mode, "arena"); }
+    void KidApply()
+    {
+        if (!KidActive()) return;
+        Fighter e = enemy, p = player;
+        if (e != null && e.ai && !e.kid)
+        {
+            e.kid = true; e.dmgMul *= 0.6f; e.speed *= 0.88f;
+            e.aiAggr *= 0.7f; e.aiBlock *= 0.55f; e.aiComboP *= 0.45f; e.aiCrouch *= 0.6f; e.aiSpecial *= 0.5f;
+        }
+        if (p != null && !p.ai && !p.kid) { p.kid = true; p.ruxMul *= 1.4f; }
+    }
+    void KidStep(float rdt, Intent input)
+    {
+        kidFailT = Mathf.Max(0, kidFailT - rdt);
+        if (input == null || !input.u || !KidActive() || phase != FIGHT || player == null || !player.active || player.ai) return;
+        if (player.sk != null || player.state == Fighter.DEAD) return;
+        if (!Skills.KidCast(player) && kidFailT <= 0)
+        {
+            Skills.Call(player, "Әлі дайын емес", "spirit", true); SkillFail(player); kidFailT = 0.6f;
+        }
+    }
+    /// <summary>Жау соққы дайындап жатыр ма (балалар режиміндегі «!» белгісі үшін): 0 — жоқ, әйтпесе 0..1 үлесі.</summary>
+    public float KidWarn()
+    {
+        Fighter e = enemy;
+        if (!KidActive() || e == null || !e.kid || e.state != Fighter.ATTACK || e.cm == null || e.cm.sk || !(e.st < e.cm.w)) return 0;
+        return Mathf.Clamp(e.st / Mathf.Max(0.05f, e.cm.w), 0.001f, 1);
+    }
+
+    public bool KidWarnLow() { return enemy != null && enemy.cm != null && U.Eq(enemy.cm.height, "low"); }
+
     // ================= кадр =================
     public void Update(float rdt, Intent input)
     {
@@ -547,6 +583,7 @@ public class Match
         sayClock += rdt * (phase == INTRO ? pacePt : 1);
         phaseMsgT += rdt; clock += rdt; skFirstT += rdt;
         if (U.Eq(mode, "arena") && player != null && enemy != null) ArenaStep(rdt);
+        KidStep(rdt, input);
 
         float dt = rdt;
         if (slow > 0) { slow -= rdt; dt *= 0.28f; }

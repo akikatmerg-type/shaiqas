@@ -207,6 +207,37 @@ public static class Skills
         if (U.Eq(s.def.id, "alpamys") || U.Eq(s.def.id, "tulpar") || U.Eq(s.def.id, "jalyn")) f.inv = Mathf.Min(f.inv, 0.08f);
         if (natural && f.state == Fighter.ATTACK && f.cm == s.cm) { f.Set(f.OnGround() ? Fighter.IDLE : Fighter.JUMP); if (f.OnGround()) f.vx = 0; }
     }
+    /// <summary>Балалар режимі: бір батырмамен әдіс (веб: kidPick) — дайын тұрған ең мықты үш әдістің бірі, жаны аз болса — шипа.</summary>
+    public static SkDef KidPick(Fighter f)
+    {
+        Init();
+        SkState T = S(f);
+        SkDef heal = null; SkDef[] top = new SkDef[3]; int tn = 0;
+        for (int i = 0; i < All.Count(); i++)
+        {
+            SkDef d = All.Get(i);
+            if (!Unlocked(d) || !Castable(f, d) || T.cd[d.idx] > 0 || f.rux < d.cost || U.Eq(d.id, "qalqan")) continue;
+            if (U.Eq(d.kind, "heal")) { if (heal == null) heal = d; continue; }
+            // ең жоғары деңгейлі үшеуін сақтаймыз
+            if (tn < 3) { top[tn++] = d; }
+            else
+            {
+                int lo = 0; for (int q2 = 1; q2 < 3; q2++) if (top[q2].lvl < top[lo].lvl) lo = q2;
+                if (d.lvl > top[lo].lvl) top[lo] = d;
+            }
+        }
+        if (heal != null && f.hp < f.maxHp * 0.45f) return heal;
+        if (tn == 0) return null;
+        return top[Mathf.Min(tn - 1, (int)(U.Rand() * tn))];
+    }
+    public static bool KidCast(Fighter f)
+    {
+        if (f == null || f.sk != null || f.state == Fighter.DEAD) return false;
+        SkDef d = KidPick(f);
+        if (d != null) { Start(f, d, false); return true; }
+        return false;
+    }
+
     /// <summary>Ойыншының енгізуі (веб: skTryInput).</summary>
     public static bool TryInput(Fighter f, SkBuf B)
     {

@@ -258,4 +258,25 @@ public partial class FightView
         if (Ui.DzBtn("◀", x + w - 104, y + 110, 44, 34, false, true, null, true, false, true)) { m.arenaSel = open.Get((cur - 1 + open.Count()) % open.Count()).id; m.arenaN = 0; Snd.Play("ui_move", 0.5f, 0); }
         if (Ui.DzBtn("▶", x + w - 54, y + 110, 44, 34, false, true, null, true, false, true)) { m.arenaSel = open.Get((cur + 1) % open.Count()).id; m.arenaN = 0; Snd.Play("ui_move", 0.5f, 0); }
     }
+
+    /// <summary>Балалар режимі (веб: kidWarnDraw): жау соққы дайындап жатқанда басының үстінде «!» және нұсқау —
+    /// «← ҚОРҒАН» (жоғары/орта соққы) немесе «↙ ОТЫР» (төмен соққы).</summary>
+    void KidWarnHud()
+    {
+        if (m == null || m.paused) return;
+        float k = m.KidWarn(); if (k <= 0) return;
+        bool low = m.KidWarnLow();
+        Fighter kE = m.enemy, kP = m.player;
+        Vector2 c = W2S(kE.x, kE.y - 270 * kE.sc / Db.S - 40 - 10 * k);
+        float a = Mathf.Clamp01(k * 3), pul = 1 + 0.12f * Mathf.Sin(Time.time * 16.7f), r = 26 * pul;
+        Color col = low ? (Color)new Color32(255, 176, 46, 255) : new Color32(255, 74, 58, 255);
+        Ui.Circle(c.x + 2, c.y + 3, r + 1, new Color(0.08f, 0.03f, 0.02f, 0.7f * a));
+        Ui.Circle(c.x, c.y, r + 3, new Color(1, 0.96f, 0.86f, a));
+        Ui.Circle(c.x, c.y, r, new Color(col.r, col.g, col.b, a));
+        Ui.TextO("!", c.x - 30, c.y - 26, 60, 52, Mathf.RoundToInt(36 * pul), new Color(1, 1, 1, a), TextAnchor.MiddleCenter, true, 2);
+        if (kP == null) return;
+        bool left = kP.x < kE.x;
+        string lab = low ? (left ? "↙" : "↘") + " ОТЫР" : (left ? "←" : "→") + " ҚОРҒАН";
+        Ui.TextO(lab, c.x - 120, c.y - 74, 240, 30, 20, new Color(1, 0.95f, 0.86f, a), TextAnchor.MiddleCenter, true, 3);
+    }
 }

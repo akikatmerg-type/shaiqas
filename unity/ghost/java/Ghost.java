@@ -129,6 +129,18 @@ public class Ghost {
       for (int f = 0; f < 240; f++) { am.Update(1f / 60, null); am.fx.Clear(); }
       check(am.player.hp > h0 + 10 && am.phase == Match.FIGHT && am.timer > 90, "алаң: денсаулық қалпына келеді, уақыт шексіз (" + h0 + "→" + am.player.hp + ")");
       System.out.println("[arena] өлмейді, қалпына келеді: " + h0 + " → " + am.player.hp); }
+    { Game.S.kid = true; Match km = new Match(); km.StartQuick(2, 1);
+      check(km.enemy.kid && Math.abs(km.enemy.dmgMul - 0.6f * 1f) < 0.5f && km.player.ruxMul > 1.3f, "балалар: жау әлсіз, рух тез");
+      km.phase = Match.FIGHT; km.player.active = true; km.enemy.active = true;
+      km.enemy.StartAttack("l1", 0); float kw = km.enemy.cm.w;
+      Match nm = new Match(); Game.S.kid = false; nm.StartQuick(2, 1); nm.enemy.StartAttack("l1", 0);
+      check(kw > nm.enemy.cm.w * 1.3f, "балалар: жау соққыға ұзақ дайындалады (" + nm.enemy.cm.w + "→" + kw + ")");
+      Game.S.kid = true; km.enemy.Update(0.01f, null); check(km.KidWarn() > 0, "балалар: «!» белгісі көрінеді");
+      Skills.TestUnlock = true; km.enemy.state = Fighter.IDLE; km.player.rux = 100; km.player.state = Fighter.IDLE;
+      Intent ki = new Intent(); ki.u = true; km.Update(1f / 60, ki); km.fx.Clear();
+      check(km.player.sk != null, "балалар: U — бір батырмамен әдіс");
+      Skills.TestUnlock = false; Game.S.kid = false;
+      System.out.println("[kid] жау соққысы " + nm.enemy.cm.w + "→" + kw + " с, U-әдіс: " + (km.player.sk != null ? km.player.sk.def.name : "жоқ")); }
     { U.Seed(5); Match cm = new Match(); cm.StartCampaign(2, 1); cm.player.ai = true; boolean okc = true; float maxd = 0;
       for (int f = 0; f < 60 * 40 && cm.phase != Match.MATCHEND; f++) { cm.Update(1f / 60, null); cm.fx.Clear();
         for (Fighter fq : new Fighter[] { cm.player, cm.enemy }) for (Chain c : new Chain[] { fq.belt1, fq.belt2, fq.hem }) { if (c == null) continue;

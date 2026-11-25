@@ -3,8 +3,8 @@ using UnityEngine;
 public class Intent
 {
     public int move, dash;
-    public bool up, down, j, k, l;
-    public void Clear() { move = 0; dash = 0; up = false; down = false; j = false; k = false; l = false; }
+    public bool up, down, j, k, l, u;   // u — балалар режимінде бір батырмамен әдіс
+    public void Clear() { move = 0; dash = 0; up = false; down = false; j = false; k = false; l = false; u = false; }
 }
 
 public class Move
