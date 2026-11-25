@@ -225,6 +225,7 @@ public class Match
         NextFight();
     }
     public int duelIdx, duelCh = -1;
+    public int newCard = -1;
     // еркін алаң: мақсатты әдіс, орындалу саны, соңғы соққы уақыты (денсаулық қалпына келуі үшін)
     public string arenaSel, arenaOk; public int arenaN; public float arenaOkT = 9;
     float pHp0, eHp0, pHitT = -9, eHitT = -9;
@@ -365,7 +366,7 @@ public class Match
 
     void EndMatch()
     {
-        phase = MATCHEND; pt = 0;
+        phase = MATCHEND; pt = 0; newCard = -1;
         won = pWins >= needWins;
         Fighter w = won ? player : enemy;
         if (w.state != Fighter.DEAD) w.Set(Fighter.VICTORY);
@@ -375,6 +376,7 @@ public class Match
         {
             int ch = chapter, si = stageIdx;
             bool first = S.prog[ch] <= si;
+            if (first) newCard = ch * 4 + si;   // жаңа тарих картасы ашылды (веб: ALB.newCard)
             reward = (int)(Db.Ch(ch).Get("rewards").At(si).F() * (first ? 1f : 0.5f) * Eco.Stage(ch, si).pay);
             if (first) S.prog[ch] = si + 1;
             float hpK = player.hp / player.maxHp;

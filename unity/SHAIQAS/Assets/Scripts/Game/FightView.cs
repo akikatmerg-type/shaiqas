@@ -663,11 +663,26 @@ public partial class FightView : MonoBehaviour
         Ui.Text("A/D — жүру · W — секіру · S — отыру · кері — қорғану\nJ — қару · K — тебу · L — күшті соққы", 400, 584, 480, 80, 14, Ui.CREAM, TextAnchor.UpperCenter);
     }
 
+    /// <summary>Жаңа тарих картасы (веб: drawNewCard): жеңістен соң сол жақта шығады.</summary>
+    void NewCardPop()
+    {
+        if (m.newCard < 0 || m.newCard >= Db.Hist.Count()) return;
+        float k = Mathf.Clamp01((m.pt - 1.1f) / 0.4f); if (k <= 0) return; k = 1 + 2.7f * Mathf.Pow(k - 1, 3) + 1.7f * Mathf.Pow(k - 1, 2);
+        float x = 22, y = 150, w = 270 * k, h = 250 * k, cx = 22 + 135, cy = 150 + 125; x = cx - w / 2; y = cy - h / 2;
+        JNode hc = Db.Hist.At(m.newCard);
+        Ui.DzPanel(x, y, w, h, "parch");
+        Ui.Text("ЖАҢА ТАРИХ КАРТАСЫ!", x, y + 20 * k, w, 26 * k, Mathf.Max(8, Mathf.RoundToInt(18 * k)), new Color32(138, 26, 18, 255), TextAnchor.MiddleCenter, true);
+        Ui.Img("Art/icons/hist" + m.newCard, cx - 62 * k, y + 46 * k, 124 * k, 124 * k);
+        Ui.Text(hc.S("title"), x + 12, y + 178 * k, w - 24, 28 * k, Mathf.Max(8, Ui.Fit(hc.S("title"), 246, Mathf.RoundToInt(22 * k))), new Color32(58, 26, 10, 255), TextAnchor.MiddleCenter, true);
+        Ui.Text("Мәзірдегі «Тарих альбомы»", x, y + 208 * k, w, 20 * k, Mathf.Max(8, Mathf.RoundToInt(14 * k)), new Color32(106, 74, 42, 255), TextAnchor.MiddleCenter, true);
+    }
+
     void DrawResult()
     {
         bool won = m.won; float pt2 = m.pt - 0.8f, T = Time.unscaledTime;
         float fa = Mathf.Clamp01(pt2 * 3), pkq = Mathf.Clamp01((pt2 - 0.1f) / 0.45f);
         Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.024f, 0.08f, 0.55f * fa));
+        NewCardPop();
         if (won) Ui.ImgRot("Art/camp/rays", 640, 330, 1100, 1100, T * 0.15f * Mathf.Rad2Deg, new Color(1, 0.81f, 0.42f, 0.25f * fa));
         float sc = 0.85f + 0.15f * EaseBack(pkq);
         Color o = GUI.color; GUI.color = new Color(1, 1, 1, fa);

@@ -116,7 +116,7 @@ public partial class GameRoot
         bool ru = Ru();
         Ui.Img("Art/lobby/backdrop", 0, 0, 1280, 720);
         Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.03f, 0.1f, 0.6f));
-        Ui.Panel(160, 60, 960, 600, new Color(0.96f, 0.88f, 0.7f, 0.97f), Ui.GOLD);
+        Ui.DzPanel(160, 60, 960, 600, "parch", true);
         Ui.Text("Атағың: " + Progress.RankName(), 160, 76, 960, 50, 34, new Color32(125, 23, 25, 255), TextAnchor.MiddleCenter, true);
         Ui.Text(Story.DoneText(doneCh, ru), 200, 136, 880, 110, 21, Ui.INK, TextAnchor.UpperLeft);
         Ui.Fill(200, 250, 880, 3, new Color32(125, 23, 25, 255));
@@ -129,7 +129,7 @@ public partial class GameRoot
             Ui.Text(Story.LessonText(doneCh, i, ru), 450, y, 620, 66, 19, Ui.INK, TextAnchor.MiddleLeft);
         }
         Ui.Text("Келесі тарауды ашу үшін — викторинадан өт (" + Progress.QzPassMin() + "/" + Db.QZ_N + ")", 160, 548, 960, 30, 18, Ui.INK, TextAnchor.MiddleCenter);
-        if (Ui.Btn("ВИКТОРИНАҒА ▶", 470, 590, 340, 56, true, true, 24)) StartQuiz(doneCh, true);
+        if (Ui.DzBtn("ВИКТОРИНАҒА ▶", 470, 590, 340, 60, true)) StartQuiz(doneCh, true);
     }
 
     // ================= ВИКТОРИНА =================
