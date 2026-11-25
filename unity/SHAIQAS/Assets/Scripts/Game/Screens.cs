@@ -247,41 +247,6 @@ public partial class GameRoot
 
     // ================= ДҮКЕН =================
     string shopTab = "weapon"; int shopScroll;
-    void DrawShop()
-    {
-        Ui.Fill(0, 0, 1280, 720, new Color32(40, 28, 20, 255));
-        Ui.TopBar("ДҮКЕН");
-        string[] tabs = { "weapon", "armor", "helm" }, names = { "ҚАРУ", "САУЫТ", "БАС КИІМ" };
-        for (int t = 0; t < 3; t++) if (Ui.Btn(names[t], 40 + t * 210, 80, 200, 48, shopTab == tabs[t])) { shopTab = tabs[t]; shopScroll = 0; }
-        JNode table = shopTab == "weapon" ? Db.Weapons : shopTab == "armor" ? Db.Armors : Db.Helms;
-        JNode order = shopTab == "weapon" ? Db.WeaponOrder : shopTab == "armor" ? Db.ArmorOrder : Db.HelmOrder;
-        Lst<string> owned = shopTab == "weapon" ? Game.S.ownWeapon : shopTab == "armor" ? Game.S.ownArmor : Game.S.ownHelm;
-        string eq = shopTab == "weapon" ? Game.S.eqWeapon : shopTab == "armor" ? Game.S.eqArmor : Game.S.eqHelm;
-        int per = 4, n = order.Count();
-        shopScroll = Mathf.Clamp(shopScroll, 0, Mathf.Max(0, n - per));
-        for (int i = 0; i < per && shopScroll + i < n; i++)
-        {
-            string id = order.At(shopScroll + i).Str(); JNode it = table.Get(id);
-            float y = 140 + i * 128;
-            bool own = owned.Contains(id), on = U.Eq(eq, id);
-            Ui.Fill(40, y, 1200, 118, on ? new Color(0.95f, 0.72f, 0.25f, 0.22f) : new Color(0, 0, 0, 0.35f));
-            Ui.Img("Art/items/" + shopTab + "_" + id, 50, y + 4, 110, 110);
-            Ui.TextS(it.S("name"), 176, y + 6, 500, 36, 24, Ui.GOLD, TextAnchor.MiddleLeft);
-            Ui.Text(it.S("desc"), 176, y + 44, 640, 70, 16, Ui.CREAM);
-            string lockMsg = own ? null : Progress.GearLock(it);
-            int price = it.Ik("price");
-            if (on) Ui.TextS("КИІЛГЕН ✔", 1000, y + 30, 220, 56, 20, new Color(0.5f, 0.9f, 0.5f), TextAnchor.MiddleCenter);
-            else if (own) { if (Ui.Btn("КИЮ", 1010, y + 30, 210, 56, true)) Equip(id); }
-            else if (lockMsg != null) Ui.TextS(lockMsg, 880, y + 20, 340, 76, 16, new Color(1, 0.6f, 0.5f), TextAnchor.MiddleCenter);
-            else if (Ui.Btn("САТЫП АЛУ · " + price + " ₸", 960, y + 30, 260, 56, true, Game.S.coins >= price, 18))
-            {
-                Game.S.coins -= price; owned.Add(id); Equip(id); Toast(it.S("name") + " — сенікі!");
-            }
-        }
-        if (Ui.Btn("▲", 1180, 80, 60, 48, false, shopScroll > 0)) shopScroll--;
-        if (Ui.Btn("▼", 1110, 80, 60, 48, false, shopScroll < n - per)) shopScroll++;
-        if (Ui.Btn("◀ ЛОББИ", 30, 662, 180, 48, false, true, 18)) Go(LOBBY);
-    }
     void Equip(string id)
     {
         if (shopTab == "weapon") Game.S.eqWeapon = id; else if (shopTab == "armor") Game.S.eqArmor = id; else Game.S.eqHelm = id;
@@ -289,35 +254,7 @@ public partial class GameRoot
     }
 
     // ================= БАТЫРЛАР =================
-    int heroScroll;
-    void DrawHeroes()
-    {
-        Ui.Fill(0, 0, 1280, 720, new Color32(26, 30, 44, 255));
-        Ui.TopBar("БАТЫРЛАР");
-        int n = Db.HeroOrder.Count(), per = 8;
-        heroScroll = Mathf.Clamp(heroScroll, 0, Mathf.Max(0, n - per));
-        for (int i = 0; i < per && heroScroll + i < n; i++)
-        {
-            string id = Db.HeroOrder.At(heroScroll + i).Str(); JNode h = Db.Hero(id);
-            float x = 40 + (i % 4) * 300, y = 84 + (i / 4) * 284;
-            bool own = Game.S.heroes.Contains(id), on = U.Eq(Game.S.hero, id);
-            Ui.Fill(x, y, 290, 274, on ? new Color(0.95f, 0.72f, 0.25f, 0.25f) : new Color(0, 0, 0, 0.35f));
-            Ui.Img("Art/portraits/" + id, x + 75, y + 6, 140, 140);
-            Ui.TextS(Game.Fix(h.S("name")), x, y + 148, 290, 30, 20, Ui.GOLD, TextAnchor.MiddleCenter);
-            Ui.Text(h.S("kind") + " · " + h.S("ability"), x + 6, y + 178, 278, 40, 14, Ui.CREAM, TextAnchor.UpperCenter);
-            int price = h.Ik("price"), lvl = h.Get("lvl").I(1);
-            if (on) Ui.TextS("ТАҢДАЛҒАН ✔", x, y + 222, 290, 44, 18, new Color(0.5f, 0.9f, 0.5f), TextAnchor.MiddleCenter);
-            else if (own) { if (Ui.Btn("ТАҢДАУ", x + 45, y + 222, 200, 44, true)) { Game.S.hero = id; Game.Persist(); } }
-            else if (Progress.Level() < lvl) Ui.TextS(lvl + "-деңгей", x, y + 222, 290, 44, 17, new Color(1, 0.6f, 0.5f), TextAnchor.MiddleCenter);
-            else if (Ui.Btn(price + " ₸", x + 45, y + 222, 200, 44, true, Game.S.coins >= price))
-            {
-                Game.S.coins -= price; Game.S.heroes.Add(id); Game.S.hero = id; Game.Persist(); Toast(Game.Fix(h.S("name")) + " сенің қосыныңда!");
-            }
-        }
-        if (Ui.Btn("◀", 1100, 662, 60, 48, false, heroScroll > 0)) heroScroll -= per;
-        if (Ui.Btn("▶", 1170, 662, 60, 48, false, heroScroll < n - per)) heroScroll += per;
-        if (Ui.Btn("◀ ЛОББИ", 30, 662, 180, 48, false, true, 18)) Go(LOBBY);
-    }
+
 }
 
 /// <summary>Ұстаз: Бұқар жырау әр экранда бірінші рет қысқаша түсіндіреді (TUT_L).</summary>

@@ -50,7 +50,7 @@ UNITY = {
  'Screen': 'width height orientation sleepTimeout',
  'Application': 'targetFrameRate dataPath isEditor isMobilePlatform platform',
  'Time': 'unscaledDeltaTime deltaTime unscaledTime time',
- 'GUI': 'color DrawTexture DrawTextureWithTexCoords Label Button TextField enabled depth skin matrix',
+ 'GUI': 'color DrawTexture DrawTextureWithTexCoords Label Button TextField enabled depth skin matrix BeginClip EndClip',
  'Resources': 'Load UnloadAsset',
  'Shader': 'Find',
  'PlayerPrefs': 'HasKey GetString SetString Save DeleteKey',

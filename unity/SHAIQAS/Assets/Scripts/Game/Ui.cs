@@ -36,6 +36,14 @@ public static class Ui
     }
     public static Rect R(float x, float y, float w, float h) { return new Rect(ox + x * k, oy + y * k, w * k, h * k); }
     public static Rect R(Rect v) { return R(v.x, v.y, v.width, v.height); }
+    static float clipOx, clipOy;
+    /// <summary>Тіктөртбұрышпен кесу (виртуал координаттар сақталады): ішінде бәрі бұрынғыдай R() арқылы салынады.</summary>
+    public static void BeginClip(float x, float y, float w, float h)
+    {
+        Rect r = R(x, y, w, h); GUI.BeginClip(r);
+        clipOx = ox; clipOy = oy; ox -= r.x; oy -= r.y;
+    }
+    public static void EndClip() { GUI.EndClip(); ox = clipOx; oy = clipOy; }
     static Texture2D disk;
     /// <summary>Тегіс шетті шеңбер (IMGUI-де шеңбер жоқ — бір рет салынған 64px дискіні бояймыз).</summary>
     public static void Circle(float cx, float cy, float r, Color c)
