@@ -18,7 +18,7 @@ public class SayLine
 public class FoeCfg
 {
     public int ch, idx;
-    public string special;      // null | trainer | shadow
+    public string special;      // null | trainer | shadow | arena
     public float scale = 1;
     public static FoeCfg Of(int ch, int idx) { FoeCfg c = new FoeCfg(); c.ch = ch; c.idx = idx; return c; }
 }
@@ -145,6 +145,16 @@ public class Match
     public Fighter MakeFoe(FoeCfg c, float px)
     {
         if (U.Eq(c.special, "trainer")) return MakeTrainer(px);
+        if (U.Eq(c.special, "arena"))
+        {
+            // веб: skArenaFoe — жаттығу серігі
+            Fighter a = new Fighter();
+            a.name = "Жаттығу серігі"; a.ai = true; a.weapon = "soyil"; a.hat = "borik"; a.coat = "chapan"; a.beard = true; a.accent = "#9fd68a";
+            a.maxHp = 160; a.dmgMul = 0.55f; a.speed = 280;
+            a.aiAggr = 0.55f; a.aiBlock = 0.35f; a.aiCrouch = 0.2f; a.aiComboP = 0.35f; a.aiSpecial = 0.3f;
+            a.x = px; a.look = "npc_trainer"; a.game = this; a.Init();
+            return a;
+        }
         if (U.Eq(c.special, "shadow"))
         {
             Fighter s = new Fighter();
@@ -199,6 +209,14 @@ public class Match
     public void StartMode(string md, int ch)
     {
         mode = md; chapter = ch; run = null; needWins = 1; cfg = null;
+        if (U.Eq(md, "arena"))
+        {
+            // веб: skArenaStart — шексіз жаттығу алаңы (әдістерді үйрену)
+            stageIdx = 0; cfg = new FoeCfg(); cfg.ch = ch; cfg.special = "arena"; StartMatch();
+            phase = FIGHT; pt = 1; introT = 0; bossIntro = false; says.Clear(); zoom = 1.06f; lb = 10;
+            player.active = true; enemy.active = true; arenaN = 0; arenaOk = null;
+            return;
+        }
         if (U.Eq(md, "train")) { stageIdx = 0; cfg = new FoeCfg(); cfg.ch = ch; cfg.special = "trainer"; StartMatch(); return; }
         if (U.Eq(md, "duel")) { needWins = 2; run = new Run(); cfg = FoeCfg.Of(duelCh >= 0 ? duelCh : ch, duelIdx); StartMatch(); return; }
         if (U.Eq(md, "tour")) { run = MakeBracket(ch, TierOpen(ch, Game.S.tourTier) ? Game.S.tourTier : 0); return; }   // торды экран көрсетеді
@@ -207,6 +225,17 @@ public class Match
         NextFight();
     }
     public int duelIdx, duelCh = -1;
+    // еркін алаң: мақсатты әдіс, орындалу саны, соңғы соққы уақыты (денсаулық қалпына келуі үшін)
+    public string arenaSel, arenaOk; public int arenaN; public float arenaOkT = 9;
+    float pHp0, eHp0, pHitT = -9, eHitT = -9;
+    void ArenaStep(float rdt)
+    {
+        timer = 99;
+        if (player.hp < pHp0 - 0.01f) pHitT = clock; if (enemy.hp < eHp0 - 0.01f) eHitT = clock;
+        if (clock - pHitT > 1.2f && player.state != Fighter.DOWN && player.hp < player.maxHp) player.hp = Mathf.Min(player.maxHp, player.hp + player.maxHp * 1.4f * rdt);
+        if (clock - eHitT > 1.2f && enemy.state != Fighter.DOWN && enemy.hp < enemy.maxHp) enemy.hp = Mathf.Min(enemy.maxHp, enemy.hp + enemy.maxHp * 1.4f * rdt);
+        pHp0 = player.hp; eHp0 = enemy.hp; arenaOkT += rdt;
+    }
 
     public void NextFight()
     {
@@ -477,6 +506,7 @@ public class Match
         if (U.Eq(d.id, "tulpar")) sndQ.Add("horse");
         if (U.Eq(d.id, "boran")) sndQ.Add("blizzard");
         if (!isAi && f == player && Skills.FirstUse(d)) { skFirstName = d.name; skFirstT = 0; }
+        if (!isAi && f == player && U.Eq(mode, "arena") && arenaSel != null && U.Eq(d.id, arenaSel)) { arenaOk = d.id; arenaN++; arenaOkT = 0; }
     }
     public void SkillFail(Fighter f) { sndQ.Add("skill_fail"); }
     public void SkillParry(Fighter f) { sndQ.Add("parry"); }
@@ -514,6 +544,7 @@ public class Match
         punch = Mathf.Max(0, punch - rdt * (0.06f + punch * 7));
         sayClock += rdt * (phase == INTRO ? pacePt : 1);
         phaseMsgT += rdt; clock += rdt; skFirstT += rdt;
+        if (U.Eq(mode, "arena") && player != null && enemy != null) ArenaStep(rdt);
 
         float dt = rdt;
         if (slow > 0) { slow -= rdt; dt *= 0.28f; }
@@ -602,6 +633,7 @@ public class Match
         if (U.Eq(next, "retry")) { if (multi) { StartMode(mode, chapter); return U.Eq(mode, "tour") ? "bracket" : "fight"; } StartMatch(); return "fight"; }
         if (U.Eq(next, "next") && multi && !runOver) { if (U.Eq(mode, "tour")) return "bracket"; NextFight(); return "fight"; }
         if (U.Eq(mode, "duel")) return "duelsel";
+        if (U.Eq(mode, "arena")) return "lobby";
         if (U.Eq(mode, "campaign") && won && U.Eq(next, "next")) return stageIdx == 3 ? "chapterDone" : "nextStage";
         return "map";
     }

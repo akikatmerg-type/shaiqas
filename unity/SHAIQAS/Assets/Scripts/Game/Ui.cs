@@ -36,6 +36,21 @@ public static class Ui
     }
     public static Rect R(float x, float y, float w, float h) { return new Rect(ox + x * k, oy + y * k, w * k, h * k); }
     public static Rect R(Rect v) { return R(v.x, v.y, v.width, v.height); }
+    static Texture2D disk;
+    /// <summary>Тегіс шетті шеңбер (IMGUI-де шеңбер жоқ — бір рет салынған 64px дискіні бояймыз).</summary>
+    public static void Circle(float cx, float cy, float r, Color c)
+    {
+        if (disk == null)
+        {
+            disk = new Texture2D(64, 64, TextureFormat.RGBA32, false); disk.wrapMode = TextureWrapMode.Clamp;
+            Color32[] px = new Color32[64 * 64];
+            for (int y = 0; y < 64; y++) for (int x = 0; x < 64; x++)
+                { float d = Mathf.Sqrt((x - 31.5f) * (x - 31.5f) + (y - 31.5f) * (y - 31.5f)); px[y * 64 + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(31.5f - d) * 255)); }
+            disk.SetPixels32(px); disk.Apply();
+        }
+        Color o = GUI.color; GUI.color = new Color(c.r * o.r, c.g * o.g, c.b * o.b, c.a * o.a);
+        GUI.DrawTexture(R(cx - r, cy - r, r * 2, r * 2), disk); GUI.color = o;
+    }
     public static Vector2 ToVirtual(Vector2 screen) { return new Vector2((screen.x - ox) / k, (screen.y - oy) / k); }
 
     // ---- интерфейс атласы (Art/uiatlas.png + Data/meta_uiatlas.json): "Art/ui/<аты>" жолдары осыдан ----

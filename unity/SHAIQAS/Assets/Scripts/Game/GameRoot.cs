@@ -76,8 +76,10 @@ public partial class GameRoot : MonoBehaviour
         Inp.Poll();
         // F12 — скриншот (жоба папкасындағы Shots/ ішіне): веб-нұсқамен пиксель бойынша салыстыру үшін
         if (Application.isEditor && Inp.Tap(Inp.F12)) StartCoroutine(Shot());
+        if (Application.isEditor && Inp.Tap(Inp.F10)) { Skills.TestUnlock = !Skills.TestUnlock; Toast(Skills.TestUnlock ? "тест: барлық әдіс ашық, рух толы" : "тест: әдістер қалыпты"); }
         if (Application.isEditor && Inp.Tap(Inp.F11)) { StageLive.dbg = (StageLive.dbg + 1) % 15; Toast("debug: " + StageLive.dbg); }
         float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+        LevelWatch(dt);
         pt += dt; toastT = Mathf.Max(0, toastT - dt);
         if (medalPop.Count() > 0) { medalT += dt; if (medalT > 2.6f) { medalPop.RemoveAt(0); medalT = 0; } }
         FitCamera();
@@ -201,7 +203,8 @@ public partial class GameRoot : MonoBehaviour
             case LOBBY: DrawLobby(); break;
             case MAP: DrawMap(); break;
             case STORY: DrawStory(); break;
-            case FIGHT: fv.DrawHud(); break;
+            case FIGHT: if (guideOverlay) DrawGuide(); else fv.DrawHud(); break;
+            case GUIDE: DrawGuide(); break;
             case BRACKET: DrawBracket(); break;
             case VS: DrawVs(); break;
             case DUELSEL: DrawDuelSel(); break;
@@ -222,6 +225,7 @@ public partial class GameRoot : MonoBehaviour
             Ui.TextS(toast, 340, 600, 600, 54, 22, new Color(1, 0.86f, 0.5f, a), TextAnchor.MiddleCenter);
         }
         if (medalPop.Count() > 0) DrawMedalPop(medalPop.Get(0));
+        DrawLevelBanner();
     }
 
     void DrawMedalPop(string id)

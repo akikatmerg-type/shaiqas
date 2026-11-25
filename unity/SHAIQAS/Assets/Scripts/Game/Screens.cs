@@ -26,8 +26,8 @@ public partial class GameRoot
         if (Ui.DzBtn("БАТЫРЛАР", 48, 366, 330, 62, false, true, "batyr")) Go(HEROES);
         if (Ui.DzBtn("ҚАРУ-ЖАРАҚ", 48, 442, 330, 62, false, true, "arms")) { shopTab = "weapon"; Go(SHOP); }
         if (Ui.DzBtn("ЕРКІН ҰРЫС", 48, 518, 330, 62, false, true, "fight")) QuickFight();
-        if (Ui.DzBtn("ЖАТТЫҒУ", 48, 594, 161, 50, false, true, null, true)) StartTrain(Progress.LastOpen());
-        if (Ui.DzBtn("ӘДІСТЕР КІТАБЫ", 217, 594, 161, 50, false, true, null, true)) Toast("Әдістер кітабы — келесі жаңартуда");
+        if (Ui.DzBtn("ЕРКІН АЛАҢ", 48, 594, 161, 50, false, true, null, true)) StartArena(null);
+        if (Ui.DzBtn("ӘДІСТЕР КІТАБЫ", 217, 594, 161, 50, false, true, null, true)) OpenGuide(false);
         // батыр тақтайшасы
         JNode hr = Db.Hero(Game.S.hero);
         Ui.Nine("Art/ui/ribbon_blue", 760 - 165 - 50, 670 - 40, 430, 80, 110, 0, 110, 0);

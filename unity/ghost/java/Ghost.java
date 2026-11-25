@@ -121,6 +121,14 @@ public class Ghost {
       check(okSeq == 18 && okFx == 18, "әдістер: тізбек " + okSeq + "/18, әсер " + okFx + "/18" + bad);
       System.out.println("[skills] тізбек " + okSeq + "/18 · әсер " + okFx + "/18" + bad);
       Skills.TestUnlock = false; }
+    { Match am = new Match(); am.StartMode("arena", 0);
+      check(am.phase == Match.FIGHT && am.enemy.name.equals("Жаттығу серігі"), "алаң: бірден ұрыс, серік бар");
+      Move big = Move.Base("l1"); big.dmg = 9999; am.player.TakeHit(big, -1, true, am.enemy);
+      check(am.player.state != Fighter.DEAD && am.player.hp >= 1, "алаң: өлмейді (hp " + am.player.hp + ")");
+      am.enemy.active = false; am.player.active = false; float h0 = am.player.hp;
+      for (int f = 0; f < 240; f++) { am.Update(1f / 60, null); am.fx.Clear(); }
+      check(am.player.hp > h0 + 10 && am.phase == Match.FIGHT && am.timer > 90, "алаң: денсаулық қалпына келеді, уақыт шексіз (" + h0 + "→" + am.player.hp + ")");
+      System.out.println("[arena] өлмейді, қалпына келеді: " + h0 + " → " + am.player.hp); }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---
     Geo g = new Geo(); g.Build(Pz.Get("idle"));

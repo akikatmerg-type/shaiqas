@@ -91,6 +91,6 @@ public class ShaiqasArtImport : AssetPostprocessor
         ti.maxTextureSize = 4096;
         bool part = assetPath.Contains("/Art/parts/") || assetPath.Contains("uiatlas");
         ti.isReadable = part;
-        ti.textureCompression = part || assetPath.Contains("/live/") ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
+        ti.textureCompression = part || assetPath.Contains("/live/") || assetPath.Contains("/Art/sk/") ? TextureImporterCompression.Uncompressed : TextureImporterCompression.Compressed;
     }
 }

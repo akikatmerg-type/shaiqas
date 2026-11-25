@@ -359,6 +359,7 @@ public class Fighter
             if (game != null) { game.Hitstop(0.12f, 12); game.punch = 0.06f; game.FxF(Match.FX_HIT, x, y - 150, from.facing, 24, this, 5); }
             Fx(Match.FX_DUST, x, Db.GROUND, 0, 14);
             AddRux(6); from.AddRux(10);
+            if (hp <= 0 && Immortal()) hp = 1;
             if (hp <= 0) Die();
             return;
         }
@@ -373,6 +374,7 @@ public class Fighter
             push = dir * m.knock * 0.5f * pk;
             AddRux(3); blocks++;
             if (game != null) { game.FxF(Match.FX_BLOCK, cx, cy, -dir, 10, this, (m.heavy ? 1 : 0) | (m.special ? 2 : 0)); game.Hitstop(0.04f, m.heavy ? 4 : 0); }
+            if (hp <= 0 && Immortal()) hp = 1;
             if (hp <= 0) Die();
             return;
         }
@@ -383,7 +385,8 @@ public class Fighter
         if (from != null) from.AddRux(9);
         aiCombo = 0; lowHit = m.IsLow();
         if (game != null) { game.FxF(m.special ? Match.FX_HITSPEC : Match.FX_HIT, cx, cy, -dir, m.heavy ? 24 : 14, this, (m.heavy ? 1 : 0) | (m.special || m.dmg >= 14 ? 2 : 0)); game.Hitstop(m.hitstop, m.heavy ? 10 : 4); }
-        if (hp <= 0) Die();
+        if (hp <= 0 && Immortal()) hp = 1;
+            if (hp <= 0) Die();
         else if ((m.down && last) || (m.anti && airborne))
         {
             state = DOWN; st = 0; push = dir * Mathf.Max(300, m.knock) * 1.2f * pk; vy = 0; y = Db.GROUND;
@@ -392,6 +395,8 @@ public class Fighter
         else { state = HIT; st = 0; }
     }
 
+    /// <summary>Еркін алаңда ешкім өлмейді (веб: skArena — шексіз денсаулық).</summary>
+    public bool Immortal() { return game != null && U.Eq(game.mode, "arena"); }
     void Die() { hp = 0; state = DEAD; st = 0; if (game != null) game.Ko(this); }
 
     // ---------------- жасанды ақыл ----------------

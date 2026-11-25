@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FightView : MonoBehaviour
+public partial class FightView : MonoBehaviour
 {
     Match m;
     GameObject world;
@@ -116,6 +116,7 @@ public class FightView : MonoBehaviour
         meshAdd = NewMesh("FxGlow", StageLive.Order("fxGlow"), out rAdd); rAdd.sharedMaterial = matAdd;
         meshE = NewMesh("Enemy", StageLive.Order("enemy"), out rE);
         meshP = NewMesh("Player", StageLive.Order("player"), out rP);
+        SkSetup();
         prts.Clear();
         Looks.For(m.player); Looks.For(m.enemy);
         EnsureAtlas();
@@ -151,6 +152,7 @@ public class FightView : MonoBehaviour
 
     public void Teardown()
     {
+        if (GameRoot.I != null) GameRoot.I.guideOverlay = false;
         PostFx.on = false;
         if (world != null) Destroy(world);
         world = null;
@@ -163,12 +165,14 @@ public class FightView : MonoBehaviour
     {
         if (m == null || world == null) return;
         ReadIntent();
-        if (Inp.Tap(Inp.ESC) && m.phase != Match.MATCHEND) m.paused = !m.paused;
+        if (GameRoot.I.guideOverlay) { m.paused = true; }
+        else if (Inp.Tap(Inp.ESC) && m.phase != Match.MATCHEND) m.paused = !m.paused;
         int ph0 = m.phase, tc0 = Mathf.CeilToInt(m.timer), r0 = m.round;
         if (!m.paused && !Tut.Active()) m.Update(dt, intent);
         PhaseSounds(ph0, tc0, r0);
         FighterSounds(m.player, sP); FighterSounds(m.enemy, sE);
-        EatFx();
+        if (Application.isEditor && Skills.TestUnlock && m.player != null) m.player.rux = 100;
+        EatFx(); SkSounds(); HistPush(m.player, histP); HistPush(m.enemy, histE);
         StepParticles(m.paused || Tut.Active() ? 0 : dt);
         // камера: зум (W/2, pivY) нүктесінің айналасында, діріл
         float z = m.zoom, pv = m.pivY;
@@ -291,6 +295,7 @@ public class FightView : MonoBehaviour
                 case Match.FX_HITSPEC: Impact(e, 2); break;
                 case Match.FX_BLOCK: Block(e); break;
                 case Match.FX_DUST: Dust(e.x, e.y, e.dir, e.n); break;
+                case Match.FX_SKILL: SkFx(e); break;
                 case Match.FX_GHOST: AddGhost(e.who, 0.22f, e.who.ai ? Col.Parse(e.who.accent) : C(255, 200, 110)); break;
                 case Match.FX_KO:
                     Flash(e.x, e.y, 360, C(255, 106, 58), 0.55f, 0.35f); Flash(e.x, e.y, 140, C(255, 255, 255), 0.4f, 0.25f);
@@ -407,8 +412,9 @@ public class FightView : MonoBehaviour
     void BuildFx()
     {
         // мөлдір қабат: көлеңкелер, шаң, жаңқалар, сағым (ghost)
-        vfx.Clear();
+        vfx.Clear(); vadd.Clear();
         Shadow(m.enemy); Shadow(m.player);
+        SkBack(vfx, vadd);
         DrawArrows(vfx);
         foreach (Prt p in prts)
         {
@@ -424,8 +430,9 @@ public class FightView : MonoBehaviour
             Pz.Copy(f.cur, keep); f.x = kx; f.y = ky; f.facing = kf;
         }
         Upload(meshFx, vfx);
+        // әдістердің алдыңғы қабаты (жауынгерлердің үстінде)
+        vskf.Clear(); SkFront(vskf, vadd); Upload(meshSkF, vskf);
         // жарық қабаты (additive): жарқыл, сақина, ұшқын, жылт, қару ізі
-        vadd.Clear();
         Trail(m.enemy); Trail(m.player);
         foreach (Prt p in prts)
         {
@@ -490,6 +497,7 @@ public class FightView : MonoBehaviour
         intent.j = Inp.Tap(Inp.J) || (tj && !prevTJ);
         intent.k = Inp.Tap(Inp.K) || (tk && !prevTK);
         intent.l = Inp.Tap(Inp.L) || (tx && !prevTX);
+        SkFeed(Inp.Down(Inp.W) || Inp.Down(Inp.UP) || Inp.Down(Inp.SPACE) || tu);
         prevTL = tl; prevTR = tr; prevTU = tu; prevTJ = tj; prevTK = tk; prevTX = tx;
     }
 
@@ -526,6 +534,8 @@ public class FightView : MonoBehaviour
         }
         if (P.rux >= 100) Ui.TextO("L — РУХ СОҚҚЫСЫ!", 128, 92 + oy, 300, 22, 15, Ui.GOLD, TextAnchor.MiddleLeft, true, 1.5f);
         // сөздер (пергамент көпіршіктер)
+        SkHud();
+        if (m.mode == "arena") ArenaHud();
         for (int i = 0; i < m.says.Count(); i++)
         {
             SayLine sl = m.says.Get(i);
@@ -644,10 +654,11 @@ public class FightView : MonoBehaviour
             m.paused = false; m.live = false;
             if (tourOut) { m.run.outd = true; Game.S.tour[m.chapter] = Mathf.Max(Game.S.tour[m.chapter], m.run.stage); Game.Persist(); GameRoot.I.OpenMapHub(m.chapter); }
             else if (m.mode == "campaign") GameRoot.I.OpenMap(m.chapter);
-            else if (m.mode == "quick") GameRoot.I.Go(GameRoot.LOBBY);
+            else if (m.mode == "quick" || m.mode == "arena") GameRoot.I.Go(GameRoot.LOBBY);
             else GameRoot.I.OpenMapHub(m.chapter);
         }
-        Ui.Text("A/D — жүру · W — секіру · S — отыру · кері — қорғану\nJ — қару · K — тебу · L — күшті соққы", 400, 530, 480, 80, 14, Ui.CREAM, TextAnchor.UpperCenter);
+        if (Ui.DzBtn("ӘДІСТЕР КІТАБЫ", 460, 526, 360, 48, false, true, null, true)) GameRoot.I.OpenGuide(true);
+        Ui.Text("A/D — жүру · W — секіру · S — отыру · кері — қорғану\nJ — қару · K — тебу · L — күшті соққы", 400, 584, 480, 80, 14, Ui.CREAM, TextAnchor.UpperCenter);
     }
 
     void DrawResult()
