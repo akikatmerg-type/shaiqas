@@ -40,6 +40,7 @@ public partial class GameRoot : MonoBehaviour
     {
         I = this;
         Application.targetFrameRate = 60;
+        Gfx.Init();
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         Ui.Init();
         Db.Init(new ResSource()); Pz.Init();

@@ -5,6 +5,15 @@ using UnityEngine;
 public class PostFx : MonoBehaviour
 {
     public static bool on, dbgOff;
+    // соққы толқындары (экран uv): x, y, уақыт, күші
+    static readonly Vector4[] shock = new Vector4[3]; static int shockI;
+    public static float chroma; static bool heat;
+    /// <summary>Ауаны қисайтатын соққы толқыны (ауыр соққы, нокаут, рух соққысы).</summary>
+    public static void AddShock(Vector2 uv, float power)
+    {
+        if (!Gfx.Shock) return;
+        shock[shockI] = new Vector4(uv.x, uv.y, 0, power); shockI = (shockI + 1) % shock.Length;
+    }
     Material mat; Texture2D grade; string gradeId;
     float bloom = 0.2f, sl = 0.14f;
 
@@ -16,12 +25,21 @@ public class PostFx : MonoBehaviour
     static readonly float[] BLOOM = { 0.18f, 0.32f, 0.3f, 0.22f, 0.4f, 0.22f, 0.2f };
     static readonly float[] VIG = { 0.3f, 0.42f, 0.4f, 0.4f, 0.5f, 0.38f, 0.38f };
 
+    /// <summary>Арена жарығының түсі жауынгерлерге (жоғарғы градация түсінен, жұмсартылған; a — күші).</summary>
+    public static Color TintOf(string id)
+    {
+        int c = Col.Parse("rgb(" + GT[Idx(id)] + ")");
+        Color t = new Color(Col.R(c) / 255f, Col.G(c) / 255f, Col.B(c) / 255f);
+        float mx = Mathf.Max(t.r, Mathf.Max(t.g, t.b)); t /= mx;   // ең ашық арна = 1
+        t.a = 0.42f; return t;
+    }
     public static int Idx(string id) { for (int i = 0; i < IDS.Length; i++) if (IDS[i] == id) return i; return 0; }
 
     public void SetStage(string id)
     {
         on = true;
         if (gradeId == id && grade != null) return;
+        heat = id == "khiva" && Gfx.Shock;
         gradeId = id; int k = Idx(id);
         sl = SL[k]; bloom = BLOOM[k];
         int top = Col.Parse("rgb(" + GT[k] + ")"), bot = Col.Parse("rgb(" + GB[k] + ")");
@@ -69,6 +87,18 @@ public class PostFx : MonoBehaviour
         mat.SetFloat("_Grain", 0.06f);
         mat.SetFloat("_Lin", QualitySettings.activeColorSpace == ColorSpace.Linear ? 1 : 0);
         mat.SetFloat("_Seed", Random.value * 100);
+        float dt = Time.deltaTime;
+        for (int i = 0; i < shock.Length; i++)
+        {
+            Vector4 s = shock[i]; if (s.w <= 0) { mat.SetVector("_Shock" + i, Vector4.zero); continue; }
+            s.z += dt; float life = 0.42f, k = s.z / life;
+            if (k >= 1) { s.w = 0; shock[i] = s; mat.SetVector("_Shock" + i, Vector4.zero); continue; }
+            shock[i] = s;
+            mat.SetVector("_Shock" + i, new Vector4(s.x, s.y, 0.02f + k * 0.42f, s.w * (1 - k) * (1 - k)));
+        }
+        chroma = Mathf.Max(0, chroma - dt * 1.6f);
+        mat.SetFloat("_Chroma", chroma); mat.SetFloat("_Heat", heat ? 1 : 0); mat.SetFloat("_T", Time.time);
+        mat.SetFloat("_Aspect", (float)src.width / Mathf.Max(1, src.height));
         Graphics.Blit(src, dst, mat, 2);
         RenderTexture.ReleaseTemporary(a); RenderTexture.ReleaseTemporary(c); RenderTexture.ReleaseTemporary(d);
     }

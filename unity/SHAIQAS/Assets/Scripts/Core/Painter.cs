@@ -13,6 +13,8 @@ public class Look
     public string hatBase = "", wShape = "";
     public float wk = 1;
     public int cHatA, cHatC, cAcc;
+    // бет әлпеті үшін: шаш/қас, көз түсі, мұрт бар ма
+    public int cHair, cEye; public bool must;
 }
 
 /// <summary>Атлас ұяшықтары: сурет кілті → нөмір (Unity атласты осы тізіммен жинайды).</summary>
@@ -71,6 +73,7 @@ public static class Looks
         JNode af = pal.Get("armF"), ab = pal.Get("armB"), lf = pal.Get("legF"), lb = pal.Get("legB");
         L.aFup = C(af, "up"); L.aFfore = C(af, "fore"); L.aFsk = C(af, "sk"); L.aBup = C(ab, "up"); L.aBfore = C(ab, "fore"); L.aBsk = C(ab, "sk");
         L.hatBase = Cloth.HatBase(f.hat); L.wShape = Cloth.WShape(f.weapon); L.wk = Cloth.WScale(f.weapon);
+        L.cHair = C(pal, "hair"); L.cEye = C(pal, "eye"); L.must = pal.Get("must").IsStr() || f.beard;
         JNode hp = pal.Get("hat"); L.cHatA = C(hp, "a"); L.cHatC = C(hp, "c"); L.cAcc = Col.Parse(f.accent);
         L.lFpants = C(lf, "pants"); L.lFboot = C(lf, "boot"); L.lBpants = C(lb, "pants"); L.lBboot = C(lb, "boot");
         return L;
@@ -150,6 +153,7 @@ public static class Painter
         if (L.bw != 1 || L.bh != 1) m.Scale(1 / L.bw, 1 / L.bh);
         float[] hb = Looks.HB;
         if (L.headSlot >= 0) m.Sprite(L.headSlot, hb[0], hb[1], hb[2], hb[3]);
+        if (live && m.solid == 0) Face(m, f, L);
         bool flown = live && f.hatOff != null;   // бас киім ұшып кеткен — басында жоқ
         if (!flown)
         {
@@ -178,6 +182,68 @@ public static class Painter
             m.Restore();
         }
         m.solid = 0;
+    }
+
+    // ---------- бет әлпеті (веб: faceExpr + headShape): ашу, ауырсыну, нокаут, жеңіс қуанышы, көзді жыпылықтату ----------
+    public static string Expr(Fighter f)
+    {
+        int s = f.state;
+        if (s == Fighter.DEAD) return "ko";
+        if (s == Fighter.HIT || s == Fighter.DOWN) return "pain";
+        if (s == Fighter.VICTORY) return "joy";
+        if (s == Fighter.ATTACK && f.cm != null && f.st < f.cm.w + f.cm.a + 0.08f) return "rage";
+        if (f.guard && (s == Fighter.WALK || s == Fighter.CROUCH || s == Fighter.IDLE)) return "guard";
+        return "norm";
+    }
+    static void Seg(VMesh m, float x0, float y0, float x1, float y1, float w) { px[0] = x0; py[0] = y0; px[1] = x1; py[1] = y1; m.Stroke(px, py, 2, w, true); }
+    static void Face(VMesh m, Fighter f, Look L)
+    {
+        string ex = Expr(f);
+        float bl = (f.at * 0.27f + (f.ai ? 0.5f : 0)) % 1f;
+        bool blink = U.Eq(ex, "norm") && bl > 0.965f;
+        if (U.Eq(ex, "norm") && !blink) return;     // қалыпты бет — суреттің өзі
+        // суреттегі көз бен қасты тері түсімен жабамыз (бет сызығынан шықпайтын көпбұрыш)
+        m.FillC(L.cSkin);
+        P(0, 2.6f, -9.4f); P(1, 8.8f, -10.3f); P(2, 11.2f, -5f); P(3, 12.6f, -3.2f); P(4, 12.4f, -0.6f); P(5, 5f, -0.6f); P(6, 2.6f, -3f);
+        m.Poly(px, py, 7);
+        m.FillC(L.cEye);
+        if (blink) Seg(m, 6.2f, -3.2f, 10.8f, -3f, 1.5f);
+        else if (U.Eq(ex, "ko")) Seg(m, 6.4f, -3.4f, 11f, -3f, 1.6f);
+        else if (U.Eq(ex, "pain")) { P(0, 6.2f, -4.8f); P(1, 10.6f, -3.2f); P(2, 6.6f, -1.4f); m.Stroke(px, py, 3, 1.6f, true); }
+        else if (U.Eq(ex, "joy")) { P(0, 6.2f, -2.4f); P(1, 7.6f, -4.1f); P(2, 9.6f, -4.2f); P(3, 11f, -2.6f); m.Stroke(px, py, 4, 1.6f, true); }
+        else
+        {
+            bool rg = U.Eq(ex, "rage");
+            m.FillC(Col.Pack(243, 235, 221, 255)); m.Ellipse(8.4f, -3.2f, 3, rg ? 1.6f : 1.9f, 0);
+            m.FillC(L.cEye); m.Circle(rg ? 9.8f : 9.4f, -3.2f, 1.5f);
+        }
+        // қас
+        m.FillC(L.cHair);
+        if (U.Eq(ex, "rage") || U.Eq(ex, "guard")) Seg(m, 4, -8.4f, 11, -5.8f, 2.2f);
+        else if (U.Eq(ex, "pain") || U.Eq(ex, "ko")) Seg(m, 4, -6.4f, 10.2f, -8.3f, 2.2f);
+        else if (U.Eq(ex, "joy")) Seg(m, 4, -8, 9.8f, -8.4f, 2.2f);
+        else Seg(m, 4, -7.2f, 10.6f, -6.7f, 2.2f);
+        // ауыз: ашумен айқай, ауырсыну, нокаут
+        float mo = U.Eq(ex, "rage") ? 2.6f : U.Eq(ex, "pain") ? 3.2f : U.Eq(ex, "ko") ? 1.6f : 0;
+        if (mo > 0)
+        {
+            m.FillC(Col.Pack(58, 20, 16, 255)); m.Ellipse(11.2f, 8.6f, 2.4f, mo, -0.15f);
+            if (L.must) { m.FillC(L.cHair); P(0, 8, 3.2f); P(1, 13.4f, 3.6f); P(2, 12.6f, 6.2f); P(3, 8.5f, 6.8f); P(4, 4.5f, 8); m.Poly(px, py, 5); }
+        }
+        else if (U.Eq(ex, "joy")) { m.FillC(Col.Pack(58, 20, 16, 255)); P(0, 9.6f, 7.4f); P(1, 11.2f, 8.5f); P(2, 12.8f, 7.2f); m.Stroke(px, py, 3, 1.3f, true); }
+    }
+
+    // ---------- қошқар мүйіз өрнегі (шапан етегінде) ----------
+    static float[] hx = new float[8], hy = new float[8];
+    static readonly float[] HXS = { 0, 1.4f, 3.6f, 5.6f, 6.2f, 5.2f, 3.6f }, HYS = { 0, -2.8f, -4.4f, -3.6f, -1.6f, -0.2f, -0.6f };
+    public static void RamHorn(VMesh m, float x, float y, float s, float w)
+    {
+        for (int sd = -1; sd <= 1; sd += 2)
+        {
+            for (int i = 0; i < 7; i++) { hx[i] = x + sd * HXS[i] * s; hy[i] = y + HYS[i] * s; }
+            m.Stroke(hx, hy, 7, w, true);
+        }
+        hx[0] = x; hy[0] = y; hx[1] = x; hy[1] = y + 3 * s; m.Stroke(hx, hy, 2, w, true);
     }
 
     /// <summary>Ұшқан бас киім (веб: kidHatDraw): өз орнында айналып, жерге түседі.</summary>
@@ -336,7 +402,14 @@ public static class Painter
             P(n++, Hx - 21, Hy);
             P(n++, G.AtX(Db.TOR * 0.45f) - G.nx * 15, G.AtY(Db.TOR * 0.45f) - G.ny * 15);
             P(n++, G.Sx - G.nx * 16, G.Sy - G.ny * 16);
+            float hfx = px[3], hfy = py[3], hbx = px[n - 4], hby = py[n - 4];
             m.FillC(L.cCoat); m.Poly(px, py, n);
+            if (!U.Eq(c, "kobe") && !U.Eq(c, "fur") && m.solid == 0)
+            {
+                // етек жиегінің үстінде — алтын қошқар мүйіз өрнектері
+                m.FillC(Col.WithA(L.cTrim, 0.85f));
+                for (int q = 0; q < 2; q++) { float t = q == 0 ? 0.3f : 0.72f; RamHorn(m, Lp(hfx, hbx, t), Lp(hfy, hby, t) - 9, 1.25f, 1.5f); }
+            }
             if (!U.Eq(c, "kobe"))
             {
                 m.FillC(L.cTrim); m.Stroke(px, py, U.Eq(c, "fur") ? 3 : 6, 3, true);

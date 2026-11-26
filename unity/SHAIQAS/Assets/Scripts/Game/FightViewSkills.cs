@@ -262,7 +262,7 @@ public partial class FightView
         if (m.zhHead == null || m.paused) return;
         float k = Mathf.Clamp01((m.pt - 0.8f - 0.7f) / 0.45f); k = 1 - (1 - k) * (1 - k) * (1 - k); if (k <= 0) return;
         float x = 962, w = 300, tw = w - 36;
-        string hd = "«" + m.zhHead + "»";
+        string hd = m.zhHead.StartsWith("«") ? m.zhHead : "«" + m.zhHead + "»";
         float hh = ZhH(hd, tw, 17), th = ZhH(m.zhTip, tw, 16);
         float h = Mathf.Ceil((150 + hh + th) / 10) * 10, y = Mathf.Clamp(400 - h / 2, 170, 720 - 30 - h);
         x += (1 - k) * 80;

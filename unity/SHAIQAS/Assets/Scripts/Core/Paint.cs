@@ -33,7 +33,7 @@ public static class Col
 public class VMesh
 {
     public float[] vx = new float[2048], vy = new float[2048], u = new float[2048], v = new float[2048];
-    public int[] col = new int[2048], slot = new int[2048], tri = new int[6144];
+    public int[] col = new int[2048], slot = new int[2048], fl = new int[2048], tri = new int[6144];   // fl: 1 — бір түсті өту (көлеңке/жиек)
     public int nv, nt;
     // түрлендіру: x' = a*x + c*y + e ; y' = b*x + d*y + f
     public float a = 1, b = 0, c = 0, d = 1, e = 0, f = 0;
@@ -59,7 +59,7 @@ public class VMesh
     void Grow()
     {
         int n = vx.Length * 2;
-        vx = Re(vx, n); vy = Re(vy, n); u = Re(u, n); v = Re(v, n); col = ReI(col, n); slot = ReI(slot, n);
+        vx = Re(vx, n); vy = Re(vy, n); u = Re(u, n); v = Re(v, n); col = ReI(col, n); slot = ReI(slot, n); fl = ReI(fl, n);
     }
     static float[] Re(float[] s, int n) { float[] r = new float[n]; for (int i = 0; i < s.Length; i++) r[i] = s[i]; return r; }
     static int[] ReI(int[] s, int n) { int[] r = new int[n]; for (int i = 0; i < s.Length; i++) r[i] = s[i]; return r; }
@@ -67,7 +67,7 @@ public class VMesh
     int V(float x, float y, int cl, int sl, float tu, float tv)
     {
         if (nv >= vx.Length) Grow();
-        vx[nv] = a * x + c * y + e; vy[nv] = b * x + d * y + f; col[nv] = cl; slot[nv] = sl; u[nv] = tu; v[nv] = tv;
+        vx[nv] = a * x + c * y + e; vy[nv] = b * x + d * y + f; col[nv] = cl; slot[nv] = sl; u[nv] = tu; v[nv] = tv; fl[nv] = solid != 0 ? 1 : 0;
         nv++; return nv - 1;
     }
     void T(int i0, int i1, int i2)

@@ -90,6 +90,7 @@ public partial class FightView : MonoBehaviour
         JNode pk = meta.Get("par");
         for (int i = 0; i < 3 && i < pk.Count(); i++) parK[i] = pk.At(i).F();
         rimCol = Col.Parse(meta.S("rim")); lightX = meta.Get("lightX").F(1080);
+        stageTint = PostFx.TintOf(stageId);
         string dc = meta.S("dustCol"); if (U.Len(dc) > 0) dustCol = Col.Parse(dc + "0.6)");
         ghosts.Clear();
         string b = "Art/stages/" + stageId + "/";
@@ -98,6 +99,7 @@ public partial class FightView : MonoBehaviour
         par1 = Spr(b + "layer1", 0, 0, StageLive.Order("layer1"), world.transform);
         Transform fogMidT = Spr(b + "fogMid", 0, 420, StageLive.Order("fogMid"), world.transform);
         par2 = Spr(b + "layer2", 0, 0, StageLive.Order("layer2"), world.transform);
+        SprBlur(par0, Gfx.BlurFar); SprBlur(par1, Gfx.BlurMid);
         Transform fogLowT = Spr(b + "fogLow", 0, 540, StageLive.Order("fogLow"), world.transform);
         actors = new GameObject("Actors").transform; actors.SetParent(world.transform, false);
         groundT = Spr(b + "ground", 0, 0, StageLive.Order("ground"), actors);
@@ -139,6 +141,11 @@ public partial class FightView : MonoBehaviour
         return go.transform;
     }
 
+    static void SprBlur(Transform t, float b)
+    {
+        if (t == null || b <= 0) return; SpriteRenderer sr = t.GetComponent<SpriteRenderer>(); if (sr == null) return;
+        MaterialPropertyBlock pb = new MaterialPropertyBlock(); sr.GetPropertyBlock(pb); pb.SetFloat("_Blur", b); sr.SetPropertyBlock(pb);
+    }
     Mesh NewMesh(string name, int order, out MeshRenderer r)
     {
         GameObject go = new GameObject(name);
@@ -201,14 +208,33 @@ public partial class FightView : MonoBehaviour
         vm.Clear();
         float side = lightX + m.cam >= f.x ? 1 : -1;
         Painter.Live = true;
+        // қара сия контуры (мультфильм стилі): силуэтті барлық жағынан қоршайды — ұрыста бойы, қолы, қаруы анық көрінеді
+        int ink = Col.Pack(16, 9, 7, 235); float ro = Gfx.OutlineW;
+        for (int k = 0; k < Gfx.OutlineDirs; k++) { float a = k * Mathf.PI * 2 / Gfx.OutlineDirs + 0.39f; Painter.Draw(vm, f, L, ink, Mathf.Cos(a) * ro, Mathf.Sin(a) * ro); }
         Painter.Draw(vm, f, L, Col.Pack(20, 12, 10, 255), -side * 1.8f, 1.2f);
         Painter.Draw(vm, f, L, rimCol, side * 2.6f, -1.6f);
         Painter.Draw(vm, f, L, 0, 0, 0);
-        if (f.flash > 0) Painter.Draw(vm, f, L, Col.Pack(255, 70, 40, (int)(Mathf.Clamp01(f.flash / 0.15f) * 0.5f * 255)), 0, 0);
+        // соққы тигенде: алдымен ақ жарқыл (балаға түсінікті «тиді!» белгісі), сосын қызғылт сөну
+        if (f.flash > 0)
+        {
+            float fk = Mathf.Clamp01(f.flash / 0.15f);
+            if (fk > 0.55f) Painter.Draw(vm, f, L, Col.Pack(255, 252, 240, (int)(0.78f * fk * 255)), 0, 0);
+            else Painter.Draw(vm, f, L, Col.Pack(255, 90, 60, (int)(fk * 0.75f * 255)), 0, 0);
+        }
         if (f.phase2) Painter.Draw(vm, f, L, Col.Pack(255, 60, 30, (int)((0.22f + 0.14f * Mathf.Sin(f.at * 12)) * 255)), 0, 0);
         Painter.Live = false;
         Upload(mesh, vm);
+        // көлем және арена жарығы (шейдерде): дене ортасы, жарық бағыты, сахна түсі
+        MeshRenderer rr = f == m.player ? rP : rE; if (rr == null) return;
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        float k2 = f.sc / Db.S;
+        mpb.SetVector("_Center", new Vector4(f.x, -(f.y - 140 * k2), 115 * k2, 0));
+        mpb.SetVector("_Light", new Vector4(side * 0.94f, 0.34f, 0, 0));
+        mpb.SetFloat("_Shade", Gfx.Shade);
+        mpb.SetColor("_Tint", stageTint);
+        rr.SetPropertyBlock(mpb);
     }
+    MaterialPropertyBlock mpb; Color stageTint = new Color(1, 1, 1, 0);
 
     static Vector3[] vbuf = new Vector3[0]; static Color32[] cbuf = new Color32[0]; static Vector2[] ubuf = new Vector2[0], u2buf = new Vector2[0]; static int[] tbuf = new int[0];
     public void Upload(Mesh mesh, VMesh v)
@@ -220,12 +246,12 @@ public partial class FightView : MonoBehaviour
             int c = v.col[i];
             cbuf[i] = new Color32((byte)((c >> 16) & 255), (byte)((c >> 8) & 255), (byte)(c & 255), (byte)((c >> 24) & 255));
             int sl = v.slot[i];
-            if (sl < 0 || sl >= rects.Length) { ubuf[i] = new Vector2(whiteRect.x, whiteRect.y); u2buf[i] = Vector2.zero; }
+            if (sl < 0 || sl >= rects.Length) { ubuf[i] = new Vector2(whiteRect.x, whiteRect.y); u2buf[i] = new Vector2(0, v.fl[i]); }
             else
             {
                 Rect r = rects[sl];
                 ubuf[i] = new Vector2(r.x + v.u[i] * r.width, r.y + v.v[i] * r.height);
-                u2buf[i] = new Vector2(c == -1 ? 0 : 1, 0);
+                u2buf[i] = new Vector2(c == -1 ? 0 : 1, v.fl[i]);
             }
         }
         if (tbuf.Length != v.nt) tbuf = new int[v.nt];
@@ -245,10 +271,10 @@ public partial class FightView : MonoBehaviour
     {
         bool og = f.OnGround(); int st = f.state; float pan = Snd.Pan(f.x, m.cam);
         if (T.og && !og && f.vy < -200 && st == Fighter.JUMP) Snd.Play("jump", 0.8f, pan);
-        if (!T.og && og && st != Fighter.DOWN && st != Fighter.DEAD) Snd.Play("land", 0.7f, pan);
+        if (!T.og && og && st != Fighter.DOWN && st != Fighter.DEAD) { Snd.Play("land", 0.7f, pan); Dust(f.x, Db.GROUND, 0, 7); }
         if (st == Fighter.DASH && T.st != Fighter.DASH) Snd.Play("dash", 1, pan);
         if ((st == Fighter.DOWN || st == Fighter.DEAD) && T.stT < 0.42f && f.st >= 0.42f && T.st == st) Snd.Play("body_fall", 1, pan);
-        if (st == Fighter.WALK && og) { T.stepT -= Time.deltaTime * (f.speed / 300); if (T.stepT <= 0) { T.stepT = 0.34f; Snd.Play("step", 0.35f, pan); } } else T.stepT = 0.12f;
+        if (st == Fighter.WALK && og) { T.stepT -= Time.deltaTime * (f.speed / 300); if (T.stepT <= 0) { T.stepT = 0.34f; Snd.Play("step", 0.35f, pan); { float sv = f.vx >= 0 ? 1 : -1; Puff(f.x - sv * 10, -sv); } } } else T.stepT = 0.12f;
         if (st == Fighter.ATTACK && f.cm != null && T.cm != f.cm && f.st >= f.cm.w * 0.55f)
         {
             T.cm = f.cm; Move mv = f.cm; string w = f.weapon;
@@ -300,6 +326,7 @@ public partial class FightView : MonoBehaviour
                 case Match.FX_SKILL: SkFx(e); break;
                 case Match.FX_GHOST: AddGhost(e.who, 0.22f, e.who.ai ? Col.Parse(e.who.accent) : C(255, 200, 110)); break;
                 case Match.FX_KO:
+                    PostFx.AddShock(ToUv(e.x, e.y), 1.4f); PostFx.chroma = 1;
                     Flash(e.x, e.y, 360, C(255, 106, 58), 0.55f, 0.35f); Flash(e.x, e.y, 140, C(255, 255, 255), 0.4f, 0.25f);
                     RingFx(e.x, e.y, 20, 1400, 0.5f, C(255, 255, 255), 6);
                     for (int k = 0; k < 30; k++) { float a = Rn(0, 6.28f), sp = Rn(300, 900); P(P_HOT, e.x, e.y, Mathf.Cos(a) * sp, Mathf.Sin(a) * sp - 150, Rn(0.25f, 0.5f), k % 3 == 0 ? C(255, 246, 224) : C(255, 120, 60), Rn(2, 4), 1300); }
@@ -307,6 +334,7 @@ public partial class FightView : MonoBehaviour
                 case Match.FX_SPECIAL:
                     {
                         int col = e.who != null && e.who.ai ? Col.Parse(e.who.accent) : C(255, 211, 107);
+                        PostFx.AddShock(ToUv(e.x, e.y), 1.1f);
                         RingFx(e.x, e.y, 30, 900, 0.35f, col, 5); RingFx(e.x, Db.GROUND - 2, 30, 700, 0.5f, col, 4);
                         Flash(e.x, e.y, 300, col, 0.35f, 0.4f); Flash(e.x, e.y, 160, C(255, 255, 255), 0.25f, 0.3f);
                         for (int k = 0; k < 30; k++) P(P_EMBER, e.x + Rn(-46, 46), e.y + 160 - Rn(0, 230), Rn(-25, 25), Rn(-240, -90), Rn(0.35f, 0.7f), col, Rn(7, 15), -60);
@@ -352,7 +380,14 @@ public partial class FightView : MonoBehaviour
         bool wood = atk != null && (atk.weapon == "soyil" || atk.weapon == "shoqpar" || atk.weapon == "staff" || atk.weapon == "kurzi");
         if (wood) for (int i = 0; i < (big ? 9 : 4); i++) P(P_CHIP, x, y, ad * Rn(100, 420), Rn(-420, -120), Rn(0.4f, 0.8f), i % 2 == 0 ? C(176, 122, 69) : C(122, 74, 34), Rn(3, 6), 1600);
         if (big && e.who != null) Dust(e.who.x, Db.GROUND, ad, 5);
+        if (big) PostFx.AddShock(ToUv(x, y), sp ? 1 : 0.7f);
         m.punch = Mathf.Max(m.punch, sp ? 0.075f : big ? 0.055f : 0.022f);
+    }
+    /// <summary>Әлем нүктесі → экран uv (пост-өңдеу үшін).</summary>
+    Vector2 ToUv(float x, float y)
+    {
+        Vector3 v = GameRoot.I.cam.WorldToViewportPoint(new Vector3(x - m.cam, -y, 0));
+        return new Vector2(v.x, v.y);
     }
     void Block(FxEv e)
     {
@@ -376,6 +411,11 @@ public partial class FightView : MonoBehaviour
         }
         if (n >= 6 && y >= Db.GROUND - 2) for (int i = 0; i < (n >= 12 ? 6 : 2); i++) P(P_CHIP, x + Rn(-20, 20), Db.GROUND - 2, Rn(-220, 220), Rn(-420, -160), Rn(0.4f, 0.7f), C(106, 82, 64), Rn(2, 4), 1800);
         if (dir == 0 && n >= 8) RingFx(x, Db.GROUND - 2, 16, n >= 12 ? 620 : 380, 0.3f, Col.Pack(255, 240, 220, 160), 2.5f);
+    }
+    /// <summary>Аяқ астынан шыққан шағын шаң (әр қадамда).</summary>
+    void Puff(float x, float dir)
+    {
+        for (int i = 0; i < 2; i++) P(P_PUFF, x + Rn(-8, 8), Db.GROUND - Rn(0, 4), dir * Rn(20, 70), Rn(-40, -10), Rn(0.3f, 0.5f), Col.WithA(dustCol, Col.A(dustCol) / 255f * 0.6f), Rn(6, 10), 0);
     }
     void AddGhost(Fighter f, float life, int col)
     {

@@ -21,7 +21,7 @@ def members(fn):
 M = {c: members(c + '.cs') for c in ('Ui', 'Snd', 'Inp')}
 allsrc = '\n'.join(src.values())
 defined = set(re.findall(r'\b(?:void|bool|int|float|string|[A-Z]\w*(?:<\w+>)?(?:\[\])?|System\.Collections\.IEnumerator)\s+(\w+)\s*\(', allsrc)) | set(re.findall(r'\bclass (\w+)', allsrc))
-ok = set('Mathf Debug Color Color32 Vector2 Vector3 Rect GUI GUIContent GUIStyle Quaternion Time Resources Sprite Texture2D Material Shader Mesh GameObject Object Camera Screen Application RenderTexture Graphics QualitySettings Input KeyCode Event Destroy StartCoroutine WaitForEndOfFrame RuntimeInitializeOnLoadMethod'.split())
+ok = set('Mathf Debug Color Color32 Vector2 Vector3 Vector4 MaterialPropertyBlock Rect GUI GUIContent GUIStyle Quaternion Time Resources Sprite Texture2D Material Shader Mesh GameObject Object Camera Screen Application RenderTexture Graphics QualitySettings Input KeyCode Event Destroy StartCoroutine WaitForEndOfFrame RuntimeInitializeOnLoadMethod'.split())
 bad = []
 for f in glob.glob(R + '/Game/*.cs'):
     s = strip(src[f]); b = os.path.basename(f)
