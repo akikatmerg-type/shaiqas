@@ -1,4 +1,4 @@
-// SHAIQAS · Үстіңгі терезелер: ДЕҢГЕЙЛЕР тізімі (веб: LV — деңгей белгісін басқанда) және КҮЙ ТАҢДАУ (веб: KM — мәзір әуені).
+// SHAIQAS · Үстіңгі терезе: ДЕҢГЕЙЛЕР тізімі (веб: LV — деңгей белгісін басқанда).
 using UnityEngine;
 
 public partial class GameRoot
@@ -15,14 +15,13 @@ public partial class GameRoot
     void OverlaysPre()
     {
         if (lvOn && !LvBadgeScreen()) lvOn = false;
-        if (kmOn && screen != SETTINGS) kmOn = false;
         Event e = Event.current;
-        if (!lvOn && !kmOn && LvBadgeScreen() && !Tut.Active() && e.type == EventType.MouseDown)
+        if (!lvOn && LvBadgeScreen() && !Tut.Active() && e.type == EventType.MouseDown)
         {
             Vector2 p = Ui.ToVirtual(e.mousePosition);
             if (LvRect().Contains(p)) { LvOpen(); e.Use(); }
         }
-        if (lvOn || kmOn)
+        if (lvOn)
         {
             Ui.blockInput = true;
             // пернелерді осында оқып, «жұтамыз» — астындағы экран (мәзір, баптаулар) оларды өңдемесін
@@ -39,7 +38,6 @@ public partial class GameRoot
     void OverlaysPost()
     {
         if (lvOn) LvDraw();
-        if (kmOn) KmDraw();
     }
 
     void LvOpen()
@@ -160,75 +158,4 @@ public partial class GameRoot
         GUI.color = o;
     }
     static float EaseBackG(float k) { float c1 = 1.70158f, c3 = c1 + 1; return 1 + c3 * Mathf.Pow(k - 1, 3) + c1 * Mathf.Pow(k - 1, 2); }
-
-    // ================= КҮЙ ТАҢДАУ (веб: KM — басты мәзірде қай күй ойнасын) =================
-    bool kmOn; float kmT0; int kmSel;
-    readonly SList slKm = new SList { x = 280, y = 188, w = 720, h = 338, rowH = 46, gap = 6, pad = 4, top = true };
-    int KmCount() { return 2 + Db.J("KUY").Count(); }
-    string KmId(int i) { return i == 0 ? "menu" : i == 1 ? "random" : Db.J("KUY").At(i - 2).S("id"); }
-    public void KmOpen()
-    {
-        kmOn = true; kmT0 = Time.unscaledTime; kmSel = 0;
-        for (int i = 0; i < KmCount(); i++) if (KmId(i) == Game.S.menuKuy) kmSel = i;
-        slKm.ty = slKm.sy = 0; SlEnsure(slKm, kmSel, KmCount()); slKm.sy = slKm.ty;
-        Snd.Play("ui_select");
-    }
-    void KmChoose(int i)
-    {
-        Game.S.menuKuy = KmId(i); Game.Persist(); Snd.Play("ui_select");
-        Snd.Music("menu", 0, true);   // бірден естіледі
-    }
-    void KmDraw()
-    {
-        int n = KmCount(); JNode K = Db.J("KUY");
-        if (Event.current.type == EventType.Layout)
-        {
-            if (ovEsc) { ovEsc = false; kmOn = false; Snd.Play("ui_back"); return; }
-            if (ovDir != 0) { kmSel = (kmSel + ovDir + n) % n; SlEnsure(slKm, kmSel, n); Snd.Play("ui_move", 0.5f); ovDir = 0; }
-            if (ovOk) { ovOk = false; KmChoose(kmSel); }
-        }
-        float k = Mathf.Clamp01((Time.unscaledTime - kmT0) / 0.3f), kb = EaseBackG(k), t = Time.unscaledTime;
-        Ui.Fill(0, 0, 1280, 720, new Color(0.03f, 0.02f, 0.06f, 0.62f * k));
-        Color o = GUI.color; GUI.color = new Color(1, 1, 1, Mathf.Clamp01(k * 1.5f));
-        float px = 250, py = 64 + (1 - kb) * 24, pw = 780, ph = 600;
-        Ui.DzPanel(px, py, pw, ph, "felt", true);
-        Ui.Ribbon(640, py + 50, 400, "КҮЙ ТАҢДАУ", 30);
-        Ui.Text("Басты мәзірде қай күй ойнасын? Таңдасаң, бірден естисің.", px, py + 84, pw, 24, 16, new Color(1, 0.9f, 0.75f, 0.8f), TextAnchor.MiddleCenter, true);
-        slKm.y = py + 124;
-        int clicked = SlInput(slKm, n);
-        if (clicked >= 0) { kmSel = clicked; KmChoose(clicked); }
-        SlBack(slKm);
-        Ui.BeginClip(slKm.x, slKm.y, slKm.w, slKm.h);
-        for (int i = 0; i < n; i++)
-        {
-            Rect r = SlRow(slKm, i); float rx = r.x, ry = r.y, rw = r.width, rh = r.height;
-            if (ry + rh < slKm.y - 4 || ry > slKm.y + slKm.h + 4) continue;
-            bool sel = kmSel == i, on = KmId(i) == Game.S.menuKuy; float cy = ry + rh / 2;
-            string nm, sub; bool boss = false;
-            if (i == 0) { nm = "Мәзір әуені"; sub = "Ойынның өз әуені · қобыз бен домбыра"; }
-            else if (i == 1) { nm = "Кездейсоқ күй"; sub = "Мәзірге кірген сайын жаңа күй"; }
-            else
-            {
-                JNode q = K.At(i - 2); nm = q.S("name") + (q.S("fid") == "сарынында" ? " (сарынында)" : "");
-                string au = q.S("author"); sub = (U.Len(au) > 0 ? au : "Түпнұсқа күй") + " · " + q.S("style") + " · " + q.Ik("bpm") + " bpm"; boss = q.Bk("boss");
-            }
-            Ui.Fill(rx, ry, rw, rh, on ? new Color(0.95f, 0.72f, 0.25f, 0.22f) : sel ? new Color(1, 0.84f, 0.47f, 0.12f) : new Color(0, 0, 0, 0.25f));
-            if (sel || on) Ui.Frame(rx, ry, rw, rh, on ? new Color(1, 0.84f, 0.47f, 0.9f) : new Color(1, 0.84f, 0.47f, 0.5f + 0.3f * Mathf.Sin(t * 5)), on ? 2.2f : 1.6f);
-            Ui.TextO(i == 0 ? "⌂" : i == 1 ? "⚄" : "♪", rx + 8, cy - 14, 36, 28, 22, on ? new Color32(255, 227, 154, 255) : new Color32(233, 178, 74, 255), TextAnchor.MiddleCenter, true, 1.5f);
-            Ui.TextO(nm, rx + 52, ry + 2, rw - 200, 24, 19, on ? new Color32(255, 233, 176, 255) : new Color32(255, 243, 220, 255), TextAnchor.MiddleLeft, true, 1.5f);
-            Ui.Text(sub, rx + 52, ry + 24, rw - 200, 18, 12, new Color(1, 0.9f, 0.75f, 0.65f), TextAnchor.MiddleLeft, false);
-            if (boss) Ui.Text("БАС ЖАУ", rx + rw - 190, cy - 9, 100, 18, 12, new Color32(255, 154, 122, 255), TextAnchor.MiddleCenter, true);
-            if (on) for (int b = 0; b < 4; b++) { float hg = 6 + 10 * Mathf.Abs(Mathf.Sin(t * 6 + b * 1.3f)); Ui.Fill(rx + rw - 70 + b * 8, cy - hg / 2, 5, hg, new Color32(255, 211, 107, 255)); }
-        }
-        Ui.EndClip();
-        SlFront(slKm, n);
-        string playing = Snd.NowPlaying();
-        Ui.Text("♪ Қазір: " + playing, px, py + ph - 112, pw, 22, 16, new Color32(255, 227, 160, 255), TextAnchor.MiddleCenter, true);
-        Ui.blockInput = false;
-        if (Ui.DzBtn("ДАЙЫН", 640 - 170, py + ph - 84, 340, 54, true)) { kmOn = false; Snd.Play("ui_back"); }
-        if (!Application.isMobilePlatform) Ui.Text("↑↓ — жылжу   ·   Enter — таңдау   ·   Esc — жабу", px, py + ph - 26, pw, 18, 13, new Color(1, 0.9f, 0.75f, 0.55f), TextAnchor.MiddleCenter, true);
-        Event e = Event.current;
-        if (e.type == EventType.MouseDown && !new Rect(px, py, pw, ph).Contains(Ui.ToVirtual(e.mousePosition))) { kmOn = false; Snd.Play("ui_back"); e.Use(); }
-        GUI.color = o;
-    }
 }

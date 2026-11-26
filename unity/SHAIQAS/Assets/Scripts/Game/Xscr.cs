@@ -54,7 +54,7 @@ public partial class GameRoot
         Ui.DzPanel(80, 120, 560, 334, "felt", true);
         T("ДЫБЫС", 110, 172, 24, H("#ffd36b"), true);
         if (Ui.DzBtn(S.sound ? "ДЫБЫС ҚОСУЛЫ" : "ДЫБЫС ӨШІК", 110, 190, 230, 46, false, true, null, true, true, false, S.sound)) { S.sound = !S.sound; Game.Persist(); Snd.Play("ui_select"); }
-        if (Ui.DzBtn("♪ МӘЗІР КҮЙІ", 360, 190, 250, 46, false, true, null, true)) { KmOpen(); return; }
+        T("Дыбысты қосу/өшіру", 360, 220, 14, H("#b8a8c8"), true, false);
         // веб: STG — жалпы дыбыс, музыка, әсерлер (жолақты басып не сүйреп те өзгертуге болады)
         S.volMaster = VolRow("Жалпы", 252, S.volMaster, true);
         S.volMusic = VolRow("Әуен", 310, S.volMusic, false);

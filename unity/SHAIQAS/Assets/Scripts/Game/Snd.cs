@@ -56,26 +56,14 @@ public class Snd : MonoBehaviour
     public static float Pan(float worldX, float cam) { return Mathf.Clamp((worldX - cam - 640) / 900f, -0.8f, 0.8f); }
 
     /// <summary>Музыка: menu | map | battle | boss | arena | tournament | victory | defeat.</summary>
-    public static void Music(string track, int chapter) { Music(track, chapter, false); }
-    string nowName = "Мәзір әуені";
-    /// <summary>Қазір ойнап тұрған әуеннің атауы (күй таңдау терезесі үшін).</summary>
-    public static string NowPlaying() { return I == null ? "—" : I.nowName; }
-    public static void Music(string track, int chapter, bool force)
+    public static void Music(string track, int chapter)
     {
         if (I == null) return;
         int ch = Mathf.Clamp(chapter, 0, 5);
         string key = track + "|" + ch;
-        if (key == I.musKey && !force) return;
+        if (key == I.musKey) return;
         I.musKey = key;
         string file = track;
-        I.nowName = track == "menu" ? "Мәзір әуені" : "—";
-        if (track == "menu" && Game.S != null && Game.S.menuKuy != "menu")
-        {   // веб: KM — мәзірде таңдалған күй (немесе кездейсоқ)
-            JNode K = Db.J("KUY"); int ki = -1;
-            if (Game.S.menuKuy == "random") ki = Random.Range(0, K.Count());
-            else for (int i = 0; i < K.Count(); i++) if (K.At(i).S("id") == Game.S.menuKuy) ki = i;
-            if (ki >= 0) { file = K.At(ki).S("file"); I.nowName = K.At(ki).S("name") + (K.At(ki).S("fid") == "сарынында" ? " (сарынында)" : ""); }
-        }
         if (track == "map") file = "map_" + ch;
         else if (track == "battle") file = "battle_k" + I.PickKuy(false, ch);
         else if (track == "boss") file = "boss_k" + I.PickKuy(true, ch);
