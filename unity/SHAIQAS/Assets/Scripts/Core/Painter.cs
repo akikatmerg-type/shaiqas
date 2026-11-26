@@ -162,13 +162,21 @@ public static class Painter
         // қару (қол жүйесі: 0 бұрыш — төмен; p.w бұрышымен)
         m.Save(); m.Translate(G.hFx, G.hFy); m.Rotate(-p[Pz.W]);
         float[] wb = Looks.WB;
-        if (L.wepSlot >= 0) m.Sprite(L.wepSlot, wb[0], wb[1], wb[2], wb[3]);
+        bool wDrop = live && f.wepOff != null;    // қару қолдан ұшып кеткен
+        if (L.wepSlot >= 0 && !wDrop) m.Sprite(L.wepSlot, wb[0], wb[1], wb[2], wb[3]);
         m.Restore();
-        WeaponTassel(m, f, L, p);
+        if (!wDrop) WeaponTassel(m, f, L, p);
 
         Arm(m, G.Sx, G.Sy, G.eFx, G.eFy, G.hFx, G.hFy, 1, L.aFup, L.aFfore, L.aFsk, L);
         m.Restore();
         if (live && f.hatOff != null) FlyingHat(m, f, L, ox, oy);
+        if (live && f.wepOff != null && L.wepSlot >= 0)
+        {
+            float[] w = f.wepOff, wb2 = Looks.WB;
+            m.Save(); m.Translate(ox + w[0], oy + w[1]); m.Scale(w[6] * f.sc, f.sc); m.Rotate(w[4]);
+            m.Sprite(L.wepSlot, wb2[0], wb2[1], wb2[2], wb2[3]);
+            m.Restore();
+        }
         m.solid = 0;
     }
 

@@ -48,6 +48,8 @@ public class Fighter
     public float[] fp;      // құлап-аунау кезіндегі айналу нүктесі (null — жоқ)
     public Chain belt1, belt2, hem;   // мата тізбектері (Cloth)
     public Chain plume, hatc, tas;
+    public float[] wepOff;            // нокаутта қолдан ұшқан қару: [x, y, vx, vy, rot, vr, facing, land]
+    int koBounce;
     public float[] hatOff;            // нокаутта ұшқан бас киім: [x, y, vx, vy, rot, vr, facing, land]    // үкі/қауырсын, сәлде ұшы/малақай шашағы, найза/сүңгі шашағы
     public float rot;       // ағымдағы құлау бұрышы (сурет үшін)
     public float pw = 1;    // PACE жергілікті уақыт
@@ -196,7 +198,7 @@ public class Fighter
         x += (vx + push) * dt;
         y += vy * dt;
         push = Pz.Toward(push, 0, 1900 * dt);
-        if (y >= Db.GROUND) { if (wasAir) Fx(Match.FX_DUST, x, Db.GROUND, 0, 8); y = Db.GROUND; vy = 0; }
+        if (y >= Db.GROUND) { float imp = vy; if (wasAir) Fx(Match.FX_DUST, x, Db.GROUND, 0, 8); y = Db.GROUND; vy = 0; if (state == DEAD && imp > 120) KoLand(imp); }
         wasAir = y < Db.GROUND - 30;
         inv = Mathf.Max(0, inv - dt);
         x = Pz.Clamp(x, 90, Db.ARENA - 90);
@@ -414,9 +416,18 @@ public class Fighter
         if (!was)
         {
             float away = opp != null ? (x >= opp.x ? 1 : -1) : (push != 0 ? Mathf.Sign(push) : -facing);
-            push = away * Mathf.Max(Mathf.Abs(push), 560);
-            if (y >= Db.GROUND - 1) vy = -430;
-            rollHw = null;
+            push = away * Mathf.Max(Mathf.Abs(push), 640);
+            if (y >= Db.GROUND - 1) vy = -540;
+            rollHw = null; koBounce = 0;
+            // ауада аяқ-қол бұлғаңдайды — серіппеге екпін
+            if (sv != null) { sv[Pz.FA1] += 9 * away * facing; sv[Pz.BA1] -= 7; sv[Pz.FFY] -= 380; sv[Pz.BFY] -= 260; sv[Pz.T] -= 6; }
+            // қару қолдан ұшып кетеді
+            if (wepOff == null && cur != null && !npc)
+            {
+                tg2.Build(cur);
+                float wx = x + facing * tg2.hFx * sc, wy = y + tg2.hFy * sc;
+                wepOff = new float[] { wx, wy, away * Pz.Rand(120, 260), -Pz.Rand(620, 820), -cur[Pz.W], away * facing * Pz.Rand(9, 14), facing, 0 };
+            }
         }
         // веб: нокаутта бас киім ұшып түседі (жеңген жаққа қарсы бағытқа, айналып)
         if (!was && hatOff == null && !npc && U.Len(hat) > 0 && cur != null)
@@ -430,7 +441,30 @@ public class Fighter
     // ================= жеңілген соң: соққыдан ұшып, шалқасынан құлау (Shadow Fight 2 сияқты) =================
     // 0–0.37 с: соққыдан артқа ұшады (секіріп, денесі шалқаяды) · 0.37: арқасымен жерге түседі, сәл серпіледі,
     // шаң көтеріледі · сосын қолы-аяғы босап, қозғалыссыз жатады.
-    public const float KO_LAND = 0.37f;
+    public const float KO_LAND = 0.47f;
+    /// <summary>Жерге соғылу: бірінші рет — серпіліп қайта көтеріледі, екіншісінде — тынады. Әр соғылуда шаң мен аяқ-қолға екпін.</summary>
+    void KoLand(float imp)
+    {
+        koBounce++;
+        Fx(Match.FX_DUST, x, Db.GROUND, push > 0 ? 1 : -1, koBounce == 1 ? 14 : 6);
+        if (sv != null) { float k = koBounce == 1 ? 1 : 0.5f; sv[Pz.FFY] -= 420 * k; sv[Pz.BFY] -= 300 * k; sv[Pz.FA1] += 6 * k; sv[Pz.BA1] -= 6 * k; sv[Pz.HY] += 160 * k; }
+        if (koBounce == 1) { vy = -imp * 0.34f; if (game != null) { game.shake = Mathf.Max(game.shake, 9); game.punch = Mathf.Max(game.punch, 0.03f); } }
+        else if (koBounce == 2) vy = -imp * 0.2f;
+    }
+    /// <summary>Ұшқан қарудың қозғалысы: айналып ұшады, жерге тиіп бір серпіледі де, жалпақ жатады.</summary>
+    public void WepStep(float dt)
+    {
+        float[] w = wepOff; if (w == null || w[7] > 0) return;
+        w[3] += Db.GRAV * dt; w[0] += w[2] * dt; w[1] += w[3] * dt; w[4] += w[5] * dt;
+        w[0] = Pz.Clamp(w[0], 40, Db.ARENA - 40);
+        float gy = Db.GROUND - 6 * sc;
+        if (w[1] >= gy)
+        {
+            w[1] = gy;
+            if (w[3] > 320) { w[3] *= -0.3f; w[2] *= 0.5f; w[5] *= 0.45f; Fx(Match.FX_DUST, w[0], Db.GROUND, 0, 3); }
+            else { w[7] = 1; w[3] = 0; float hp2 = Mathf.PI / 2; w[4] = Mathf.Round((w[4] - hp2) / Mathf.PI) * Mathf.PI + hp2; }
+        }
+    }
     static float[] koLie;
     static float[] KoLie()
     {
@@ -667,8 +701,23 @@ public class Fighter
         else if (s0 == DEAD)
         {
             // соққы әсері → ауада шалқаю → жерде босаңсып жату (тегіс, діріл жоқ)
-            Pz.Mix(tg, Pz.Get("hitHeavy"), KoLie(), Pz.Smooth01((st - 0.06f) / 0.42f));
-            rate = 13; zeta = 0.92f;
+            Pz.Mix(tg, Pz.Get("hitHeavy"), KoLie(), Pz.Smooth01((st - 0.06f) / 0.5f));
+            // ауада — бос, серпімді (аяқ-қол бұлғаңдайды); жерде біртіндеп тынады
+            float calm = Pz.Smooth01((st - 0.9f) / 0.6f);
+            rate = 11 + 3 * calm; zeta = 0.5f + 0.4f * calm;
+            if (st > 1.3f)
+            {
+                // тынысы: кеудесі баяу көтеріліп-басылады
+                float br = Mathf.Sin((st - 1.3f) * 2.6f) * Pz.Smooth01((st - 1.3f) / 0.5f);
+                tg[Pz.T] += br * 0.025f; tg[Pz.FA1] += br * 0.04f;
+                // соңғы әрекет: басын көтеріп, қолымен жерге тіреліп тұрмақ болады — шамасы келмей, құлайды
+                float up = Mathf.Sin(Pz.Clamp((st - 1.75f) / 0.9f, 0, 1) * Mathf.PI);
+                up = up * up;
+                tg[Pz.T] += up * 0.38f; tg[Pz.HX] -= up * 6;
+                tg[Pz.BA1] += up * 1.1f; tg[Pz.BA2] += up * 1.6f;
+                tg[Pz.FFY] -= up * 18; tg[Pz.FFX] += up * 10;
+                if (st > 2.62f && st - dt <= 2.62f) { sv[Pz.T] -= 3; sv[Pz.HY] += 120; Fx(Match.FX_DUST, x, Db.GROUND, 0, 3); }
+            }
         }
         else if (s0 == JUMP)
         {
@@ -815,9 +864,11 @@ public class Fighter
             // шалқасынан: толық жатады (0.98·90°), денені жерден сәл көтереміз — арқасы жерге «батпасын»
             float t = st, L = -Mathf.PI / 2 * 0.98f;
             fp = new float[] { 0, -13 * Pz.Smooth01((t - 0.15f) / 0.25f), 0, 0 };
-            if (t < KO_LAND) { float e = t / KO_LAND; return L * e * e * (3 - 2 * e) * (0.7f + 0.3f * e); }
-            float b = Pz.Clamp((t - KO_LAND) / 0.28f, 0, 1);
-            return L * (1 - 0.09f * Mathf.Sin(b * Mathf.PI) * (1 - b));   // жерге соғылып, бір рет серпіледі
+            if (t < KO_LAND) { float e = t / KO_LAND; return L * e * e * (3 - 2 * e) * (0.66f + 0.34f * e); }
+            // жерге соғылғанда дене екі рет серпіледі (физикалық секірумен бірге)
+            float b1 = Pz.Clamp((t - KO_LAND) / 0.3f, 0, 1), b2 = Pz.Clamp((t - KO_LAND - 0.3f) / 0.18f, 0, 1);
+            float rise = Pz.Clamp((t - 1.75f) / 0.9f, 0, 1); rise = Mathf.Sin(rise * Mathf.PI); rise *= rise;
+            return L * (1 - 0.16f * Mathf.Sin(b1 * Mathf.PI) - 0.05f * Mathf.Sin(b2 * Mathf.PI) - 0.1f * rise);
         }
         if (state == DOWN)
         {

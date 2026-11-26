@@ -169,7 +169,7 @@ public class Ghost {
       float d1 = Math.abs(cr.enemy.x - cr.player.x), x1 = cr.enemy.x;
       for (int f = 0; f < 60; f++) { cr.Update(1f / 60, null); cr.fx.Clear(); }
       boolean still = Math.abs(cr.enemy.x - x1) < 0.5f;
-      check(!nan && d1 > d0 + 40 && topK < Db.GROUND - 20 && Math.abs(cr.enemy.rot) > 1.4f && cr.enemy.y == Db.GROUND && still, "жеңілген: соққыдан ұшып, шалқасынан жатады, қозғалмайды");
+      check(!nan && d1 > d0 + 40 && topK < Db.GROUND - 20 && Math.abs(cr.enemy.rot) > 1.25f && cr.enemy.y == Db.GROUND && still && cr.enemy.wepOff != null && cr.enemy.wepOff[7] > 0, "жеңілген: соққыдан ұшып, шалқасынан жатады, қозғалмайды");
       System.out.println("[ko] жеңілген " + (int) (d1 - d0) + " px ұшты, " + (int) (Db.GROUND - topK) + " px көтерілді, бұрыш " + cr.enemy.rot + ", қозғалыссыз: " + still); }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---

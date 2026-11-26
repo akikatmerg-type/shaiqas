@@ -474,8 +474,10 @@ public class Match
     public void Ko(Fighter f)
     {
         if (phase != FIGHT) return;
-        slow = 1.1f * Db.PaceK("ko");
-        flash = Mathf.Max(flash, 0.12f);
+        // соңғы соққы: сәл тоқтап қалу, экран сілкінісі, ұзағырақ баяу қозғалыс (Shadow Fight 2 сияқты)
+        Hitstop(0.09f, 12); punch = Mathf.Max(punch, 0.07f);
+        slow = 1.45f * Db.PaceK("ko");
+        flash = Mathf.Max(flash, 0.18f);
         Fx(FX_KO, f.x, f.y - 150, f.facing, 0, f);
     }
     public void SpecialFx(Fighter f) { flash = 0.25f; dark = 0.55f; Hitstop(0.1f, 6); Fx(FX_SPECIAL, f.x, f.y - 160, f.facing, 30, f); }
@@ -606,7 +608,7 @@ public class Match
         if (dt > 0)
         {
             player.Update(dt, input); enemy.Update(dt, null);
-            player.HatStep(dt); enemy.HatStep(dt);
+            player.HatStep(dt); enemy.HatStep(dt); player.WepStep(dt); enemy.WepStep(dt);
             Skills.Step(this, dt);
             for (int i = arrows.Count() - 1; i >= 0; i--)
             {
@@ -658,7 +660,7 @@ public class Match
         else if (phase == ROUNDEND) { Fighter L = loser; if (L != null) focus = Pz.Lerp(mid, L.x, 0.6f); zoomT = 1.18f; lbT = 60; }
         else if (phase == MATCHEND) { Fighter w = won ? player : enemy; focus = Pz.Lerp(mid, w.x, 0.7f); zoomT = 1.14f; lbT = 60; }
         else if (spec != null) { bool wind = spec.st < spec.cm.w; focus = Pz.Lerp(mid, spec.x, wind ? 0.7f : 0.5f); zoomT = wind ? 1.24f : 1.15f; lbT = 68; if (wind) dark = Mathf.Max(dark, 0.42f); }
-        if (player.state == Fighter.DEAD || enemy.state == Fighter.DEAD) { zoomT = Mathf.Max(zoomT, 1.2f); lbT = 60; }
+        if (player.state == Fighter.DEAD || enemy.state == Fighter.DEAD) { zoomT = Mathf.Max(zoomT, slow > 0 ? 1.3f : 1.2f); lbT = slow > 0 ? 72 : 60; }
         float ez = 1 - Mathf.Exp(-3.5f * rdt);
         zoom += (zoomT - zoom) * ez; lb += (lbT - lb) * ez;
         dark = Mathf.Max(0, dark - rdt * 1.2f);
