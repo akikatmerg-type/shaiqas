@@ -38,10 +38,27 @@ public partial class GameRoot
         if (zk > 0)
         {
             string line = Db.J("ZH_LINES").At(Mathf.Min(Progress.RankIndex(), Db.J("ZH_LINES").Count() - 1)).Str();
-            float bw = 380, bx = 1130 - bw + 60, by = 82;
-            Ui.DzPanel(bx, by, bw, 70, "parch");
-            Ui.Text("❦ Бұқар жырау", bx + 14, by + 6, bw - 20, 20, 14, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
-            Ui.Text(line, bx + 14, by + 26, bw - 24, 40, 16, Ui.INK, TextAnchor.UpperLeft, true);
+            // веб: zhLobbyBubble — сөз бұлты жыраудың дәл басының үстінде, құйрығы аузына қарай
+            float zx = 1130, ease = 1 + 2.7f * Mathf.Pow(zk - 1, 3) + 1.7f * Mathf.Pow(zk - 1, 2);
+            float tw = Mathf.Min(380, Ui.TextW(line, 17)), bw = Mathf.Max(260, tw + 40);
+            float th = Ui.TextHeight(line, bw - 36, 17, true), bh = 42 + th + 4;
+            float bx = Mathf.Min(1280 - 16 - bw, zx - 190), by = 268 - bh + (1 - ease) * 24 + br * 0.6f;
+            Color o = GUI.color; GUI.color = new Color(1, 1, 1, Mathf.Clamp01(zk * 1.5f));
+            Color edge = new Color32(138, 84, 24, 255), paper = new Color32(248, 236, 210, 255);
+            Ui.Fill(bx + 3, by + 5, bw, bh, new Color(0, 0, 0, 0.28f));                 // көлеңке
+            Ui.Fill(bx, by, bw, bh, edge); Ui.Fill(bx + 2.5f, by + 2.5f, bw - 5, bh - 5, paper);
+            // құйрығы: жыраудың басына қарай сүйірленеді
+            float tx = Mathf.Clamp(zx - 10, bx + 40, bx + bw - 40);
+            for (int i = 0; i < 22; i++)
+            {
+                float k = i / 22f, w = 28 * (1 - k), cx = tx - 9 + 21 * k;
+                Ui.Fill(cx - w / 2 - 2.5f, by + bh - 3 + i, w + 5, 1.2f, edge);
+                if (w > 5) Ui.Fill(cx - w / 2 + 0.5f, by + bh - 3 + i, w - 1, 1.2f, paper);
+            }
+            Ui.Img("Art/ui/ram", bx + 12, by + 13, 24, 12);
+            Ui.Text("Бұқар жырау", bx + 42, by + 8, bw - 52, 24, 16, new Color32(138, 26, 18, 255), TextAnchor.MiddleLeft, true);
+            Ui.Text(line, bx + 18, by + 36, bw - 36, th + 6, 17, new Color32(42, 26, 16, 255), TextAnchor.UpperLeft, true);
+            GUI.color = o;
         }
     }
 
