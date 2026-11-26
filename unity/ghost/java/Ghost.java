@@ -162,6 +162,13 @@ public class Ghost {
       boolean landed = flew && km2.enemy.hatOff[7] > 0 && Math.abs(km2.enemy.hatOff[1] - (Db.GROUND - 19 * km2.enemy.sc)) < 1;
       check(flew && landed && topY < km2.enemy.y - 250, "нокаут: бас киім ұшып, жерге түседі");
       System.out.println("[hat] нокаутта бас киім ұшты (ең биік " + (int) topY + "), жерге түсті: " + landed); }
+    { Match cr = new Match(); cr.StartQuick(0, 0); cr.phase = Match.FIGHT; cr.player.active = true; cr.enemy.active = true;
+      Move kb2 = Move.Base("l1"); kb2.dmg = 9999; cr.enemy.TakeHit(kb2, -1, true, cr.player);
+      float d0 = Math.abs(cr.enemy.x - cr.player.x); int f0 = cr.enemy.facing; boolean nan = false;
+      for (int f = 0; f < 60 * 4; f++) { cr.Update(1f / 60, null); cr.fx.Clear(); if (Float.isNaN(cr.enemy.x) || Float.isNaN(cr.enemy.rot)) nan = true; }
+      float d1 = Math.abs(cr.enemy.x - cr.player.x);
+      check(!nan && cr.enemy.crawlFlip && cr.enemy.facing == -f0 && d1 > d0 + 40 && cr.enemy.rot * cr.enemy.facing != 0, "жеңілген: аударылып, жаудан алыстай жорғалайды");
+      System.out.println("[crawl] жеңілген ішімен аударылды, " + (int) (d1 - d0) + " px жорғалап алыстады, бұрыш " + cr.enemy.rot); }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---
     Geo g = new Geo(); g.Build(Pz.Get("idle"));

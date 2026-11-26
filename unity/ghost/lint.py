@@ -67,7 +67,7 @@ UNITY = {
  'SleepTimeout': 'NeverSleep',
  'CameraClearFlags': 'SolidColor',
  'RuntimeInitializeLoadType': 'AfterSceneLoad BeforeSceneLoad',
- 'PlayerSettings': 'productName colorSpace companyName defaultInterfaceOrientation allowedAutorotateToPortrait allowedAutorotateToPortraitUpsideDown allowedAutorotateToLandscapeLeft allowedAutorotateToLandscapeRight defaultScreenWidth defaultScreenHeight',
+ 'PlayerSettings': 'productName colorSpace companyName defaultInterfaceOrientation allowedAutorotateToPortrait allowedAutorotateToPortraitUpsideDown allowedAutorotateToLandscapeLeft allowedAutorotateToLandscapeRight defaultScreenWidth defaultScreenHeight SetApplicationIdentifier bundleVersion Android SetScriptingBackend',
  'UIOrientation': 'AutoRotation LandscapeLeft',
  'AssetDatabase': 'LoadAssetAtPath IsValidFolder CreateFolder CreateAsset SaveAssets ImportAsset',
  'EditorSceneManager': 'GetActiveScene NewScene SaveScene',
