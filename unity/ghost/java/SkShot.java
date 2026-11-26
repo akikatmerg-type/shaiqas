@@ -19,7 +19,7 @@ public class SkShot {
     for (String tsI : ts) {
       float target = Float.parseFloat(tsI);
       while (tNow < target) {
-        if (!cast && tNow >= 0.2f) { cast = true; Skills.Start(m.player, Skills.By(id), false); }
+        if (!cast && tNow >= 0.2f) { cast = true; SkDef dd = Skills.By(id); if (dd.air) { m.player.y = Db.GROUND - 260; m.player.vy = -200; m.player.state = Fighter.JUMP; } Skills.Start(m.player, dd, false); }
         m.Update(1f / 60, null); m.fx.Clear(); tNow += 1f / 60;
       }
       BufferedImage im = new BufferedImage(1280, 720, BufferedImage.TYPE_INT_ARGB); Graphics2D g = im.createGraphics();
@@ -29,10 +29,12 @@ public class SkShot {
       VMesh back = new VMesh(), add = new VMesh(), front = new VMesh(), fa = new VMesh();
       SkArt.Spikes(back, add, m);
       for (int i = 0; i < m.skProj.Count(); i++) { SkProj p = m.skProj.Get(i); if (U.Eq(p.kind, "earth")) SkArt.EarthWave(back, add, p, tNow); if (U.Eq(p.kind, "ice")) SkArt.IceLance(front, fa, p, tNow); }
-      for (Fighter f : new Fighter[] { m.enemy, m.player }) SkArt.Frost(back, add, f, tNow);
+      for (Fighter f : new Fighter[] { m.enemy, m.player }) { SkArt.Frost(back, add, f, tNow); SkArt.AuraBack(back, add, f, tNow); }
+      for (int i = 0; i < m.skProj.Count(); i++) { SkProj p = m.skProj.Get(i); if (U.Eq(p.kind, "wind")) SkArt.Tornado(front, fa, p, tNow); if (U.Eq(p.kind, "lasso")) SkArt.Lasso(front, p, tNow); }
+      for (int i = 0; i < m.arrows.Count(); i++) { float[] ar = m.arrows.Get(i); if (ar[4] <= 0) SkArt.ArrowTrail(fa, ar, tNow); }
       Render.draw(g, back); Render.draw(g, add);
       for (Fighter f : new Fighter[] { m.enemy, m.player }) { VMesh v = new VMesh(); Painter.Live = true; Painter.Draw(v, f, Looks.For(f), 0, 0, 0); Render.draw(g, v); }
-      for (Fighter f : new Fighter[] { m.enemy, m.player }) SkArt.IceBlock(front, fa, f, tNow);
+      for (Fighter f : new Fighter[] { m.enemy, m.player }) { SkArt.IceBlock(front, fa, f, tNow); SkArt.AuraFront(front, fa, f, tNow); }
       Render.draw(g, front); Render.draw(g, fa);
       g.dispose();
       sg.drawImage(im.getSubimage(160, 180, 960, 540).getScaledInstance(W, H, Image.SCALE_SMOOTH), (idx % cols) * W, (idx / cols) * H, null);

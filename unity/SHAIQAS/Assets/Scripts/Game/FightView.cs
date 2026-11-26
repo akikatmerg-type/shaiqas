@@ -402,6 +402,7 @@ public partial class FightView : MonoBehaviour
         for (int i = 0; i < m.arrows.Count(); i++)
         {
             float[] a = m.arrows.Get(i); if (a[4] > 0) continue;
+            SkArt.ArrowTrail(vadd, a, Time.time);
             v.Save(); v.Translate(a[0], a[1]); v.Scale(a[2], 1);
             v.FillC(Col.Parse("#7a4a22")); v.Quad(-50, -1.5f, 14, -1.5f, 14, 1.5f, -50, 1.5f);
             v.FillC(Col.Parse("#c8d0d8")); v.Quad(12, -5, 26, 0, 26, 0, 12, 5);

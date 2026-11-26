@@ -97,7 +97,7 @@ public partial class FightView
             Pz.Copy(f.cur, keep); f.x = kx; f.y = ky; f.facing = kf;
         }
         SkArt.Frost(v, va, f, T);
-        if (S.hot > 0) { va.FillC(Col.WithA(Col.Parse(Skills.KIND_COL[7]), Mathf.Clamp01(S.hot) * 0.5f)); va.Save(); va.Translate(f.x, Db.GROUND - 2); va.Scale(1, 14f / 70f); va.Ring(0, 0, 70 + 8 * Mathf.Sin(T * 6), 3 * 5); va.Restore(); }
+        SkArt.AuraBack(v, va, f, T);
     }
 
     /// <summary>Алдыңғы қабат: снарядтар, найзағайлар, арқан, қалқан, құйын, мұз, есеңгіреу жұлдыздары.</summary>
@@ -108,23 +108,9 @@ public partial class FightView
         {
             SkProj p = m.skProj.Get(i); float k = Mathf.Clamp01(p.life * 4) * Mathf.Clamp01(p.t * 8), dir = p.vx >= 0 ? 1 : -1;
             int wc = Col.Parse(Skills.KIND_COL[0]), ic = Col.Parse(Skills.KIND_COL[4]);
-            if (p.kind == "wind")
-            {
-                va.Save(); va.Translate(p.x, Db.GROUND - 125); va.Scale(110f / 145f, 1); va.Glow(0, 0, 145, Col.WithA(wc, 0.35f * k)); va.Restore();
-                for (int j = 0; j < 11; j++)
-                {
-                    float yy = Db.GROUND - 6 - j * 22, rw = 14 + j * 7.5f, off = Mathf.Sin(p.t * 13 + j * 0.7f) * 9 * (j / 10f), rot = p.t * 16 + j;
-                    va.FillC(Col.WithA(j % 3 != 0 ? C(190, 255, 236) : C(255, 255, 255), k * (0.35f + 0.4f * (j / 10f))));
-                    Arc(va, p.x + off, yy, rw, rw * 0.26f, rot % 6.2832f, 4.2f, 2.6f);
-                }
-            }
+            if (p.kind == "wind") SkArt.Tornado(v, va, p, T);
             else if (p.kind == "ice") SkArt.IceLance(v, va, p, T);
-            else if (p.kind == "lasso" && p.owner != null)
-            {
-                Vector2 hnd = Hand(p.owner);
-                v.FillC(C(138, 90, 42)); Curve(v, hnd.x, hnd.y, (hnd.x + p.x) / 2, Mathf.Max(hnd.y, p.y) + 30, p.x, p.y, 3.2f);
-                v.FillC(C(200, 148, 90)); Arc(v, p.x + dir * 14, p.y, 18, 12, 0, 6.2832f, 3);
-            }
+            else if (p.kind == "lasso" && p.owner != null) SkArt.Lasso(v, p, T);
         }
         // найзағайлар: [x, t, seed, kind]
         for (int i = 0; i < m.bolts.Count(); i++)
@@ -135,6 +121,13 @@ public partial class FightView
             va.FillC(Col.WithA(kc, 0.22f * a)); va.Thin(zx, zy, n + 1, 26);
             va.FillC(Col.WithA(kc, 0.7f * a)); va.Stroke(zx, zy, n + 1, 8, true);
             va.FillC(Col.WithA(C(255, 255, 255), a)); va.Stroke(zx, zy, n + 1, 3, true);
+            // бұтақтар: негізгі найзағайдан жан-жаққа тарайды
+            for (int q = 0; q < 3; q++)
+            {
+                int j0 = 3 + q * 3; float bx = zx[j0], by = zy[j0], sd = ((float)r.NextDouble() < 0.5f ? -1 : 1);
+                lx[0] = bx; ly[0] = by; lx[1] = bx + sd * (40 + (float)r.NextDouble() * 60); ly[1] = by + 40 + (float)r.NextDouble() * 50;
+                va.FillC(Col.WithA(kc, 0.6f * a)); va.Thin(lx, ly, 2, 4); va.FillC(Col.WithA(C(255, 255, 255), 0.8f * a)); va.Thin(lx, ly, 2, 1.5f);
+            }
             va.Save(); va.Translate(x, Db.GROUND - 20); va.Scale(1, 0.5f); va.Glow(0, 0, 140, Col.WithA(kc, a)); va.Restore();
         }
         SkFrontF(v, va, m.player, T); SkFrontF(v, va, m.enemy, T);
@@ -144,17 +137,7 @@ public partial class FightView
         SkState S = f.sks; if (S == null) return;
         float sc = f.sc / Db.S, hy = f.y - 290 * sc;
         if (S.pullT > 0 && f.opp != null) { Vector2 hnd = Hand(f.opp); v.FillC(C(138, 90, 42)); lx[0] = hnd.x; ly[0] = hnd.y; lx[1] = f.x; ly[1] = f.y - 190 * sc; v.Stroke(lx, ly, 2, 3.2f, true); }
-        if (S.parry > 0)
-        {
-            float a = Mathf.Clamp01(S.parry * 5) * (0.7f + 0.3f * Mathf.Sin(T * 30)), cx = f.x + f.facing * 30 * sc, cy = f.y - 150 * sc;
-            va.Save(); va.Translate(cx + f.facing * 40, cy); va.Scale(0.6f, 1); va.Glow(0, 0, 120, Col.WithA(Col.Parse(Skills.KIND_COL[6]), a)); va.Restore();
-            va.FillC(Col.WithA(C(255, 242, 196), a)); Arc(va, cx, cy, 100 * sc, 100 * sc, f.facing > 0 ? -1 : Mathf.PI - 1, 2, 5);
-        }
-        if (f.sk != null && f.sk.def.id == "quiyn" && f.sk.t < 0.9f)
-        {
-            va.FillC(Col.Pack(190, 255, 236, 140));
-            for (int i = 0; i < 4; i++) { float r = 120 + i * 26, ph = T * 14 + i; Arc(va, f.x, f.y - 60 - i * 40, r, r * 0.22f, ph % 6.28f, 3.6f, 3); }
-        }
+        SkArt.AuraFront(v, va, f, T);
         SkArt.IceBlock(v, va, f, T);
         if (S.stun > 0 && f.state != Fighter.DOWN && f.state != Fighter.DEAD && !(S.ice > 0))
             for (int i = 0; i < 3; i++) { float a = T * 6 + i * 2.09f; v.FillC(C(255, 220, 90)); v.Star(f.x + Mathf.Cos(a) * 34 * sc, hy + Mathf.Sin(a) * 9, 8, T * 3); }
