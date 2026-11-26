@@ -397,9 +397,11 @@ public class Match
         else if (U.Eq(mode, "boss")) EndBoss(S);
         if (won) Medal("first");
         if (player.blocks >= 10) Medal("block");
+        if (!won && !U.Eq(mode, "surv") && !U.Eq(mode, "boss")) reward = 0;
         if (reward > 0) S.coins += reward;
         // тәжірибе (веб: skMatchXp)
-        xpGot = !won ? 8 : Mathf.RoundToInt(24 + chapter * 6 + stageIdx * 4 + (enemy.boss ? 30 : 0));
+        // жеңілгенге ештеңе берілмейді (тәжірибе де, теңге де)
+        xpGot = !won ? 0 : Mathf.RoundToInt(24 + chapter * 6 + stageIdx * 4 + (enemy.boss ? 30 : 0));
         if (U.Eq(mode, "train") && won) xpGot = Mathf.RoundToInt(xpGot * 0.6f);
         if (U.Eq(mode, "quick")) xpGot = 0;
         lvlCoins = xpGot > 0 ? Progress.GainXp(xpGot) : 0;

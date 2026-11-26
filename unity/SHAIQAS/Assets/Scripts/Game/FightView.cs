@@ -727,7 +727,7 @@ public partial class FightView : MonoBehaviour
         }
         else if (!won) { Ui.TextS("Бұқар жырау: «Қайта тұр, балам. Батыр бір жеңілістен сынбайды.»", 370, y - 20, 540, 56, 19, new Color32(240, 228, 208, 255), TextAnchor.UpperCenter, false); y += 52; }
         if (m.mode == "quick") Ui.TextS("Еркін ұрыс — жаттығу үшін: теңге мен тәжірибе берілмейді", 290, y - 10, 700, 24, 15, new Color(1, 0.95f, 0.86f, 0.75f), TextAnchor.MiddleCenter, false);
-        else Ui.TextS("+" + m.xpGot + " тәжірибе" + (m.lvlCoins > 0 ? " · ЖАҢА ДЕҢГЕЙ! +" + m.lvlCoins + " теңге" : ""), 340, y - 10, 600, 24, 16, Ui.CREAM, TextAnchor.MiddleCenter, false);
+        else if (m.xpGot > 0) Ui.TextS("+" + m.xpGot + " тәжірибе" + (m.lvlCoins > 0 ? " · ЖАҢА ДЕҢГЕЙ! +" + m.lvlCoins + " теңге" : ""), 340, y - 10, 600, 24, 16, Ui.CREAM, TextAnchor.MiddleCenter, false);
         if (m.mode == "campaign" && won && U.Len(m.zhWin) > 0) Ui.TextS("Бұқар жырау: " + m.zhWin, 360, 600, 560, 44, 16, new Color32(232, 220, 203, 255), TextAnchor.UpperCenter, false);
         // батырмалар (веб: buildUI matchEnd)
         if (pt2 < 0.4f) return;
