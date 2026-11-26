@@ -319,6 +319,9 @@ public static class Ui
     /// <summary>Мөлдір аймақ-батырма (сурет үстінде).</summary>
     /// <summary>Көрінбейтін батырма: тіктөртбұрышқа басылса true.</summary>
     public static bool Click(float x, float y, float w, float h) { return GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none); }
+    /// <summary>Тек тінтуір үстінде ме (басуды «жемейді» — Hot/Click-тен айырмашылығы).</summary>
+    public static bool Over(float x, float y, float w, float h) { return Event.current != null && R(x, y, w, h).Contains(Event.current.mousePosition); }
+    /// <summary>Батырма сияқты басу + дыбыс (басуды жейді — астындағы Click енді ұстамайды).</summary>
     public static bool Hot(float x, float y, float w, float h)
     {
         bool hit = GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none);
@@ -356,5 +359,14 @@ public static class Ui
     public static void DzPanelSmall(float x, float y, float w, float h)
     {
         Nine("Art/ui/btn_ch_nor_48", x - 26, y - 26 + (h - 48) / 2, w + 52, 100, 40, 32, 40, 32);
+    }
+
+    /// <summary>ҚАЗ + РУС: орысша аударма жолағы (веб: ruLine). yBottom — жолақтың төменгі шеті.</summary>
+    public static void RuStrip(string s, float x, float yBottom, float w)
+    {
+        float th = TextHeight(s, w - 24, 14, true), h = th + 16;
+        Fill(x - 8, yBottom - h, w + 16, h, new Color(0.055f, 0.04f, 0.12f, 0.88f));
+        Fill(x - 8, yBottom - h, 3, h, new Color32(200, 184, 224, 200));
+        Text(s, x + 6, yBottom - h + 8, w - 12, th + 4, 14, new Color32(200, 184, 224, 255), TextAnchor.UpperLeft, true);
     }
 }

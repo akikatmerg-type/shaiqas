@@ -31,9 +31,12 @@ public partial class GameRoot
             Ui.DzPanel(x, y, 236, 104, has ? "parch" : "felt");
             Ui.Img("Art/icons/medal_" + id + (has ? "" : "_off"), x + 38 - 36, y + 46 - 36, 72, 72);
             JNode rm = Db.RuMed.Get(id);
-            string nm = ru && rm.IsArr() ? rm.At(0).Str() : m.S("name"), ds = ru && rm.IsArr() ? rm.At(1).Str() : m.S("desc");
+            string nm = m.S("name"), ds = m.S("desc");
+            bool hr = ru && rm.IsArr();
             Ui.Text(nm, x + 72, y + 22, 156, 24, Ui.Fit(nm, 156, 17), has ? (Color)new Color32(58, 26, 10, 255) : new Color32(255, 243, 220, 255), TextAnchor.MiddleLeft, true);
-            Ui.Text(ds, x + 72, y + 48, 156, 50, 12, has ? (Color)new Color32(106, 74, 42, 255) : new Color32(184, 168, 200, 255), TextAnchor.UpperLeft, true);
+            Ui.Text(ds, x + 72, y + 46, 156, hr ? 34 : 50, 12, has ? (Color)new Color32(106, 74, 42, 255) : new Color32(184, 168, 200, 255), TextAnchor.UpperLeft, true);
+            // орысша аударма — астында, кішірек (веб: RU_MED)
+            if (hr) Ui.Text(rm.At(0).Str(), x + 72, y + 80, 156, 16, 11, has ? (Color)new Color32(138, 106, 74, 255) : new Color32(154, 138, 168, 255), TextAnchor.MiddleLeft, true);
             GUI.color = o;
         }
     }

@@ -72,21 +72,25 @@ public partial class GameRoot
         Ui.Portrait("Art/ui/por_zhyrau", 78 + ax, 632, 44);
         Ui.TextO(p.date, 142 + ax, 566, 820, 36, 28, new Color32(255, 214, 120, 255), TextAnchor.MiddleLeft);
         bool dlg = p.dlg != null;
-        float tw = dlg ? 700 : 820;
-        Ui.TextO(p.Title(ru), 142 + ax, 600, tw, 30, 21, new Color32(255, 243, 224, 255), TextAnchor.MiddleLeft, true, 1.5f);
-        // мәтін біртіндеп пайда болады
-        string body = p.Body(ru);
+        float tw = dlg ? 700 : 780;   // ◀ батырмасына (x 940) тимейді
+        Ui.TextO(p.Title(false), 142 + ax, 600, tw, 30, 21, new Color32(255, 243, 224, 255), TextAnchor.MiddleLeft, true, 1.5f);
+        // мәтін біртіндеп пайда болады — әрқашан қазақша
+        string body = p.Body(false);
         int shown = Mathf.Clamp(Mathf.FloorToInt((pt - 0.2f) * 90), 0, body.Length);
         Ui.Text(body.Substring(0, shown), 142, 634, tw, 90, 17, new Color32(236, 226, 210, 255), TextAnchor.UpperLeft);
+        // ҚАЗ + РУС: орысша аударма — сурет үстіндегі жеке жолақта, қазақ мәтінін жаппайды
+        if (ru && p.ruText != null) Ui.RuStrip(Game.Fix((p.ruTitle != null ? p.ruTitle + ". " : "") + p.ruText), 142, 524, dlg ? 700 : 820);
         if (dlg)
         {
             JNode o = p.dlg.Get("o");
-            if (p.dlgAns < 0) Ui.TextO(ru ? "Выбери ответ ▼" : "Жауабын таңда ▼", 860, 540, 380, 20, 15, Ui.GOLD, TextAnchor.MiddleCenter, true, 1);
+            if (p.dlgAns < 0) Ui.TextO(ru ? "Жауабын таңда · Выбери ответ ▼" : "Жауабын таңда ▼", 860, 540, 380, 20, 15, Ui.GOLD, TextAnchor.MiddleCenter, true, 1);
             for (int i = 0; i < o.Count(); i++)
             {
                 bool right = i == p.dlg.Ik("ok"), picked = i == p.dlgAns;
                 if (p.dlgAns >= 0 && (right || picked)) Ui.Fill(866, 562 + i * 50, 368, 42, right ? new Color(0.2f, 0.6f, 0.25f, 0.85f) : new Color(0.7f, 0.18f, 0.15f, 0.85f));
-                if (Ui.DzBtn(o.At(i).At(ru ? 1 : 0).Str(), 870, 564 + i * 50, 360, 38, false, p.dlgAns < 0, null, true, false, true))
+                bool hasRu = ru && o.At(i).Count() > 1 && o.At(i).At(1).Str() != o.At(i).At(0).Str();
+                if (hasRu) Ui.Text(Game.Fix(o.At(i).At(1).Str()), 874, 600 + i * 50, 352, 14, 11, new Color(0.85f, 0.8f, 0.95f, 0.9f), TextAnchor.MiddleCenter, true);
+                if (Ui.DzBtn(o.At(i).At(0).Str(), 870, 564 + i * 50, 360, hasRu ? 34 : 38, false, p.dlgAns < 0, null, true, false, true))
                 {
                     int got = Story.Answer(p, i); pt = 0.2f;
                     Toast(Story.AnswerOk(p) ? (got > 0 ? "Дұрыс жауап! +15 теңге" : "Дұрыс жауап!") : "Есіңде сақта!");
@@ -118,7 +122,7 @@ public partial class GameRoot
         Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.03f, 0.1f, 0.6f));
         Ui.DzPanel(160, 60, 960, 600, "parch", true);
         Ui.Text("Атағың: " + Progress.RankName(), 160, 76, 960, 50, 34, new Color32(125, 23, 25, 255), TextAnchor.MiddleCenter, true);
-        Ui.Text(Story.DoneText(doneCh, ru), 200, 136, 880, 110, 21, Ui.INK, TextAnchor.UpperLeft);
+        Ui.Text(Story.DoneText(doneCh, false), 200, 136, 880, 110, 21, Ui.INK, TextAnchor.UpperLeft);
         Ui.Fill(200, 250, 880, 3, new Color32(125, 23, 25, 255));
         Ui.Text("ЕСТЕ САҚТА", 200, 260, 880, 40, 26, new Color32(125, 23, 25, 255), TextAnchor.MiddleCenter, true);
         for (int i = 0; i < Story.LessonCount(doneCh); i++)
@@ -126,7 +130,12 @@ public partial class GameRoot
             float y = 310 + i * 76;
             Ui.Fill(200, y, 880, 66, new Color(1, 1, 1, 0.45f));
             Ui.Text(Story.LessonHead(doneCh, i), 214, y, 230, 66, 20, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
-            Ui.Text(Story.LessonText(doneCh, i, ru), 450, y, 620, 66, 19, Ui.INK, TextAnchor.MiddleLeft);
+            if (ru)
+            {
+                Ui.Text(Story.LessonText(doneCh, i, false), 450, y + 2, 620, 40, 17, Ui.INK, TextAnchor.MiddleLeft);
+                Ui.Text(Game.Fix(Story.LessonText(doneCh, i, true)), 450, y + 42, 620, 22, 13, new Color32(110, 80, 50, 255), TextAnchor.MiddleLeft);
+            }
+            else Ui.Text(Story.LessonText(doneCh, i, false), 450, y, 620, 66, 19, Ui.INK, TextAnchor.MiddleLeft);
         }
         Ui.Text("Келесі тарауды ашу үшін — викторинадан өт (" + Progress.QzPassMin() + "/" + Db.QZ_N + ")", 160, 548, 960, 30, 18, Ui.INK, TextAnchor.MiddleCenter);
         if (Ui.DzBtn("ВИКТОРИНАҒА ▶", 470, 590, 340, 60, true)) StartQuiz(doneCh, true);

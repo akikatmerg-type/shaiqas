@@ -38,7 +38,7 @@ public partial class GameRoot
         for (int ch = 0; ch < Db.NCH; ch++)
         {
             float x = ATlX(ch); JNode Cc = Db.Ch(ch); bool on = ch == albumCh;
-            bool hv = albumSel < 0 && Ui.Hot(x - 64, y0 - 40, 128, 90);
+            bool hv = albumSel < 0 && Ui.Over(x - 64, y0 - 40, 128, 90);
             Ui.Circle(x, y0, on ? 17 : 13, new Color32(255, 227, 160, 255));
             Ui.Circle(x, y0, on ? 15 : 11, on ? (Color)new Color32(233, 173, 60, 255) : hv ? new Color32(138, 106, 154, 255) : new Color32(58, 48, 96, 255));
             Ui.Text(Cc.S("roman"), x - 20, y0 - 10, 40, 20, on ? 15 : 12, on ? (Color)new Color32(42, 18, 5, 255) : new Color32(255, 227, 160, 255), TextAnchor.MiddleCenter, true);
@@ -53,7 +53,7 @@ public partial class GameRoot
         {
             int i = albumCh * 4 + j; if (i >= n) break;
             Rect r = ACard(j); bool open = Medals.CardOpen(i); JNode c = Db.Hist.At(i), rc = Db.RuCards.At(i);
-            bool hv = albumSel < 0 && Ui.Hot(r.x, r.y, r.width, r.height);
+            bool hv = albumSel < 0 && Ui.Over(r.x, r.y, r.width, r.height);
             float k = Mathf.Clamp01((pt - j * 0.07f) / 0.35f); k = 1 - (1 - k) * (1 - k) * (1 - k);
             float x = r.x, y = r.y + (1 - k) * 30 + (hv && open ? -6 : 0), w = r.width, h = r.height;
             Color o = GUI.color; GUI.color = new Color(1, 1, 1, k);
@@ -61,11 +61,12 @@ public partial class GameRoot
             Ui.Img("Art/icons/hist" + i + (open ? "" : "_locked"), x + w / 2 - 80, y + 98 - 80, 160, 160);
             if (open)
             {
-                string tt = ru && rc.IsArr() ? rc.At(0).Str() : c.S("title");
+                string tt = c.S("title"); bool hr = ru && rc.IsArr();
                 Ui.Text(tt, x + 10, y + 186, w - 20, 28, Ui.Fit(tt, w - 30, 24), new Color32(58, 26, 10, 255), TextAnchor.MiddleCenter, true);
-                Ui.Text(c.S("date"), x + 10, y + 218, w - 20, 20, 15, new Color32(138, 26, 18, 255), TextAnchor.MiddleCenter, true);
-                string f0 = ru && rc.IsArr() ? rc.At(1).At(0).Str() : c.Get("facts").At(0).Str();
-                Ui.Text(f0, x + 17, y + 246, w - 34, 84, 15, new Color32(42, 26, 16, 255), TextAnchor.UpperCenter, true);
+                Ui.Text(hr ? c.S("date") + " · " + rc.At(0).Str() : c.S("date"), x + 10, y + 218, w - 20, 20, hr ? 13 : 15, new Color32(138, 26, 18, 255), TextAnchor.MiddleCenter, true);
+                string f0 = c.Get("facts").At(0).Str();
+                Ui.Text(f0, x + 17, y + 246, w - 34, hr ? 50 : 84, hr ? 14 : 15, new Color32(42, 26, 16, 255), TextAnchor.UpperCenter, true);
+                if (hr) Ui.Text(rc.At(1).At(0).Str(), x + 17, y + 296, w - 34, 40, 12, new Color32(122, 90, 58, 255), TextAnchor.UpperCenter, true);
                 Ui.Text("Толығырақ ▸", x, y + h - 32, w, 22, 15, new Color32(138, 90, 42, 255), TextAnchor.MiddleCenter, true);
             }
             else
@@ -109,23 +110,35 @@ public partial class GameRoot
         float u = s;
         Ui.Img("Art/icons/hist" + i, x + (190 - 130 - 18) * u, y + (210 - 130 - 18) * u, 296 * u, 296 * u);
         Ui.Text(Db.ChName(i / 4) + " · " + c.S("date"), x + 40 * u, y + 366 * u, 300 * u, 22 * u, 16, new Color32(138, 26, 18, 255), TextAnchor.MiddleCenter, true);
-        string tt = ru && rc.IsArr() ? rc.At(0).Str() : c.S("title");
+        bool hr = ru && rc.IsArr();
+        string tt = c.S("title");
         Ui.TextO(tt, x + 360 * u, y + 62 * u, 500 * u, 50 * u, Ui.Fit(tt, 500, 40), Ui.GOLD, TextAnchor.MiddleLeft, true, 3);
-        JNode facts = ru && rc.IsArr() ? rc.At(1) : c.Get("facts");
-        float yy = y + 128 * u;
+        if (hr) Ui.Text(rc.At(0).Str(), x + 362 * u, y + 108 * u, 500 * u, 22, 16, new Color32(138, 106, 74, 255), TextAnchor.MiddleLeft, true);
+        JNode facts = c.Get("facts");
+        float yy = y + (hr ? 140 : 128) * u;
+        int fs = hr ? 19 : 22;
         for (int k = 0; k < facts.Count(); k++)
         {
-            string f = facts.At(k).Str(); float th = Ui.TextHeight(f, 480 * u, 22, true);
-            Ui.Circle(x + 368 * u, yy + 14, 5, new Color32(192, 138, 42, 255));
-            Ui.Text(f, x + 384 * u, yy, 480 * u, th + 6, 22, new Color32(42, 26, 16, 255), TextAnchor.UpperLeft, true);
-            yy += th + 14;
+            string f = facts.At(k).Str(); float th = Ui.TextHeight(f, 480 * u, fs, true);
+            Ui.Circle(x + 368 * u, yy + 12, 5, new Color32(192, 138, 42, 255));
+            Ui.Text(f, x + 384 * u, yy, 480 * u, th + 6, fs, new Color32(42, 26, 16, 255), TextAnchor.UpperLeft, true);
+            yy += th + 4;
+            if (hr && k < rc.At(1).Count())
+            {
+                string fr = rc.At(1).At(k).Str(); float rh = Ui.TextHeight(fr, 480 * u, 15, true);
+                Ui.Text(fr, x + 384 * u, yy, 480 * u, rh + 4, 15, new Color32(122, 90, 58, 255), TextAnchor.UpperLeft, true);
+                yy += rh;
+            }
+            yy += 10;
         }
-        string fun = ru && rc.IsArr() ? rc.At(2).Str() : c.S("fun");
+        string fun = c.S("fun");
         if (U.Len(fun) > 0)
         {
-            Ui.DzPanel(x + 352 * u, yy + 6, 512 * u, 116 * u, "felt");
-            Ui.Text(ru ? "Знаешь ли ты?" : "Білесің бе?", x + 374 * u, yy + 18, 300, 26, 19, new Color32(255, 211, 107, 255), TextAnchor.MiddleLeft, true);
-            Ui.Text(fun, x + 374 * u, yy + 48, 470 * u, 70 * u, 18, new Color32(255, 243, 220, 255), TextAnchor.UpperLeft, true);
+            Ui.DzPanel(x + 352 * u, yy + 6, 512 * u, (hr ? 136 : 116) * u, "felt");
+            Ui.Text(hr ? "Білесің бе? · Знаешь ли ты?" : "Білесің бе?", x + 374 * u, yy + 18, 400, 26, 19, new Color32(255, 211, 107, 255), TextAnchor.MiddleLeft, true);
+            float fh = Ui.TextHeight(fun, 470 * u, hr ? 16 : 18, true);
+            Ui.Text(fun, x + 374 * u, yy + 46, 470 * u, fh + 4, hr ? 16 : 18, new Color32(255, 243, 220, 255), TextAnchor.UpperLeft, true);
+            if (hr) Ui.Text(rc.At(2).Str(), x + 374 * u, yy + 48 + fh, 470 * u, 40, 13, new Color32(200, 184, 224, 255), TextAnchor.UpperLeft, true);
         }
         GUI.color = o;
         int s0 = albumCh * 4; Lst<int> L = new Lst<int>(); for (int j = 0; j < 4; j++) if (Medals.CardOpen(s0 + j)) L.Add(s0 + j);
@@ -173,18 +186,20 @@ public partial class GameRoot
         }
         T("Сұрақ " + (q.i + 1) + " / " + N, 640, 178, 18, H("#c8b8d8"));
         Ui.DzPanel(190, 196, 900, 110, "parch");
-        string qt = q.Question(ru);
-        Ui.Text(qt, 220, 202, 840, 98, Ui.FitBox(qt, 840, 98, 30), H("#2a1a10"), TextAnchor.MiddleCenter, true);
+        string qt = q.Question(false), qr = ru ? q.Question(true) : null; if (qr == qt) qr = null;
+        Ui.Text(qt, 220, 202, 840, qr != null ? 74 : 98, Ui.FitBox(qt, 840, qr != null ? 74 : 98, 30), H("#2a1a10"), TextAnchor.MiddleCenter, true);
+        if (qr != null) Ui.Text(qr, 220, 276, 840, 24, Ui.Fit(qr, 840, 17), H("#7a5a3a"), TextAnchor.MiddleCenter, true);
         string[] lt = { "А", "Ә", "Б" };
         for (int k = 0; k < 3; k++)
         {
-            float x = 290, y = 334 + k * 86, w = 700, h = 72; bool right = q.IsRight(k), hv = q.picked < 0 && Ui.Hot(x, y, w, h);
+            float x = 290, y = 334 + k * 86, w = 700, h = 72; bool right = q.IsRight(k), hv = q.picked < 0 && Ui.Over(x, y, w, h);
             Color fill = hv ? H("#3a3170") : H("#1f1a3e"), edge = H("#e9ad3c");
             if (q.picked >= 0) { if (right) { fill = H("#2a6a3a"); edge = H("#9dffb0"); } else if (k == q.picked) { fill = H("#7a2020"); edge = H("#ff8a7a"); } }
             Ui.Fill(x, y, w, h, fill); Ui.Frame(x, y, w, h, edge, 3);
             Ui.Text(lt[k], x + 14, y, 40, h, 26, H("#ffd36b"), TextAnchor.MiddleCenter, true);
-            string op = q.Option(k, ru);
-            Ui.TextS(op, x + 70, y, w - 110, h, Ui.Fit(op, w - 110, 26), H("#fff3dc"), TextAnchor.MiddleLeft, true);
+            string op = q.Option(k, false), orr = ru ? q.Option(k, true) : null; if (orr == op) orr = null;
+            Ui.TextS(op, x + 70, y, w - 110, orr != null ? h - 18 : h, Ui.Fit(op, w - 110, orr != null ? 24 : 26), H("#fff3dc"), TextAnchor.MiddleLeft, true);
+            if (orr != null) Ui.Text(orr, x + 70, y + h - 26, w - 130, 20, 14, new Color(1, 0.94f, 0.86f, 0.7f), TextAnchor.MiddleLeft, true);
             if (q.picked >= 0 && right) Ui.Text("✓", x + w - 54, y, 40, h, 30, H("#9dffb0"), TextAnchor.MiddleCenter, true);
             if (q.picked == k && !right) Ui.Text("✗", x + w - 54, y, 40, h, 30, H("#ffb0a0"), TextAnchor.MiddleCenter, true);
             if (q.picked < 0 && Ui.Click(x, y, w, h)) QPick(q, k);
@@ -192,7 +207,7 @@ public partial class GameRoot
         if (q.picked >= 0)
         {
             bool ok = q.IsRight(q.picked);
-            TO(ok ? "Дұрыс! Жарайсың!" : "Дұрыс жауап: " + q.Option(q.RightIndex(), ru), 640, 616, 22, ok ? H("#9dffb0") : H("#ffd0a0"));
+            TO(ok ? "Дұрыс! Жарайсың!" : "Дұрыс жауап: " + q.Option(q.RightIndex(), false), 640, 616, 22, ok ? H("#9dffb0") : H("#ffd0a0"));
             if (Ui.DzBtn(q.i < N - 1 ? "КЕЛЕСІ ▶" : "НӘТИЖЕ", 640 - 120, 640, 240, 52, true)) q.Next();
         }
         else T("Келесі тарау үшін: кемінде " + Progress.QzPassMin() + " дұрыс жауап · қазір: " + q.score, 32, 690, 15, H("#ffe3a0"), true);
