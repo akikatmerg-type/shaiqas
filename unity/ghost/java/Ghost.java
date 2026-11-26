@@ -164,11 +164,13 @@ public class Ghost {
       System.out.println("[hat] нокаутта бас киім ұшты (ең биік " + (int) topY + "), жерге түсті: " + landed); }
     { Match cr = new Match(); cr.StartQuick(0, 0); cr.phase = Match.FIGHT; cr.player.active = true; cr.enemy.active = true;
       Move kb2 = Move.Base("l1"); kb2.dmg = 9999; cr.enemy.TakeHit(kb2, -1, true, cr.player);
-      float d0 = Math.abs(cr.enemy.x - cr.player.x); int f0 = cr.enemy.facing; boolean nan = false;
-      for (int f = 0; f < 60 * 4; f++) { cr.Update(1f / 60, null); cr.fx.Clear(); if (Float.isNaN(cr.enemy.x) || Float.isNaN(cr.enemy.rot)) nan = true; }
-      float d1 = Math.abs(cr.enemy.x - cr.player.x);
-      check(!nan && cr.enemy.crawlFlip && cr.enemy.facing == -f0 && d1 > d0 + 40 && cr.enemy.rot * cr.enemy.facing != 0, "жеңілген: аударылып, жаудан алыстай жорғалайды");
-      System.out.println("[crawl] жеңілген ішімен аударылды, " + (int) (d1 - d0) + " px жорғалап алыстады, бұрыш " + cr.enemy.rot); }
+      float d0 = Math.abs(cr.enemy.x - cr.player.x); boolean nan = false; float topK = 9999;
+      for (int f = 0; f < 60 * 2; f++) { cr.Update(1f / 60, null); cr.fx.Clear(); if (Float.isNaN(cr.enemy.x) || Float.isNaN(cr.enemy.rot)) nan = true; topK = Math.min(topK, cr.enemy.y); }
+      float d1 = Math.abs(cr.enemy.x - cr.player.x), x1 = cr.enemy.x;
+      for (int f = 0; f < 60; f++) { cr.Update(1f / 60, null); cr.fx.Clear(); }
+      boolean still = Math.abs(cr.enemy.x - x1) < 0.5f;
+      check(!nan && d1 > d0 + 40 && topK < Db.GROUND - 20 && Math.abs(cr.enemy.rot) > 1.4f && cr.enemy.y == Db.GROUND && still, "жеңілген: соққыдан ұшып, шалқасынан жатады, қозғалмайды");
+      System.out.println("[ko] жеңілген " + (int) (d1 - d0) + " px ұшты, " + (int) (Db.GROUND - topK) + " px көтерілді, бұрыш " + cr.enemy.rot + ", қозғалыссыз: " + still); }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---
     Geo g = new Geo(); g.Build(Pz.Get("idle"));

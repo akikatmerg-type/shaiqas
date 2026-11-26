@@ -48,7 +48,6 @@ public class Fighter
     public float[] fp;      // құлап-аунау кезіндегі айналу нүктесі (null — жоқ)
     public Chain belt1, belt2, hem;   // мата тізбектері (Cloth)
     public Chain plume, hatc, tas;
-    public bool crawlFlip;            // жеңілген соң ішімен аударылып, жорғалап бара жатыр (Shadow Fight 2 сияқты)
     public float[] hatOff;            // нокаутта ұшқан бас киім: [x, y, vx, vy, rot, vr, facing, land]    // үкі/қауырсын, сәлде ұшы/малақай шашағы, найза/сүңгі шашағы
     public float rot;       // ағымдағы құлау бұрышы (сурет үшін)
     public float pw = 1;    // PACE жергілікті уақыт
@@ -121,7 +120,7 @@ public class Fighter
         guard = false;
         switch (state)
         {
-            case DEAD: vx = 0; Crawl(dt); break;
+            case DEAD: vx = 0; break;
             case VICTORY: vx = 0; break;
             case DOWN: vx = 0; if (st > 1.25f) Set(IDLE); break;
             case HIT: vx = 0; if (st > 0.3f) Set(IDLE); break;
@@ -411,6 +410,14 @@ public class Fighter
     {
         bool was = state == DEAD;
         hp = 0; state = DEAD; st = 0;
+        // соңғы соққыдан артқа ұшады: жоғары секіріп, жауынан алыс сырғиды
+        if (!was)
+        {
+            float away = opp != null ? (x >= opp.x ? 1 : -1) : (push != 0 ? Mathf.Sign(push) : -facing);
+            push = away * Mathf.Max(Mathf.Abs(push), 560);
+            if (y >= Db.GROUND - 1) vy = -430;
+            rollHw = null;
+        }
         // веб: нокаутта бас киім ұшып түседі (жеңген жаққа қарсы бағытқа, айналып)
         if (!was && hatOff == null && !npc && U.Len(hat) > 0 && cur != null)
         {
@@ -420,37 +427,24 @@ public class Fighter
         }
         if (game != null) game.Ko(this);
     }
-    // ================= жеңілген соң жорғалау =================
-    // 0–1.1 с: құлау (бұрынғыдай) · 1.1–1.3: иығын көтереді · 1.3: ішімен аударылады · 1.6-дан: шынтағымен
-    // жерді тартып, жеңген жаудан алыстай жорғалайды; 7–10 с аралығында әлсіреп, тоқтайды.
-    public const float CR_FLIP = 1.3f, CR_GO = 1.6f, CR_CYC = 1.1f;
-    void Crawl(float dt)
+    // ================= жеңілген соң: соққыдан ұшып, шалқасынан құлау (Shadow Fight 2 сияқты) =================
+    // 0–0.37 с: соққыдан артқа ұшады (секіріп, денесі шалқаяды) · 0.37: арқасымен жерге түседі, сәл серпіледі,
+    // шаң көтеріледі · сосын қолы-аяғы босап, қозғалыссыз жатады.
+    public const float KO_LAND = 0.37f;
+    static float[] koLie;
+    static float[] KoLie()
     {
-        if (!crawlFlip && st >= CR_FLIP && cur != null)
-        {
-            crawlFlip = true; facing = -facing;
-            Fx(Match.FX_DUST, x, Db.GROUND, facing, 5);
-        }
-        if (!crawlFlip || st < CR_GO) return;
-        float c = (st - CR_GO) / CR_CYC, k = Pz.Smooth01((st - CR_GO) / 0.5f), tired = 1 - Pz.Smooth01((st - 7) / 3);
-        float sp = 58 * (sc / Db.S) * (0.3f + 0.7f * Mathf.Abs(Mathf.Cos(c * Mathf.PI * 2))) * k * tired;
-        x = Pz.Clamp(x + facing * sp * dt, 70, Db.ARENA - 70);
-    }
-    /// <summary>Жорғалау позасы (Animate ішінде, DEAD күйінде аударылғаннан кейін).</summary>
-    void CrawlPose(float[] o)
-    {
-        float c = (st - CR_GO) / CR_CYC, s = Mathf.Sin(c * Mathf.PI * 2), k = Pz.Smooth01((st - CR_GO) / 0.5f);
-        float tired = 1 - 0.6f * Pz.Smooth01((st - 7) / 3); s *= tired;
-        Pz.Copy(o, Pz.Get("fallen"));
-        float[] q = tp;
-        q[Pz.HX] = -2; q[Pz.HY] = -96; q[Pz.T] = -0.08f;
-        // қол бұрыштары дене бұрышына (R0 ≈ 1.16) қатысты: алға созылғанда алақан алда жерге тиеді, тартқанда — иықтың астына келеді
-        float R0 = 1.16f;
-        q[Pz.FA1] = R0 + 0.45f + 0.55f * s; q[Pz.FA2] = R0 + 0.55f - 0.35f * s;
-        q[Pz.BA1] = R0 + 0.45f - 0.55f * s; q[Pz.BA2] = R0 + 0.55f + 0.35f * s;
-        q[Pz.FFX] = 12 + 9 * s; q[Pz.FFY] = -7 * Mathf.Max(0, s); q[Pz.BFX] = -10 - 9 * s; q[Pz.BFY] = -7 * Mathf.Max(0, -s);
-        q[Pz.W] = q[Pz.FA2] + 0.5f;
-        Pz.Mix(o, o, q, k);
+        if (koLie != null) return koLie;
+        float r = -Mathf.PI / 2 * 0.98f;        // дене бұрышы (шалқасынан)
+        koLie = new float[Pz.N];
+        // жамбас аяқтан ~120 бірлік (аяқ ұзындығы 122) — аяқтар түзу жатады, тізе көтерілмейді
+        koLie[Pz.HX] = -1; koLie[Pz.HY] = -120; koLie[Pz.T] = -0.06f;
+        koLie[Pz.FFX] = 6; koLie[Pz.FFY] = 0; koLie[Pz.BFX] = -6; koLie[Pz.BFY] = 0;
+        // қол бұрышы әлемде = a − r: алдыңғы қол дене бойымен аяққа қарай жерде жатыр, артқы қол басының үстіне лақтырылған
+        koLie[Pz.FA1] = r + 1.25f; koLie[Pz.FA2] = r + 1.55f;
+        koLie[Pz.BA1] = r - 1.85f; koLie[Pz.BA2] = r - 1.5f;
+        koLie[Pz.W] = r + 1.75f;   // қару қолдан түсіп, жерге жатады
+        return koLie;
     }
 
     /// <summary>Ұшқан бас киімнің қозғалысы (веб: kidHatStep).</summary>
@@ -670,8 +664,12 @@ public class Fighter
             if (t > 0.45f && t < 0.8f) tg[Pz.HY] += Mathf.Sin(at * 7) * 1.5f;
             rate = 18; zeta = 0.6f;
         }
-        else if (s0 == DEAD && crawlFlip) { CrawlPose(tg); rate = 11; zeta = 0.7f; }
-        else if (s0 == DEAD) { Pz.Mix(tg, Pz.Get("hitHeavy"), Pz.Get("dead"), Pz.Smooth01(st / 0.32f)); rate = 14; zeta = 0.5f; }
+        else if (s0 == DEAD)
+        {
+            // соққы әсері → ауада шалқаю → жерде босаңсып жату (тегіс, діріл жоқ)
+            Pz.Mix(tg, Pz.Get("hitHeavy"), KoLie(), Pz.Smooth01((st - 0.06f) / 0.42f));
+            rate = 13; zeta = 0.92f;
+        }
         else if (s0 == JUMP)
         {
             Pz.Mix(tg, Pz.Get("jumpUp"), Pz.Get("jump"), Pz.Smooth01((vy + 650) / 600));
@@ -814,17 +812,12 @@ public class Fighter
         float A = -Mathf.PI / 2 * 0.93f;
         if (state == DEAD)
         {
-            float t = st;
-            if (t < 0.42f) return A * Mathf.Pow(t / 0.42f, 1.7f);
-            if (crawlFlip)
-            {
-                // ішімен жатыр (бұрыш таңбасы ауысты — бет жаққа қарай), сосын кеудесін шынтаққа көтереді
-                float P = -A, e = Pz.Smooth01((t - CR_FLIP) / 0.25f), k = Pz.Smooth01((t - CR_GO) / 0.5f);
-                float c = (t - CR_GO) / CR_CYC, tired = 1 - 0.6f * Pz.Smooth01((t - 7) / 3);
-                return P * (0.86f + 0.14f * e) - k * (0.3f + 0.05f * Mathf.Sin(c * Mathf.PI * 4)) * tired;
-            }
-            if (t > 1.1f) return A * (1 - 0.14f * Pz.Smooth01((t - 1.1f) / 0.2f));
-            return A * (1 - 0.1f * Mathf.Sin(Pz.Clamp((t - 0.42f) / 0.2f, 0, 1) * Mathf.PI) - 0.03f * Mathf.Sin(Pz.Clamp((t - 0.62f) / 0.12f, 0, 1) * Mathf.PI));
+            // шалқасынан: толық жатады (0.98·90°), денені жерден сәл көтереміз — арқасы жерге «батпасын»
+            float t = st, L = -Mathf.PI / 2 * 0.98f;
+            fp = new float[] { 0, -13 * Pz.Smooth01((t - 0.15f) / 0.25f), 0, 0 };
+            if (t < KO_LAND) { float e = t / KO_LAND; return L * e * e * (3 - 2 * e) * (0.7f + 0.3f * e); }
+            float b = Pz.Clamp((t - KO_LAND) / 0.28f, 0, 1);
+            return L * (1 - 0.09f * Mathf.Sin(b * Mathf.PI) * (1 - b));   // жерге соғылып, бір рет серпіледі
         }
         if (state == DOWN)
         {

@@ -596,8 +596,8 @@ public class Match
             if (player.state == Fighter.DEAD || enemy.state == Fighter.DEAD) { if (slow <= 0) EndRound(true); }
             else if (timer <= 0) { timer = 0; EndRound(false); }
         }
-        // соңғы раунд: жеңілген жорғалап бара жатқанын көрсету үшін нәтиже терезесі сәл кешірек шығады (Shadow Fight 2 сияқты)
-        else if (phase == ROUNDEND && pt > ((pWins >= needWins || eWins >= needWins) && (player.state == Fighter.DEAD || enemy.state == Fighter.DEAD) ? 4.4f : 2.6f))
+        // соңғы раунд: жеңілгеннің ұшып құлағаны толық көрінсін — нәтиже терезесі сәл кешірек шығады
+        else if (phase == ROUNDEND && pt > ((pWins >= needWins || eWins >= needWins) && (player.state == Fighter.DEAD || enemy.state == Fighter.DEAD) ? 3.4f : 2.6f))
         {
             if (pWins >= needWins || eWins >= needWins) EndMatch();
             else { int kp = pWins, ke = eWins, r = round + 1; StartRound(); pWins = kp; eWins = ke; round = r; }
