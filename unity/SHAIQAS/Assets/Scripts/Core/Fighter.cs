@@ -47,6 +47,8 @@ public class Fighter
     float[] rollHw;
     public float[] fp;      // құлап-аунау кезіндегі айналу нүктесі (null — жоқ)
     public Chain belt1, belt2, hem;   // мата тізбектері (Cloth)
+    public Chain plume, hatc, tas;
+    public float[] hatOff;            // нокаутта ұшқан бас киім: [x, y, vx, vy, rot, vr, facing, land]    // үкі/қауырсын, сәлде ұшы/малақай шашағы, найза/сүңгі шашағы
     public float rot;       // ағымдағы құлау бұрышы (сурет үшін)
     public float pw = 1;    // PACE жергілікті уақыт
     // қару ізі (веб: this.trail): [x, y, bx, by, life, max, seq, special]
@@ -403,7 +405,33 @@ public class Fighter
 
     /// <summary>Еркін алаңда ешкім өлмейді (веб: skArena — шексіз денсаулық).</summary>
     public bool Immortal() { return game != null && U.Eq(game.mode, "arena"); }
-    void Die() { hp = 0; state = DEAD; st = 0; if (game != null) game.Ko(this); }
+    void Die()
+    {
+        bool was = state == DEAD;
+        hp = 0; state = DEAD; st = 0;
+        // веб: нокаутта бас киім ұшып түседі (жеңген жаққа қарсы бағытқа, айналып)
+        if (!was && hatOff == null && !npc && U.Len(hat) > 0 && cur != null)
+        {
+            tg2.Build(cur);
+            float dir = opp != null ? (x >= opp.x ? 1 : -1) : -facing;
+            hatOff = new float[] { x + facing * tg2.Cx * sc, y + (tg2.Cy - 22) * sc, dir * Pz.Rand(380, 520), -Pz.Rand(760, 900), 0, dir * Pz.Rand(7, 11), facing, 0 };
+        }
+        if (game != null) game.Ko(this);
+    }
+    /// <summary>Ұшқан бас киімнің қозғалысы (веб: kidHatStep).</summary>
+    public void HatStep(float dt)
+    {
+        float[] h = hatOff; if (h == null || h[7] > 0) return;
+        h[3] += Db.GRAV * dt; h[0] += h[2] * dt; h[1] += h[3] * dt; h[4] += h[5] * dt;
+        h[0] = Pz.Clamp(h[0], 40, Db.ARENA - 40);
+        float gy = Db.GROUND - 19 * sc;
+        if (h[1] >= gy)
+        {
+            h[1] = gy;
+            if (h[3] > 300) { h[3] *= -0.32f; h[2] *= 0.55f; h[5] *= 0.5f; Fx(Match.FX_DUST, h[0], Db.GROUND, 0, 4); }
+            else { h[7] = 1; h[3] = 0; h[4] = Mathf.Round(h[4] / Mathf.PI) * Mathf.PI; }
+        }
+    }
 
     // ---------------- жасанды ақыл ----------------
     Intent aiIt = new Intent();

@@ -605,6 +605,7 @@ public class Match
         if (dt > 0)
         {
             player.Update(dt, input); enemy.Update(dt, null);
+            player.HatStep(dt); enemy.HatStep(dt);
             Skills.Step(this, dt);
             for (int i = arrows.Count() - 1; i >= 0; i--)
             {

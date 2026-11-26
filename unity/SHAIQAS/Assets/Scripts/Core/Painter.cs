@@ -9,6 +9,10 @@ public class Look
     // палитра (ARGB)
     public int cCoat, cSkin, cTrim, cTorso, cBelt, cShoulderB, cSkirt, cPauldron, cFur;
     public int aFup, aFfore, aFsk, aBup, aBfore, aBsk, lFpants, lFboot, lBpants, lBboot;
+    // бас киім мен қарудың қозғалатын бөліктері (суретте жоқ — Painter салады)
+    public string hatBase = "", wShape = "";
+    public float wk = 1;
+    public int cHatA, cHatC, cAcc;
 }
 
 /// <summary>Атлас ұяшықтары: сурет кілті → нөмір (Unity атласты осы тізіммен жинайды).</summary>
@@ -66,6 +70,8 @@ public static class Looks
         L.cShoulderB = C(pal, "shoulderB"); L.cSkirt = C(pal, "skirt"); L.cPauldron = C(pal, "pauldron"); L.cFur = C(pal, "fur");
         JNode af = pal.Get("armF"), ab = pal.Get("armB"), lf = pal.Get("legF"), lb = pal.Get("legB");
         L.aFup = C(af, "up"); L.aFfore = C(af, "fore"); L.aFsk = C(af, "sk"); L.aBup = C(ab, "up"); L.aBfore = C(ab, "fore"); L.aBsk = C(ab, "sk");
+        L.hatBase = Cloth.HatBase(f.hat); L.wShape = Cloth.WShape(f.weapon); L.wk = Cloth.WScale(f.weapon);
+        JNode hp = pal.Get("hat"); L.cHatA = C(hp, "a"); L.cHatC = C(hp, "c"); L.cAcc = Col.Parse(f.accent);
         L.lFpants = C(lf, "pants"); L.lFboot = C(lf, "boot"); L.lBpants = C(lb, "pants"); L.lBboot = C(lb, "boot");
         return L;
     }
@@ -144,7 +150,13 @@ public static class Painter
         if (L.bw != 1 || L.bh != 1) m.Scale(1 / L.bw, 1 / L.bh);
         float[] hb = Looks.HB;
         if (L.headSlot >= 0) m.Sprite(L.headSlot, hb[0], hb[1], hb[2], hb[3]);
-        if (L.hatSlot >= 0) m.Sprite(L.hatSlot, hb[0], hb[1], hb[2], hb[3]);
+        bool flown = live && f.hatOff != null;   // бас киім ұшып кеткен — басында жоқ
+        if (!flown)
+        {
+            HatBack(m, f, L, p);
+            if (L.hatSlot >= 0) m.Sprite(L.hatSlot, hb[0], hb[1], hb[2], hb[3]);
+            HatFront(m, f, L, p);
+        }
         m.Restore();
 
         // қару (қол жүйесі: 0 бұрыш — төмен; p.w бұрышымен)
@@ -152,10 +164,88 @@ public static class Painter
         float[] wb = Looks.WB;
         if (L.wepSlot >= 0) m.Sprite(L.wepSlot, wb[0], wb[1], wb[2], wb[3]);
         m.Restore();
+        WeaponTassel(m, f, L, p);
 
         Arm(m, G.Sx, G.Sy, G.eFx, G.eFy, G.hFx, G.hFy, 1, L.aFup, L.aFfore, L.aFsk, L);
         m.Restore();
+        if (live && f.hatOff != null) FlyingHat(m, f, L, ox, oy);
         m.solid = 0;
+    }
+
+    /// <summary>Ұшқан бас киім (веб: kidHatDraw): өз орнында айналып, жерге түседі.</summary>
+    static void FlyingHat(VMesh m, Fighter f, Look L, float ox, float oy)
+    {
+        float[] h = f.hatOff; float[] hb = Looks.HB;
+        bool lv = live; live = false;              // қозғалмалы бөліктер — тыныш күйде
+        m.Save();
+        m.Translate(ox + h[0], oy + h[1]); m.Rotate(h[4]); m.Scale(h[6] * f.sc, f.sc); m.Translate(0, 22);
+        HatBack(m, f, L, f.cur);
+        if (L.hatSlot >= 0) m.Sprite(L.hatSlot, hb[0], hb[1], hb[2], hb[3]);
+        HatFront(m, f, L, f.cur);
+        m.Restore();
+        live = lv;
+    }
+
+    // ---------- бас киім: үкі/қауырсын (күмбездің артында), сәлде ұшы мен малақай шашағы (үстінде) ----------
+    static void HatBack(VMesh m, Fighter f, Look L, float[] p)
+    {
+        string h = L.hatBase; bool bay = U.Eq(h, "bayge");
+        if (!bay && !U.Eq(h, "altyn") && !U.Eq(h, "plume")) return;
+        bool on = live && f.plume != null && f.plume.ok;
+        float pl = on ? Cloth.Angle(f, f.plume, G.Cx, G.Cy, p[Pz.T], bay ? -0.33f : -0.29f, -0.95f, 1.1f) : 0;
+        m.FillC(L.cHatC);
+        m.Save();
+        if (bay) { m.Translate(2, -32); m.Rotate(-0.35f + pl * 0.9f); m.Ellipse(0, -12, 4, 13, 0); }
+        else
+        {
+            // веб: әр қауырсын тізбектің бұрышына ілесіп, ұшы кешірек бұрылады
+            m.Translate(1, -42); m.Rotate(pl * 0.7f);
+            for (int i = 0; i < 4; i++) { m.Rotate(-0.28f + pl * 0.1f); m.Ellipse(-4, -12, 3.2f, 13, 0); }
+        }
+        m.Restore();
+    }
+    static void HatFront(VMesh m, Fighter f, Look L, float[] p)
+    {
+        string h = L.hatBase; bool on = live && f.hatc != null && f.hatc.ok;
+        if (U.Eq(h, "turban"))
+        {
+            m.FillC(L.cHatA);
+            if (on) { int n = Cloth.LocalHead(f, f.hatc, cx, cy, G.Cx, G.Cy, p[Pz.T]); Cloth.Ribbon(m, cx, cy, n, 9, 3); }
+            else { P(0, -16, -12); P(1, -22, 8); P(2, -15, 6); m.Poly(px, py, 3); }
+        }
+        else if (U.Eq(h, "malgai") && on)
+        {
+            m.FillC(L.cAcc); int n = Cloth.LocalHead(f, f.hatc, cx, cy, G.Cx, G.Cy, p[Pz.T]); Cloth.Ribbon(m, cx, cy, n, 5, 1.5f);
+        }
+    }
+    // ---------- найза шашағы (үш тал) және сүңгі жалауы ----------
+    static float[] tx2 = new float[8], ty2 = new float[8];
+    static void WeaponTassel(VMesh m, Fighter f, Look L, float[] p)
+    {
+        string w = L.wShape; bool nz = U.Eq(w, "naiza"), sg = U.Eq(w, "sungi");
+        if (!nz && !sg) return;
+        float a = p[Pz.W], dx = Mathf.Sin(a), dy = Mathf.Cos(a), nx = -dy, ny = dx, k = L.wk;
+        float hx = G.hFx, hy = G.hFy;
+        bool on = live && f.tas != null && f.tas.ok;
+        m.FillC(L.cAcc);
+        if (on)
+        {
+            int n = Cloth.Local(f, f.tas, cx, cy);
+            if (sg) { Cloth.Ribbon(m, cx, cy, n, 12, 2); return; }
+            Cloth.Ribbon(m, cx, cy, n, 9, 2.5f);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                for (int i = 0; i < n; i++) { tx2[i] = cx[i] + nx * s * i * 1.3f; ty2[i] = cy[i] + ny * s * i * 1.3f + i * 0.4f; }
+                Cloth.Ribbon(m, tx2, ty2, n, 5, 1.2f);
+            }
+            m.Circle(cx[0], cy[0], 4);
+            return;
+        }
+        // тыныш күй (сағым/көлеңке көшірмесі): веб суреттегі қалпы
+        if (sg) { P(0, hx + dx * 126 * k, hy + dy * 126 * k); P(1, hx + dx * 110 * k, hy + dy * 110 * k); P(2, hx + dx * 104 * k + nx * 18, hy + dy * 104 * k + ny * 18); m.Poly(px, py, 3); return; }
+        P(0, hx + dx * 124 * k + nx * 3, hy + dy * 124 * k + ny * 3); P(1, hx + dx * 108 * k + nx * 8, hy + dy * 108 * k + ny * 8);
+        P(2, hx + dx * 110 * k - nx * 6, hy + dy * 110 * k - ny * 6); P(3, hx + dx * 124 * k - nx * 3, hy + dy * 124 * k - ny * 3);
+        m.Poly(px, py, 4);
     }
 
     static void Arm(VMesh m, float sx, float sy, float ex, float ey, float hx, float hy, float k, int cUp, int cFore, int cSk, Look L)

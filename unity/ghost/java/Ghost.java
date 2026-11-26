@@ -147,6 +147,21 @@ public class Ghost {
           for (int i = 0; i < c.n; i++) { if (Float.isNaN(c.x[i]) || Float.isNaN(c.y[i])) okc = false; maxd = Math.max(maxd, Math.abs(c.x[i] - fq.x)); } } }
       check(okc && maxd < 400, "мата: NaN жоқ, тізбек денеден алыс кетпейді (max " + (int) maxd + ")");
       System.out.println("[cloth] 40 с ұрыс: тізбектер тұрақты, ең алыс ауытқу " + (int) maxd + " px"); }
+    { U.Seed(7); Match hm = new Match(); hm.StartCampaign(0, 0); hm.player.ai = true; hm.player.weapon = "naiza"; hm.player.hat = "altyn"; hm.player.Init();
+      hm.player.hp = hm.player.hpLag = hm.player.maxHp; boolean okh = true; float md = 0;
+      for (int f = 0; f < 60 * 20 && hm.phase != Match.MATCHEND; f++) { hm.Update(1f / 60, null); hm.fx.Clear();
+        for (Fighter fq : new Fighter[] { hm.player, hm.enemy }) for (Chain c : new Chain[] { fq.plume, fq.hatc, fq.tas }) { if (c == null || !c.ok) continue;
+          for (int i = 0; i < c.n; i++) { if (Float.isNaN(c.x[i]) || Float.isNaN(c.y[i])) okh = false; md = Math.max(md, Math.abs(c.x[i] - fq.x)); } } }
+      boolean live3 = hm.player.plume != null && hm.player.plume.ok && hm.player.tas.ok && hm.enemy.hatc.ok;
+      check(okh && md < 520 && live3, "үкі/сәлде/шашақ тізбектері: іске қосылды, NaN жоқ (max " + (int) md + ")");
+      System.out.println("[tassel] үкі (" + Cloth.HatBase(hm.player.hat) + "), найза шашағы, сәлде ұшы (" + Cloth.HatBase(hm.enemy.hat) + "): тұрақты, ең алыс " + (int) md + " px"); }
+    { Match km2 = new Match(); km2.StartQuick(0, 0); km2.phase = Match.FIGHT; km2.player.active = true; km2.enemy.active = true;
+      Move kb = Move.Base("l1"); kb.dmg = 9999; km2.enemy.TakeHit(kb, -1, true, km2.player);
+      boolean flew = km2.enemy.hatOff != null; float topY = 9999;
+      for (int f = 0; f < 240; f++) { km2.Update(1f / 60, null); km2.fx.Clear(); if (km2.enemy.hatOff != null) topY = Math.min(topY, km2.enemy.hatOff[1]); }
+      boolean landed = flew && km2.enemy.hatOff[7] > 0 && Math.abs(km2.enemy.hatOff[1] - (Db.GROUND - 19 * km2.enemy.sc)) < 1;
+      check(flew && landed && topY < km2.enemy.y - 250, "нокаут: бас киім ұшып, жерге түседі");
+      System.out.println("[hat] нокаутта бас киім ұшты (ең биік " + (int) topY + "), жерге түсті: " + landed); }
     System.out.println("[modes] турнир/төзім/бастар/жекпе-жек/жаттығу тексерілді");
     // --- геометрия: позалар ақылға қонымды ---
     Geo g = new Geo(); g.Build(Pz.Get("idle"));

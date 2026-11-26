@@ -12,7 +12,12 @@ public class Frame {
     Looks.Init(JNode.Parse(Files.readString(Path.of(Ghost.DATA + "meta_parts.json"))));
     int ch = Integer.parseInt(a[0]); float t = Float.parseFloat(a[1]);
     U.Seed(11); Match m = new Match(); m.StartCampaign(ch, 3); m.player.ai = true;
-    for (int i = 0; i < (int) (t * 60); i++) { m.Update(1f / 60, null); m.fx.Clear(); }
+    // қосымша: a[4] — ойыншының қаруы, a[5] — look (бас киім суреті), a[6] — жауды t секундта нокаутқа жіберу
+    if (a.length > 5) { m.player.weapon = a[4]; m.player.look = a[5]; m.player.hat = a[5].split("_")[3]; m.player.Init(); m.player.hp = m.player.hpLag = m.player.maxHp; }
+    float koT = a.length > 6 ? Float.parseFloat(a[6]) : -1;
+    for (int i = 0; i < (int) (t * 60); i++) {
+      if (koT >= 0 && i == (int) (koT * 60)) { Move kb = Move.Base("l1"); kb.dmg = 9999; m.enemy.TakeHit(kb, m.player.x < m.enemy.x ? 1 : -1, true, m.player); }
+      m.Update(1f / 60, null); m.fx.Clear(); }
     JNode meta = JNode.Parse(Files.readString(Path.of(Ghost.DATA + "meta_stages.json"))).Get(m.stageId);
     String b = "stages/" + m.stageId + "/";
     BufferedImage out = new BufferedImage(1280, 720, BufferedImage.TYPE_INT_ARGB);
