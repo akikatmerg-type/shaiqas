@@ -68,6 +68,31 @@ public static class ShaiqasSetup
         Debug.Log("SHAIQAS: Main сахнасы құрастыруға қосылды");
     }
 
+    /// <summary>Android APK: бір батырмамен (Android Build Support модулі орнатылған болуы керек).
+    /// Нәтиже: SHAIQAS/Builds/SHAIQAS.apk — телефонға көшіріп, орнатуға болады.</summary>
+    [MenuItem("SHAIQAS/Build Android APK")]
+    public static void BuildApk()
+    {
+        if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Android, BuildTarget.Android))
+        {
+            EditorUtility.DisplayDialog("SHAIQAS", "Android модулі орнатылмаған.\nUnity Hub → Installs → 6000.6.10f1 → Add modules → Android Build Support (OpenJDK, SDK & NDK).", "OK");
+            return;
+        }
+        Setup(false);
+        var nt = UnityEditor.Build.NamedBuildTarget.Android;
+        PlayerSettings.SetApplicationIdentifier(nt, "kz.shaiqas.game");
+        PlayerSettings.bundleVersion = "2.0";
+        PlayerSettings.Android.bundleVersionCode = 2;
+        PlayerSettings.SetScriptingBackend(nt, ScriptingImplementation.IL2CPP);
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
+        EditorUserBuildSettings.buildAppBundle = false;
+        System.IO.Directory.CreateDirectory("Builds");
+        var opt = new BuildPlayerOptions { scenes = new[] { "Assets/Scenes/Main.unity" }, locationPathName = "Builds/SHAIQAS.apk", target = BuildTarget.Android, targetGroup = BuildTargetGroup.Android, options = BuildOptions.None };
+        var rep = BuildPipeline.BuildPlayer(opt);
+        Debug.Log("SHAIQAS APK: " + rep.summary.result + " · " + (rep.summary.totalSize / 1048576) + " МБ · " + rep.summary.totalTime + " → Builds/SHAIQAS.apk");
+    }
+
     [MenuItem("SHAIQAS/Reimport Art")]
     public static void ReimportArt() { AssetDatabase.ImportAsset("Assets/Resources/Art", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate); }
 
