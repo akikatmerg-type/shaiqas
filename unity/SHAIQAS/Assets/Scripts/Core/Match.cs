@@ -32,7 +32,7 @@ public class Run
     public int wave, acc, i, stage, tier;
     public float hp = -1, time;
     public string rule = "none";
-    public bool outd, champ, prize;
+    public bool outd, champ, prize, fighting;
     public Lst<TourSlot> slots = new Lst<TourSlot>();
     public Lst<int[]> lv = new Lst<int[]>();
     public Lst<FoeCfg> list = new Lst<FoeCfg>();
@@ -219,7 +219,22 @@ public class Match
         }
         if (U.Eq(md, "train")) { stageIdx = 0; cfg = new FoeCfg(); cfg.ch = ch; cfg.special = "trainer"; StartMatch(); return; }
         if (U.Eq(md, "duel")) { needWins = 2; run = new Run(); cfg = FoeCfg.Of(duelCh >= 0 ? duelCh : ch, duelIdx); StartMatch(); return; }
-        if (U.Eq(md, "tour")) { run = MakeBracket(ch, TierOpen(ch, Game.S.tourTier) ? Game.S.tourTier : 0); return; }   // торды экран көрсетеді
+        if (U.Eq(md, "tour"))
+        {
+            // веб: tourSaved — басталған турнир картадан шыққанда да сақталады
+            Run sv = TourSaved(ch); tourNote = null;
+            if (sv != null && sv.fighting)
+            {   // ұрыс ортасында ойын жабылған — жеңіліс
+                Game.S.tour[ch] = Mathf.Max(Game.S.tour[ch], sv.stage); TourStore(ch, null); Game.Persist();
+                tourNote = "Алдыңғы турнир ұрыс ортасында тоқтады — жеңіліс есептелді";
+            }
+            else if (sv != null)
+            {
+                run = sv; if (Game.S.tourTier != sv.tier) { Game.S.tourTier = sv.tier; Game.Persist(); }
+                return;
+            }
+            run = MakeBracket(ch, TierOpen(ch, Game.S.tourTier) ? Game.S.tourTier : 0); TourStore(ch, run); return;   // торды экран көрсетеді
+        }
         if (U.Eq(md, "surv")) run = new Run();
         if (U.Eq(md, "boss")) { run = new Run(); run.list = BossList(ch); }
         NextFight();
@@ -263,6 +278,58 @@ public class Match
         TourSlot b = new TourSlot(); b.name = C.Get("enemies").At(3).S("name"); b.type = "бас жау"; b.cfg = FoeCfg.Of(ch, 3); b.boss = true; r.slots.Add(b);
         r.lv.Add(new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
         return r;
+    }
+    // ---------- турнирді сақтау (веб: tourStore / tourSaved / tourForfeit) ----------
+    public string tourNote;
+    public static void TourStore(int ch, Run r)
+    {
+        JNode d = JNode.Parse(U.Len(Game.S.tourRuns) > 0 ? Game.S.tourRuns : "{}"); if (!d.IsObj()) d = JNode.NewObj();
+        JNode o = JNode.NewObj();
+        string key = "c" + ch;
+        for (int i = 0; i < d.Count(); i++) if (!U.Eq(d.KeyAt(i), key)) o.Set(d.KeyAt(i), d.At(i));
+        if (r != null && !r.outd && !r.champ)
+        {
+            JNode j = JNode.NewObj();
+            j.Set("tier", JNode.Of(r.tier)).Set("stage", JNode.Of(r.stage)).Set("rule", JNode.Of(r.rule)).Set("hp", JNode.Of(r.hp)).Set("fighting", JNode.OfBool(r.fighting));
+            JNode sl = JNode.NewArr();
+            for (int i = 0; i < r.slots.Count(); i++)
+            {
+                TourSlot s = r.slots.Get(i); JNode q = JNode.NewObj();
+                q.Set("name", JNode.Of(s.name)).Set("type", JNode.Of(s.type == null ? "" : s.type)).Set("me", JNode.OfBool(s.me)).Set("boss", JNode.OfBool(s.boss));
+                q.Set("ch", JNode.Of(s.cfg != null ? s.cfg.ch : -1)).Set("idx", JNode.Of(s.cfg != null ? s.cfg.idx : -1));
+                sl.Add(q);
+            }
+            JNode lv = JNode.NewArr();
+            for (int i = 0; i < r.lv.Count(); i++) { int[] a = r.lv.Get(i); JNode q = JNode.NewArr(); for (int k = 0; k < a.Length; k++) q.Add(JNode.Of(a[k])); lv.Add(q); }
+            j.Set("slots", sl).Set("lv", lv);
+            o.Set(key, j);
+        }
+        Game.S.tourRuns = o.Dump();
+    }
+    public static Run TourSaved(int ch)
+    {
+        JNode d = JNode.Parse(U.Len(Game.S.tourRuns) > 0 ? Game.S.tourRuns : "{}"); if (!d.IsObj()) return null;
+        JNode j = d.Get("c" + ch); if (!j.IsObj()) return null;
+        JNode sl = j.Get("slots"), lv = j.Get("lv");
+        if (sl.Count() != 8 || lv.Count() == 0) return null;
+        Run r = new Run(); r.tier = j.Ik("tier"); r.stage = j.Ik("stage"); r.rule = j.Get("rule").Str("none"); r.hp = j.Get("hp").F(-1); r.fighting = j.Bk("fighting");
+        for (int i = 0; i < sl.Count(); i++)
+        {
+            JNode q = sl.At(i); TourSlot s = new TourSlot(); s.name = q.S("name"); s.type = q.S("type"); s.me = q.Bk("me"); s.boss = q.Bk("boss");
+            if (q.Ik("ch") >= 0) s.cfg = FoeCfg.Of(q.Ik("ch"), q.Ik("idx"));
+            if (s.me) s.name = Game.Fix(Db.Hero(Game.S.hero).S("full"));
+            r.slots.Add(s);
+        }
+        for (int i = 0; i < lv.Count(); i++) { JNode q = lv.At(i); int[] a = new int[q.Count()]; for (int k = 0; k < a.Length; k++) a[k] = q.At(k).I(); r.lv.Add(a); }
+        if (r.stage >= r.lv.Count()) return null;
+        return r;
+    }
+    /// <summary>Үзілістен шығу — турнирдегі жеңіліс.</summary>
+    public void TourForfeit()
+    {
+        if (run == null) return;
+        run.outd = true; run.fighting = false; Game.S.tour[chapter] = Mathf.Max(Game.S.tour[chapter], run.stage);
+        TourStore(chapter, run); Game.Persist();
     }
     int SimWin(Run r, int a, int b)
     {
@@ -308,6 +375,9 @@ public class Match
         round = 1; pWins = 0; eWins = 0; reward = 0; runMsg = ""; matchT = 0; starsGot = 0; starsNew = 0; won = false; runOver = true;
         if (U.Eq(mode, "campaign") || U.Eq(mode, "quick")) cfg = null;
         StartRound();
+        Zh.Reset(zhFs); zhHead = null; zhTip = null;
+        if (U.Eq(mode, "tour") && run != null && !run.outd && !run.champ) { run.fighting = true; TourStore(chapter, run); Game.Persist(); }
+        zhPre = Zh.Pre(this);
         bossIntro = U.Eq(mode, "boss");
         if (bossIntro) introT = 3.6f;
         if (U.Eq(mode, "campaign"))
@@ -317,6 +387,8 @@ public class Match
             SayLine a = new SayLine(); a.enemy = true; a.name = enemy.name; a.text = Game.Fix(Db.Taunts.At(chapter).At(stageIdx).Str()); a.t0 = 0.35f; a.t1 = 1.95f; says.Add(a);
             SayLine b = new SayLine(); b.enemy = false; b.name = player.name;
             b.text = Game.Fix(Db.Replies.At((int)(U.Rand() * Db.Replies.Count())).Str()); b.t0 = 2.0f; b.t1 = 3.6f; says.Add(b);
+            // веб: Бауыржан кейде жыр батырларына сілтеме жасайды (FRAME_REPLIES.past)
+            if (U.Eq(player.heroId, "sharua") && U.Rand() < 0.35f) b.text = Game.Fix("Жырдағы батырлардай шайқасамын!");
         }
     }
 
@@ -338,6 +410,7 @@ public class Match
         phaseMsgT = 9; waves.Clear(); fx.Clear(); arrows.Clear(); skProj.Clear(); spikes.Clear(); bolts.Clear(); skBuf.Clear();
         Skills.AssignAi(enemy, this, cfg != null ? cfg : FoeCfg.Of(chapter, stageIdx)); weatherT = 0; weatherKind = null;
         KidApply();
+        pops.Clear(); sbSlots = Skills.SbSlots(); sbFailT = 0;
         if (U.Eq(mode, "tour") && run != null)
         {
             string ru = run.rule; TourSlot sl = run.slots.Get(run.lv.Get(run.stage)[1]);
@@ -351,6 +424,7 @@ public class Match
 
     void EndRound(bool ko)
     {
+        if (!ko && zhFs.on) zhFs.timeout = true;
         Fighter p = player, e = enemy;
         int winner = 0;
         if (p.hp > e.hp) winner = 1; else if (e.hp > p.hp) winner = 2;
@@ -369,6 +443,8 @@ public class Match
     {
         phase = MATCHEND; pt = 0; newCard = -1;
         won = pWins >= needWins;
+        if (!U.Eq(mode, "arena") && zhFs.on) { string[] za = Zh.After(this, zhFs); zhHead = za[0]; zhTip = za[1]; }
+        zhFs.on = false;
         Fighter w = won ? player : enemy;
         if (w.state != Fighter.DEAD) w.Set(Fighter.VICTORY);
         reward = 0; runMsg = "";
@@ -391,7 +467,7 @@ public class Match
         }
         else if (U.Eq(mode, "train") && won) { reward = (15 + chapter * 6) * 2; runMsg = "Жаттығу сәтті өтті!"; }
         // еркін ұрыс — тек ойын үшін: теңге де, тәжірибе де берілмейді
-        else if (U.Eq(mode, "tour")) EndTour(S);
+        else if (U.Eq(mode, "tour")) { EndTour(S); run.fighting = false; TourStore(chapter, run); }
         else if (U.Eq(mode, "surv")) EndSurv(S);
         else if (U.Eq(mode, "duel")) EndDuel(S);
         else if (U.Eq(mode, "boss")) EndBoss(S);
@@ -510,6 +586,7 @@ public class Match
     public void Spike(float x, float h, float w, float lean) { spikes.Add(new float[] { x, h, w, lean, 0.62f, 0 }); }
     public void SkillCast(Fighter f, SkDef d, bool isAi)
     {
+        if (!isAi && f == player && ZhTrack()) zhFs.skills++;
         sndQ.Add("skill_cast"); sndQ.Add("skill_" + d.kind);
         if (U.Eq(d.id, "tulpar")) sndQ.Add("horse");
         if (U.Eq(d.id, "boran")) sndQ.Add("blizzard");
@@ -539,6 +616,59 @@ public class Match
     }
 
     static Move waveMove;
+
+    // ================= әдіс тақтасы және соққы сандары (веб: ГЕЙМПЛЕЙ 2.0) =================
+    public Lst<SkDef> sbSlots = new Lst<SkDef>(); public float sbFailT;
+    public Lst<DmgPop> pops = new Lst<DmgPop>();
+    // Бұқар жырау: ұрыс алдындағы кеңес, ұрыстан кейінгі мақтау/кеңес, статистика
+    public string zhPre, zhHead, zhTip; public ZhFs zhFs = new ZhFs();
+    bool ZhTrack() { return zhFs.on && live && !U.Eq(mode, "arena"); }
+    public void ZhAttack(Fighter f, string id)
+    {
+        if (f != player || !ZhTrack()) return;
+        zhFs.attacks++; if (!zhFs.ids.Contains(id)) zhFs.ids.Add(id);
+        if (U.Eq(id, "kick") || U.Eq(id, "round") || U.Eq(id, "ckick") || U.Eq(id, "akick")) zhFs.kicks++;
+        if (f.cm != null && f.cm.special) zhFs.specials++;
+    }
+    public bool SbShown() { return !U.Eq(mode, "arena") && player != null && !player.ai && (phase == FIGHT || phase == INTRO); }
+    void SbStep(float rdt, Intent input)
+    {
+        sbFailT = Mathf.Max(0, sbFailT - rdt);
+        if (input == null || input.sb <= 0 || input.sb > sbSlots.Count() || phase != FIGHT || U.Eq(mode, "arena")) return;
+        if (player == null || !player.active || player.ai) return;
+        SkDef d = sbSlots.Get(input.sb - 1);
+        int r = Skills.SbCast(player, d);
+        if ((r == 1 || r == 2) && sbFailT <= 0) { Skills.Call(player, r == 1 ? "Әлі дайын емес" : "Рух жетпейді", d.kind, true); SkillFail(player); sbFailT = 0.5f; }
+    }
+    public void Pop(float x, float y, string txt, string col, float size)
+    {
+        if (pops.Count() > 30) pops.RemoveAt(0);
+        DmgPop d = new DmgPop(); d.x = x + Pz.Rand(-14, 14); d.y = y; d.txt = txt; d.col = col; d.size = size; d.vx = Pz.Rand(-40, 40);
+        pops.Add(d);
+    }
+    /// <summary>Fighter.TakeHit соңында: зақым саны, «ҚОРҒАДЫ», «ЖЕҢІС!».</summary>
+    public void HitPop(Fighter f, Move m, float dmg)
+    {
+        if (!live) return;
+        if (m != null && f == player && ZhTrack())
+        {
+            if (U.Eq(f.skRes, "block")) zhFs.blocks++;
+            else if (U.Eq(f.skRes, "hit")) { zhFs.hits++; if (m.foot) zhFs.foot++; if (m.IsLow()) zhFs.low++; if (m.thr) zhFs.thrown++; }
+        }
+        float hy = f.y - 250 * f.sc / Db.S;
+        if (dmg > 0.5f)
+        {
+            bool big = (m != null && (m.heavy || m.special)) || dmg >= 14;
+            Pop(f.x, hy, "" + (int)Mathf.Round(dmg), big ? "#ffd04a" : "#ffffff", big ? 40 : 30);
+            if (f.state == Fighter.DEAD) Pop(f.x, hy - 50, "ЖЕҢІС!", "#ff6a4a", 46);
+        }
+        else if (U.Eq(f.skRes, "block") || (m != null && f.guard)) Pop(f.x, hy, "ҚОРҒАДЫ", "#9dd0ff", 24);
+    }
+    void PopStep(float rdt)
+    {
+        for (int i = 0; i < pops.Count(); i++) { DmgPop d = pops.Get(i); d.t += rdt; d.y -= (70 - d.t * 40) * rdt; d.x += d.vx * rdt; }
+        for (int i = pops.Count() - 1; i >= 0; i--) if (pops.Get(i).t > 1.1f) pops.RemoveAt(i);
+    }
 
     // ================= балалар режимі (веб: kidApply) =================
     public float kidFailT;
@@ -589,6 +719,7 @@ public class Match
         phaseMsgT += rdt; clock += rdt; skFirstT += rdt;
         if (U.Eq(mode, "arena") && player != null && enemy != null) ArenaStep(rdt);
         KidStep(rdt, input);
+        SbStep(rdt, input); PopStep(rdt);
 
         float dt = rdt;
         if (slow > 0) { slow -= rdt; dt *= 0.28f; }
@@ -598,6 +729,7 @@ public class Match
         else if (phase == FIGHT)
         {
             timer -= dt; matchT += dt;
+            if (ZhTrack() && player != null) { if (player.rux >= 100) zhFs.ruxT += rdt; if (player.hp > 0) zhFs.minHp = Mathf.Min(zhFs.minHp, player.hp / player.maxHp); }
             if (player.state == Fighter.DEAD || enemy.state == Fighter.DEAD) { if (slow <= 0) EndRound(true); }
             else if (timer <= 0) { timer = 0; EndRound(false); }
         }
@@ -708,4 +840,11 @@ public static class Medals
     /// <summary>Тарих картасы ашық па: әр тарауда 4 карта, ұрыс жеңілген сайын бір карта.</summary>
     public static bool CardOpen(int i) { return Progress.TestUnlockAll || Game.S.prog[i / 4] > i % 4; }
     public static int CardsOpen() { int n = 0; for (int i = 0; i < Db.Hist.Count(); i++) if (CardOpen(i)) n++; return n; }
+}
+
+/// <summary>Ұшып шығатын соққы саны / сөз (веб: DMGP).</summary>
+public class DmgPop
+{
+    public float x, y, vx, t, size;
+    public string txt, col;
 }

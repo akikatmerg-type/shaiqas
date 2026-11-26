@@ -190,6 +190,96 @@ public partial class FightView
     }
     static Color32 Col32(string css) { int c = Col.Parse(css); return new Color32((byte)Col.R(c), (byte)Col.G(c), (byte)Col.B(c), 255); }
 
+    // ---------- ӘДІС ТАҚТАСЫ 1–4 (веб: ГЕЙМПЛЕЙ 2.0 drawFightHud) ----------
+    void SbHud()
+    {
+        if (m.paused || !m.SbShown() || m.sbSlots.Count() == 0) return;
+        Fighter pl = m.player; SkState T = Skills.S(pl); float t = Time.time;
+        for (int i = 0; i < m.sbSlots.Count(); i++)
+        {
+            SkDef d = m.sbSlots.Get(i);
+            bool touch = showTouch; float cx = touch ? SBX[i] : 58 + i * 80, cy = touch ? SBY : 720 - 44, r = touch ? 26 : 30;
+            float cd = Mathf.Max(0, T.cd[d.idx]); bool ready = cd <= 0 && pl.rux >= d.cost;
+            Color kc = Col32(Skills.KIND_COL[Skills.KindIdx(d.kind)]);
+            Ui.Circle(cx + 2, cy + 3, r + 3, new Color(0.05f, 0.02f, 0.02f, 0.55f));
+            Ui.Circle(cx, cy, r + 2, ready ? new Color(kc.r, kc.g, kc.b, 0.9f) : new Color(0.35f, 0.3f, 0.42f, 0.9f));
+            Ui.Circle(cx, cy, r, new Color32(26, 20, 48, 240));
+            float ir = r * 1.5f;
+            Ui.Img("Art/sk/ic_" + d.kind + "_" + (ready ? 0 : 1), cx - ir / 2, cy - ir / 2, ir, ir);
+            if (cd > 0)
+            {
+                Ui.Pie(cx, cy, r, cd / Mathf.Max(0.01f, d.cd), new Color(0, 0, 0, 0.55f));
+                Ui.TextO(cd.ToString("0.0"), cx - 30, cy - 12, 60, 24, 16, Color.white, TextAnchor.MiddleCenter, true, 2);
+            }
+            if (ready) Ui.Ring(cx, cy, r + 6, new Color(1, 0.9f, 0.55f, 0.5f + 0.4f * Mathf.Sin(t * 5 + i)));
+            if (!touch)
+            {
+                Ui.Circle(cx - r + 4, cy - r + 4, 11, new Color32(26, 20, 48, 255));
+                Ui.Ring(cx - r + 4, cy - r + 4, 11, new Color32(255, 227, 160, 200));
+                Ui.TextO("" + (i + 1), cx - r - 8, cy - r - 7, 24, 22, 15, new Color32(255, 227, 160, 255), TextAnchor.MiddleCenter, true, 1.5f);
+            }
+            if (d.cost > 0) Ui.TextO("" + (int)d.cost, cx + r - 16, cy + r - 12, 32, 18, 12, pl.rux >= d.cost ? (Color)new Color32(138, 216, 255, 255) : new Color32(255, 138, 122, 255), TextAnchor.MiddleCenter, true, 1.5f);
+        }
+        if (!showTouch) Ui.TextO("ӘДІСТЕР: 1 · 2 · 3 · 4", 58 - 30, 720 - 98, 300, 20, 13, new Color(1, 0.89f, 0.63f, 0.7f), TextAnchor.MiddleLeft, true, 1.5f);
+    }
+    /// <summary>Ұшатын соққы сандары: пайда болғанда үлкейіп, соңында сөнеді (веб: DMGP).</summary>
+    void PopsHud()
+    {
+        for (int i = 0; i < m.pops.Count(); i++)
+        {
+            DmgPop pd = m.pops.Get(i);
+            float k = pd.t < 0.12f ? 1 + (1 - pd.t / 0.12f) * 0.6f : 1, a = Mathf.Clamp01(pd.t > 0.75f ? 1 - (pd.t - 0.75f) / 0.35f : 1);
+            Vector2 c = W2S(pd.x, pd.y); int sz = Mathf.RoundToInt(pd.size * k * m.zoom * 0.9f);
+            Color col = Col32(pd.col);
+            Ui.TextO(pd.txt, c.x - 200, c.y - sz * 0.7f, 400, sz * 1.4f, sz, new Color(col.r, col.g, col.b, a), TextAnchor.MiddleCenter, true, 3);
+        }
+    }
+
+    // ---------- БҰҚАР ЖЫРАУ: ұрыс алдындағы кеңес және ұрыстан кейінгі панель (веб: zhPrePanel / zhMatchPanel) ----------
+    static float ZhH(string s, float w, int size)
+    {
+        float h = Ui.TextHeight(s, w, size, true), est = Mathf.Ceil(Ui.TextW(s, size, true) / Mathf.Max(40, w - 10)) * size * 1.32f;
+        return Mathf.Max(h, est);
+    }
+    void ZhPrePanel()
+    {
+        string s = m.zhPre; if (s == null || m.paused || m.round != 1 || m.bossIntro) return;
+        float a;
+        if (m.phase == Match.INTRO) a = Mathf.Clamp01((m.pt - 0.3f) * 3);
+        else if (m.phase == Match.FIGHT) a = Mathf.Clamp01((2.6f - m.pt) * 2);
+        else return;
+        if (a <= 0) return;
+        float w = 620, tw = w - 80, th = ZhH(s, tw, 18), h = 44 + th, x = 360, y = 720 - 28 - h + (1 - a) * 20;
+        Color o = GUI.color; GUI.color = new Color(1, 1, 1, a);
+        Ui.DzPanel(x, y, w, h, "parch");
+        Ui.Medal(x + 6, y + h / 2, 30, "a32222"); Ui.Portrait("Art/ui/por_zhyrau", x + 6, y + h / 2, 30);
+        Ui.Text("Бұқар жырау:", x + 50, y + 10, 300, 22, 15, new Color32(138, 26, 18, 255), TextAnchor.MiddleLeft, true);
+        Ui.Text(s, x + 50, y + 34, tw, th + 6, 18, new Color32(42, 26, 16, 255), TextAnchor.UpperLeft, true);
+        GUI.color = o;
+    }
+    void ZhMatchPanel()
+    {
+        if (m.zhHead == null || m.paused) return;
+        float k = Mathf.Clamp01((m.pt - 0.8f - 0.7f) / 0.45f); k = 1 - (1 - k) * (1 - k) * (1 - k); if (k <= 0) return;
+        float x = 962, w = 300, tw = w - 36;
+        string hd = "«" + m.zhHead + "»";
+        float hh = ZhH(hd, tw, 17), th = ZhH(m.zhTip, tw, 16);
+        float h = Mathf.Ceil((150 + hh + th) / 10) * 10, y = Mathf.Clamp(400 - h / 2, 170, 720 - 30 - h);
+        x += (1 - k) * 80;
+        Color o = GUI.color; GUI.color = new Color(1, 1, 1, k);
+        Ui.DzPanel(x, y, w, h, "parch");
+        Ui.Medal(x + 50, y + 54, 28, "a32222"); Ui.Portrait("Art/ui/por_zhyrau", x + 50, y + 54, 28);
+        Ui.Text("Бұқар жырау", x + 88, y + 34, 200, 24, 19, new Color32(138, 26, 18, 255), TextAnchor.MiddleLeft, true);
+        Ui.Text(m.won ? "мақтау мен кеңес" : "жұбату мен кеңес", x + 88, y + 58, 200, 18, 13, new Color32(138, 90, 42, 255), TextAnchor.MiddleLeft, true);
+        float yy = y + 92;
+        Ui.Text(hd, x + 18, yy, tw, hh + 4, 17, new Color32(42, 26, 16, 255), TextAnchor.UpperLeft, true); yy += hh + 10;
+        Ui.Fill(x + 18, yy, tw, 1.2f, new Color(0.48f, 0.29f, 0.08f, 0.45f)); Ui.Img("Art/ui/ram", x + w / 2 - 14, yy - 7, 28, 14);
+        yy += 10;
+        Ui.Text("КЕҢЕС", x + 18, yy, 120, 20, 14, new Color32(163, 34, 34, 255), TextAnchor.MiddleLeft, true); yy += 24;
+        Ui.Text(m.zhTip, x + 18, yy, tw, th + 4, 16, new Color32(58, 36, 20, 255), TextAnchor.UpperLeft, false);
+        GUI.color = o;
+    }
+
     // ---------- ЕРКІН АЛАҢ: мақсатты әдіс тақтасы (веб: skDrawArenaHud) ----------
     void ArenaHud()
     {

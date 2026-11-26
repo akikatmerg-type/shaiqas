@@ -75,6 +75,49 @@ public static class Ui
         Color o = GUI.color; GUI.color = new Color(c.r * o.r, c.g * o.g, c.b * o.b, c.a * o.a);
         GUI.DrawTexture(R(cx - r, cy - r, r * 2, r * 2), disk); GUI.color = o;
     }
+    static Texture2D ringTex, vigTex;
+    /// <summary>Сақина сызығы (қалыңдығы радиустың ~13%).</summary>
+    public static void Ring(float cx, float cy, float r, Color c)
+    {
+        if (ringTex == null)
+        {
+            ringTex = new Texture2D(96, 96, TextureFormat.RGBA32, false); ringTex.wrapMode = TextureWrapMode.Clamp;
+            Color32[] px = new Color32[96 * 96];
+            for (int y = 0; y < 96; y++) for (int x = 0; x < 96; x++)
+                { float d = Mathf.Sqrt((x - 47.5f) * (x - 47.5f) + (y - 47.5f) * (y - 47.5f)); float a = Mathf.Clamp01(47.5f - d) * Mathf.Clamp01(d - 41.5f); px[y * 96 + x] = new Color32(255, 255, 255, (byte)(a * 255)); }
+            ringTex.SetPixels32(px); ringTex.Apply();
+        }
+        Color o = GUI.color; GUI.color = new Color(c.r * o.r, c.g * o.g, c.b * o.b, c.a * o.a);
+        GUI.DrawTexture(R(cx - r, cy - r, r * 2, r * 2), ringTex); GUI.color = o;
+    }
+    /// <summary>Дөңгелек сектор (кері санақ «пирогы»): 12 сағаттан сағат тілімен frac үлесі.</summary>
+    public static void Pie(float cx, float cy, float r, float frac, Color c)
+    {
+        frac = Mathf.Clamp01(frac); if (frac <= 0) return;
+        int n = Mathf.Max(3, Mathf.CeilToInt(Mathf.PI * 2 * r * frac / 1.6f));
+        for (int i = 0; i <= n; i++)
+        {
+            float t = -Mathf.PI / 2 + Mathf.PI * 2 * frac * i / n;
+            Line(cx, cy, cx + Mathf.Cos(t) * r, cy + Mathf.Sin(t) * r, 2.6f, c);
+        }
+    }
+    /// <summary>Экран шетіндегі радиалды күңгірт жиек (жаны аз кезде — қызыл).</summary>
+    public static void Vignette(Color c)
+    {
+        if (vigTex == null)
+        {
+            vigTex = new Texture2D(160, 90, TextureFormat.RGBA32, false); vigTex.wrapMode = TextureWrapMode.Clamp;
+            Color32[] px = new Color32[160 * 90];
+            for (int y = 0; y < 90; y++) for (int x = 0; x < 160; x++)
+            {
+                float dx = (x - 79.5f) / 90f, dy = (y - 44.5f) / 90f, d = Mathf.Sqrt(dx * dx + dy * dy);
+                float a = Mathf.Clamp01((d - 0.35f) / 0.5f);
+                px[y * 160 + x] = new Color32(255, 255, 255, (byte)(a * 255));
+            }
+            vigTex.SetPixels32(px); vigTex.Apply();
+        }
+        Color o = GUI.color; GUI.color = c; GUI.DrawTexture(R(0, 0, 1280, 720), vigTex); GUI.color = o;
+    }
     public static Vector2 ToVirtual(Vector2 screen) { return new Vector2((screen.x - ox) / k, (screen.y - oy) / k); }
 
     // ---- интерфейс атласы (Art/uiatlas.png + Data/meta_uiatlas.json): "Art/ui/<аты>" жолдары осыдан ----

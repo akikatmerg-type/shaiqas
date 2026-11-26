@@ -9,7 +9,7 @@ public class SkDef
     public string[] seq;
     public int lvl, idx;
     public float cd, cost;
-    public bool air, ult;
+    public bool air, ult, hold;
 }
 
 /// <summary>Белсенді әдіс (веб: f.sk) — барлық әдістің жалпы өрістері.</summary>
@@ -62,7 +62,7 @@ public static class Skills
     public static readonly string[] KINDS = { "wind", "fire", "thunder", "earth", "ice", "spirit", "blade", "heal" };
     public static readonly string[] KIND_COL = { "#9ff0dc", "#ff8a3a", "#fff27a", "#d6a060", "#b4ecff", "#c8a8ff", "#ffe2a0", "#8dff9a" };
     public static readonly string[] KIND_NAME = { "Жел", "От", "Найзағай", "Жер", "Мұз", "Рух", "Жүз", "Шипа" };
-    public static bool TestUnlock = false;
+    public static bool TestUnlock = false, DebugLog = false;
 
     public static void Init()
     {
@@ -73,7 +73,7 @@ public static class Skills
         {
             JNode j = S.At(i); SkDef d = new SkDef();
             d.id = j.S("id"); d.kind = j.S("kind"); d.name = j.S("name"); d.desc = j.S("desc"); d.lvl = j.Ik("lvl"); d.cd = j.Fk("cd"); d.cost = j.Fk("cost");
-            d.air = j.Bk("air"); d.ult = j.Bk("ult"); d.idx = i;
+            d.air = j.Bk("air"); d.ult = j.Bk("ult"); d.hold = j.Bk("hold"); d.idx = i;
             JNode q = j.Get("seq"); d.seq = new string[q.Count()]; for (int k = 0; k < d.seq.Length; k++) d.seq[k] = q.At(k).Str();
             All.Add(d);
         }
@@ -191,6 +191,7 @@ public static class Skills
     public static void Start(Fighter f, SkDef d, bool isAi)
     {
         SkState T = S(f);
+        if (DebugLog && f.game != null && f == f.game.player) U.Log("[sk] player cast " + d.id + " ai=" + isAi + " clock=" + f.game.clock + " fai=" + f.ai);
         SkRun s = new SkRun(); s.def = d; f.sk = s;
         if (!isAi) f.rux = Mathf.Max(0, f.rux - d.cost);
         T.cd[d.idx] = d.cd * (isAi ? 1.8f : 1);
@@ -236,6 +237,33 @@ public static class Skills
         SkDef d = KidPick(f);
         if (d != null) { Start(f, d, false); return true; }
         return false;
+    }
+
+    // ================= әдіс тақтасы 1–4 (веб: sbSlots / sbCast) =================
+    /// <summary>1 — тегін әдіс, 2 — шипа (бар болса), 3–4 — ең мықтылары. Ұстап тұратын және аспандағы әдістер кірмейді.</summary>
+    public static Lst<SkDef> SbSlots()
+    {
+        Init();
+        Lst<SkDef> L = new Lst<SkDef>(), outL = new Lst<SkDef>();
+        for (int i = All.Count() - 1; i >= 0; i--) { SkDef d = All.Get(i); if (Unlocked(d) && !d.hold && !d.air) L.Add(d); }
+        // деңгей бойынша кему ретімен (All деңгей бойынша өседі, сондықтан кері өттік; сенімділік үшін сұрыптаймыз)
+        for (int i = 1; i < L.Count(); i++) { SkDef v = L.Get(i); int k = i - 1; while (k >= 0 && L.Get(k).lvl < v.lvl) { L.Set(k + 1, L.Get(k)); k--; } L.Set(k + 1, v); }
+        SkDef free = null, heal = null;
+        for (int i = 0; i < L.Count(); i++) { SkDef d = L.Get(i); if (free == null && d.cost <= 0) free = d; if (heal == null && U.Eq(d.kind, "heal")) heal = d; }
+        SbAdd(outL, free); SbAdd(outL, heal);
+        for (int i = 0; i < L.Count(); i++) SbAdd(outL, L.Get(i));
+        return outL;
+    }
+    static void SbAdd(Lst<SkDef> o, SkDef d) { if (d != null && !o.Contains(d) && o.Count() < 4) o.Add(d); }
+    /// <summary>Тақтадан әдіс шақыру: 0 — басталды, 1 — дайын емес, 2 — рух жетпейді, 3 — қазір мүмкін емес.</summary>
+    public static int SbCast(Fighter f, SkDef d)
+    {
+        if (f == null || d == null || f.sk != null || f.state == Fighter.DEAD) return 3;
+        if (!Castable(f, d)) return 3;
+        SkState T = S(f);
+        if (T.cd[d.idx] > 0) return 1;
+        if (f.rux < d.cost) return 2;
+        Start(f, d, false); return 0;
     }
 
     /// <summary>Ойыншының енгізуі (веб: skTryInput).</summary>

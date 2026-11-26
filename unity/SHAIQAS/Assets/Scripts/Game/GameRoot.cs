@@ -234,6 +234,7 @@ public partial class GameRoot : MonoBehaviour
         GUI.depth = 0;
         GUI.enabled = true;
         Ui.blockInput = Tut.Active();   // астындағы экран толық көрінеді, бірақ басылмайды
+        OverlaysPre();
         switch (screen)
         {
             case NAME: DrawName(); break;
@@ -254,6 +255,7 @@ public partial class GameRoot : MonoBehaviour
             case HEROES: DrawHeroes(); break;
         }
         Ui.blockInput = false;
+        OverlaysPost();
         Tut.Draw(screen);
         if (toastT > 0)
         {

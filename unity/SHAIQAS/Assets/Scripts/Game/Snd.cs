@@ -47,7 +47,7 @@ public class Snd : MonoBehaviour
         if (a.Length == 0) return;
         AudioSource s = I.pool[I.next]; I.next = (I.next + 1) % I.pool.Length;
         s.clip = a[Random.Range(0, a.Length)];
-        s.volume = Mathf.Clamp01(vol * Game.S.volSfx * 0.9f);
+        s.volume = Mathf.Clamp01(vol * Game.S.volSfx * Game.S.volMaster * 0.9f);
         s.panStereo = Mathf.Clamp(pan, -1, 1);
         s.pitch = pitch * Random.Range(0.96f, 1.04f);
         s.Play();
@@ -56,14 +56,26 @@ public class Snd : MonoBehaviour
     public static float Pan(float worldX, float cam) { return Mathf.Clamp((worldX - cam - 640) / 900f, -0.8f, 0.8f); }
 
     /// <summary>Музыка: menu | map | battle | boss | arena | tournament | victory | defeat.</summary>
-    public static void Music(string track, int chapter)
+    public static void Music(string track, int chapter) { Music(track, chapter, false); }
+    string nowName = "Мәзір әуені";
+    /// <summary>Қазір ойнап тұрған әуеннің атауы (күй таңдау терезесі үшін).</summary>
+    public static string NowPlaying() { return I == null ? "—" : I.nowName; }
+    public static void Music(string track, int chapter, bool force)
     {
         if (I == null) return;
         int ch = Mathf.Clamp(chapter, 0, 5);
         string key = track + "|" + ch;
-        if (key == I.musKey) return;
+        if (key == I.musKey && !force) return;
         I.musKey = key;
         string file = track;
+        I.nowName = track == "menu" ? "Мәзір әуені" : "—";
+        if (track == "menu" && Game.S != null && Game.S.menuKuy != "menu")
+        {   // веб: KM — мәзірде таңдалған күй (немесе кездейсоқ)
+            JNode K = Db.J("KUY"); int ki = -1;
+            if (Game.S.menuKuy == "random") ki = Random.Range(0, K.Count());
+            else for (int i = 0; i < K.Count(); i++) if (K.At(i).S("id") == Game.S.menuKuy) ki = i;
+            if (ki >= 0) { file = K.At(ki).S("file"); I.nowName = K.At(ki).S("name") + (K.At(ki).S("fid") == "сарынында" ? " (сарынында)" : ""); }
+        }
         if (track == "map") file = "map_" + ch;
         else if (track == "battle") file = "battle_k" + I.PickKuy(false, ch);
         else if (track == "boss") file = "boss_k" + I.PickKuy(true, ch);
@@ -88,7 +100,7 @@ public class Snd : MonoBehaviour
 
     void Update()
     {
-        float vol = Game.S == null || !Game.S.sound ? 0 : Game.S.volMusic * 0.7f;
+        float vol = Game.S == null || !Game.S.sound ? 0 : Game.S.volMusic * Game.S.volMaster * 0.7f;
         if (fade < 1) fade = Mathf.Min(1, fade + Time.unscaledDeltaTime * fadeSpeed);
         if (fadeIn != null) fadeIn.volume = vol * fade;
         if (fadeOut != null) { fadeOut.volume = vol * (1 - fade); if (fade >= 1 && fadeOut.isPlaying) fadeOut.Stop(); }

@@ -7,6 +7,8 @@ public class Page
     public string title, date, text;
     public string ruTitle, ruText;
     public bool zh;            // Бұқар жырау бұрышта
+    public bool sab;           // Сабина әңгімелейді (төменгі панельде оның портреті)
+    public string sabLook = "girl";
     public JNode dlg;          // диалог болса: { who, q:[kz,ru], o:[[kz,ru]..], ok, yes:[..], no:[..] }
     public string dlgKey;
     public int dlgAns = -1;
@@ -27,6 +29,13 @@ public static class Story
         return v.IsStr() ? v.Str() : id;
     }
 
+    /// <summary>Сабинаның киімі (веб: ep.cast ішіндегі «sab» — 3-өрісі: girl | winter | bride).</summary>
+    static string SabLook(JNode ep)
+    {
+        JNode c = ep.Get("cast");
+        for (int i = 0; i < c.Count(); i++) if (U.Eq(c.At(i).At(0).Str(), "sab")) { string l = c.At(i).At(3).Str(); return U.Len(l) > 0 ? l : "girl"; }
+        return "girl";
+    }
     static Page FromEp(string id, JNode ep)
     {
         Page p = new Page();
@@ -34,7 +43,7 @@ public static class Story
         p.title = ep.S("title"); p.date = ep.S("date"); p.text = ep.S("text");
         JNode ru = ep.Get("ru");
         if (ru.IsArr()) { p.ruTitle = ru.At(0).Str(); p.ruText = ru.At(1).Str(); }
-        p.zh = ep.Bk("zh");
+        p.zh = ep.Bk("zh"); p.sab = ep.Bk("sab") && !p.zh; p.sabLook = SabLook(ep);
         return p;
     }
 
@@ -43,7 +52,14 @@ public static class Story
     {
         Lst<Page> L = new Lst<Page>();
         JNode E = Db.Ch(ch).Get("episodes");
-        for (int i = 0; i < E.Count(); i++) L.Add(FromEp("ch" + ch + "_ep" + i, E.At(i)));
+        JNode R = Db.J("RU_EP").At(ch); int k = 0;
+        for (int i = 0; i < E.Count(); i++)
+        {
+            Page p = FromEp("ch" + ch + "_ep" + i, E.At(i));
+            // веб: ruEp — өз аудармасы жоқ беттерге RU_EP кестесінен (ретімен) алынады
+            if (p.ruText == null) { JNode r = R.At(k++); if (r.IsArr()) { p.ruTitle = r.At(0).Str(); p.ruText = r.At(1).Str(); } }
+            L.Add(p);
+        }
         return L;
     }
 

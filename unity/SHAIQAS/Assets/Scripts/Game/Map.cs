@@ -178,7 +178,8 @@ public partial class GameRoot
         GUI.color = o;
         string mm = mapPop; int prog = Progress.TestUnlockAll ? 4 : Game.S.prog[ci];
         bool can = mm == "boss" ? open && prog >= 4 : open;
-        string lbl = mm == "train" ? "ЖАТТЫҒУ" : mm == "tour" ? "ТУРНИРДІ БАСТАУ" : mm == "surv" ? "БАСТАУ" : mm == "duel" ? "ЖЕКПЕ-ЖЕК" : "БАСТАР ШАБУЫЛЫ";
+        Run tsv = mm == "tour" ? Match.TourSaved(ci) : null;
+        string lbl = mm == "train" ? "ЖАТТЫҒУ" : mm == "tour" ? (tsv != null ? "ТУРНИРДІ ЖАЛҒАСТЫРУ" : "ТУРНИРДІ БАСТАУ") : mm == "surv" ? "БАСТАУ" : mm == "duel" ? "ЖЕКПЕ-ЖЕК" : "БАСТАР ШАБУЫЛЫ";
         float bx = px - 870;
         if (Ui.DzBtn(can ? lbl : "ЖАБЫҚ", 892 + bx, 590, 336, 56, true, can))
         {
@@ -186,13 +187,14 @@ public partial class GameRoot
         }
         if (mm == "tour")
         {
-            JNode TT = Db.J("TOUR_TIERS"); int curT = Match.TierOpen(ci, Game.S.tourTier) ? Game.S.tourTier : 0;
+            JNode TT = Db.J("TOUR_TIERS"); int curT = tsv != null ? tsv.tier : Match.TierOpen(ci, Game.S.tourTier) ? Game.S.tourTier : 0;
             for (int i = 0; i < 3; i++)
             {
                 bool ok = open && Match.TierOpen(ci, i);
                 if (Ui.DzBtn(ok ? TT.At(i).S("name") : "ЖАБЫҚ", 896 + bx + i * 112, 246, 104, 36, false, true, null, true, true, true, i == curT && ok))
                 {
-                    if (ok) { Game.S.tourTier = i; Game.Persist(); }
+                    if (ok && tsv != null && i != tsv.tier) { Snd.Play("ui_error"); Toast("Алдымен басталған " + U.Lower(TT.At(tsv.tier).S("name")) + " турнирін аяқта", 2.6f); }
+                    else if (ok) { Game.S.tourTier = i; Game.Persist(); }
                     else Toast(open ? "Алдымен " + U.Lower(TT.At(i - 1).S("name")) + " турнирін жең" : Progress.LockMsg(ci));
                 }
             }
@@ -399,7 +401,7 @@ public partial class GameRoot
     {
         match.StartMode(mm, ci);
         mapPop = null;
-        if (mm == "tour") { Go(BRACKET); return; }
+        if (mm == "tour") { if (match.tourNote != null) Toast(match.tourNote, 3); Go(BRACKET); return; }
         if (mm == "boss" && match.run.list.Count() == 0) { Toast("Алдымен тараудың бас жауын жең"); return; }
         fv.Setup(match); Go(FIGHT);
     }

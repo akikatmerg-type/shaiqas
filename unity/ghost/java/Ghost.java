@@ -33,6 +33,8 @@ public class Ghost {
     Lst<Page> d = Story.BeforeFight(0, 1); Page dp = null; for (int i = 0; i < d.Count(); i++) if (d.Get(i).dlg != null) dp = d.Get(i);
     check(dp != null, "2-ұрыс алдында диалог бар");
     int c0 = Game.S.coins; Story.Answer(dp, dp.dlg.Ik("ok")); check(Game.S.coins == c0 + 15 && Story.AnswerOk(dp), "дұрыс жауап +15");
+    int noRu = 0, eps = 0; for (int c = 0; c < Db.NCH; c++) { Lst<Page> E = Story.Episodes(c); for (int i = 0; i < E.Count(); i++) { eps++; if (E.Get(i).ruText == null) noRu++; } }
+    System.out.println("[ru] тарих беттері " + eps + ", орысша аудармасыз: " + noRu);
     System.out.println("[story] ұрыс алдындағы беттер барлығы=" + pages + ", эпилог=" + Story.EpilogueList().Count());
     // --- сақтау: жазу/оқу ---
     Game.Persist(); SaveData back = SaveData.FromJson(store.Get(Game.KEY), Db.NCH);
@@ -64,6 +66,16 @@ public class Ghost {
       if (st < 2) check(nx.equals("bracket") && t.run.stage == st + 1 && t.run.lv.Get(t.run.stage).length == (st == 0 ? 4 : 2), "турнир келесі кезең " + st);
     }
     check(t.run.champ && Game.S.tourW[2][t.run.tier] == 1, "турнир чемпионы");
+    check(Match.TourSaved(2) == null, "турнир: чемпион болған соң сақталған тор өшеді");
+    { Match ta = new Match(); ta.StartMode("tour", 3); String n1 = ta.run.slots.Get(3).name;
+      ta.NextFight(); playOut(ta, true); ta.After("next");
+      Match tb = new Match(); tb.StartMode("tour", 3);
+      check(tb.run.stage == 1 && tb.run.slots.Get(3).name.equals(n1) && tb.run.lv.Count() == 2, "турнир: картадан шыққанда тор сақталады (кезең " + tb.run.stage + ")");
+      tb.NextFight(); check(Match.TourSaved(3).fighting, "турнир: ұрыс басталғанда белгі қойылады");
+      Match tc = new Match(); tc.StartMode("tour", 3);
+      check(tc.tourNote != null && tc.run.stage == 0 && Game.S.tour[3] >= 1, "турнир: ұрыс ортасында жабылса — жеңіліс, жаңа тор");
+      Match.TourStore(3, null);
+      System.out.println("[tour] сақталған тор: кезең " + tb.run.stage + ", " + n1 + " · " + tc.tourNote); }
     Match sv = new Match(); sv.StartMode("surv", 1); playOut(sv, true); check(sv.run.wave == 1 && sv.After("next").equals("fight"), "төзім: 1 толқын → келесі");
     playOut(sv, true); check(sv.run.wave == 2 && sv.enemy.maxHp > 0, "төзім: 2 толқын");
     sv.After("next"); playOut(sv, false); check(!sv.won && Game.S.surv[1] == 2 && sv.runOver, "төзім: жеңіліс → рекорд 2");
@@ -148,13 +160,36 @@ public class Ghost {
       check(okc && maxd < 400, "мата: NaN жоқ, тізбек денеден алыс кетпейді (max " + (int) maxd + ")");
       System.out.println("[cloth] 40 с ұрыс: тізбектер тұрақты, ең алыс ауытқу " + (int) maxd + " px"); }
     { U.Seed(7); Match hm = new Match(); hm.StartCampaign(0, 0); hm.player.ai = true; hm.player.weapon = "naiza"; hm.player.hat = "altyn"; hm.player.Init();
-      hm.player.hp = hm.player.hpLag = hm.player.maxHp; boolean okh = true; float md = 0;
+      hm.player.hp = hm.player.hpLag = hm.player.maxHp; boolean okh = true, seen3 = false; float md = 0;
       for (int f = 0; f < 60 * 20 && hm.phase != Match.MATCHEND; f++) { hm.Update(1f / 60, null); hm.fx.Clear();
+        if (f == 120 && hm.player.plume != null && hm.player.plume.ok && hm.player.tas.ok && hm.enemy.hatc.ok) seen3 = true;
         for (Fighter fq : new Fighter[] { hm.player, hm.enemy }) for (Chain c : new Chain[] { fq.plume, fq.hatc, fq.tas }) { if (c == null || !c.ok) continue;
           for (int i = 0; i < c.n; i++) { if (Float.isNaN(c.x[i]) || Float.isNaN(c.y[i])) okh = false; md = Math.max(md, Math.abs(c.x[i] - fq.x)); } } }
-      boolean live3 = hm.player.plume != null && hm.player.plume.ok && hm.player.tas.ok && hm.enemy.hatc.ok;
+      boolean live3 = seen3;   // 2 с кейін (1-раунд): үшеуі де жұмыс істеп тұр
       check(okh && md < 520 && live3, "үкі/сәлде/шашақ тізбектері: іске қосылды, NaN жоқ (max " + (int) md + ")");
       System.out.println("[tassel] үкі (" + Cloth.HatBase(hm.player.hat) + "), найза шашағы, сәлде ұшы (" + Cloth.HatBase(hm.enemy.hat) + "): тұрақты, ең алыс " + (int) md + " px"); }
+    { Skills.TestUnlock = true; Match sm = new Match(); sm.StartQuick(2, 1); sm.live = true; sm.phase = Match.FIGHT; sm.player.active = true; sm.enemy.active = true;
+      String sl = ""; for (int i = 0; i < sm.sbSlots.Count(); i++) sl += (i > 0 ? "," : "") + sm.sbSlots.Get(i).id;
+      check(sm.sbSlots.Count() == 4 && sm.sbSlots.Get(0).cost <= 0 && sm.sbSlots.Get(1).kind.equals("heal") && !sl.contains("qalqan") && !sl.contains("burkit"), "әдіс тақтасы: 1 тегін, 2 шипа, ұстау/аспан жоқ (" + sl + ")");
+      sm.player.rux = 100; sm.player.state = Fighter.IDLE; Intent si = new Intent(); si.sb = 4; sm.Update(1f / 60, si); sm.fx.Clear();
+      check(sm.player.sk != null && sm.player.sk.def == sm.sbSlots.Get(3), "әдіс тақтасы: 4 пернесі әдісті бастайды");
+      Match fm = new Match(); fm.StartQuick(2, 1); fm.live = true; fm.phase = Match.FIGHT; fm.player.active = true; fm.enemy.active = true; fm.player.rux = 0; fm.player.state = Fighter.IDLE;
+      Intent fi = new Intent(); fi.sb = 4; fm.Update(1f / 60, fi); check(fm.player.sk == null && fm.player.sks.callFail, "әдіс тақтасы: рух жетпесе «Рух жетпейді»");
+      Move hb = Move.Base("heavy"); hb.dmg = 20; fm.enemy.TakeHit(hb, -fm.enemy.facing * -1, true, fm.player);
+      check(fm.pops.Count() > 0, "соққы саны шықты");
+      String pt = fm.pops.Count() > 0 ? fm.pops.Get(0).txt + " " + fm.pops.Get(0).col : "-";
+      for (int f = 0; f < 80; f++) fm.Update(1f / 60, null);
+      check(fm.pops.Count() == 0, "соққы саны 1.1 с кейін жоғалады");
+      Skills.TestUnlock = false;
+      System.out.println("[sb] тақта: " + sl + " · соққы: " + pt + " · " + fm.player.sks.callText); }
+    { U.Seed(11); Match zm = new Match(); zm.StartCampaign(1, 2); zm.player.ai = true;
+      check(zm.zhPre != null && zm.zhPre.length() > 10, "жырау: ұрыс алдындағы кеңес бар");
+      String zp = zm.zhPre;
+      for (int f = 0; f < 60 * 200 && zm.phase != Match.MATCHEND; f++) { zm.Update(1f / 60, null); zm.fx.Clear(); }
+      check(zm.phase == Match.MATCHEND && zm.zhHead != null && zm.zhTip != null && !zm.zhHead.contains("{") && !zm.zhTip.contains("{"), "жырау: ұрыстан кейінгі мақтау мен кеңес");
+      String rr = ""; for (int i = 0; i < 6; i++) { String zq = Zh.Pick("pre"); rr += zq.substring(0, 6) + "|"; }
+      Match am2 = new Match(); am2.StartMode("arena", 0); check(am2.zhPre == null, "жырау: еркін алаңда кеңес жоқ");
+      System.out.println("[zh] алдында: " + zp + "\n     кейін: " + zm.zhHead + " / КЕҢЕС: " + zm.zhTip + "\n     pre ретімен: " + rr); }
     { int qc0 = Game.S.coins, qx0 = Game.S.xp; Match qm = new Match(); qm.StartQuick(1, 0); qm.phase = Match.FIGHT; qm.player.active = true; qm.enemy.active = true;
       Move qb = Move.Base("l1"); qb.dmg = 9999; qm.enemy.TakeHit(qb, 1, true, qm.player);
       for (int f = 0; f < 60 * 8 && qm.phase != Match.MATCHEND; f++) { qm.Update(1f / 60, null); qm.fx.Clear(); }

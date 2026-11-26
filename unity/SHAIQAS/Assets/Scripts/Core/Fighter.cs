@@ -282,6 +282,7 @@ public class Fighter
             aiCombo = U.Rand() < aiComboP + Db.PaceK("aiPush") * fz ? combo.Length - 1 : (U.Rand() < 0.4f + 0.3f * fz ? 1 : 0);
         }
         state = ATTACK; st = 0;
+        if (game != null && sk == null) game.ZhAttack(this, id);
     }
 
     void UpdAttack(bool og, float dt, Intent it)
@@ -354,6 +355,7 @@ public class Fighter
         if (state == DASH && st0 != DASH && U.Eq(bossAb, "evade")) skRes = "evade";
         else if (wouldBlock && state != HIT && state != DOWN && state != DEAD) skRes = "block";
         else if (hp < hp0 - 1e-6f || state == HIT || state == DOWN || state == DEAD) skRes = "hit";
+        game.HitPop(this, m, hp0 - hp);
     }
 
     void TakeHitCore(Move m, int dir, bool last, Fighter from)

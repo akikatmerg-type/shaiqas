@@ -51,18 +51,14 @@ public partial class GameRoot
         Ui.TopBar("БАПТАУЛАР");
         if (Ui.DzBtn("МӘЗІР", 24, 18, 150, 46, false, true, null, true)) { Go(LOBBY); return; }
         // дыбыс
-        Ui.DzPanel(80, 120, 560, 300, "felt", true);
-        T("ДЫБЫС", 110, 176, 24, H("#ffd36b"), true);
-        if (Ui.DzBtn(S.sound ? "ДЫБЫС ҚОСУЛЫ" : "ДЫБЫС ӨШІК", 110, 200, 230, 50, false, true, null, true, true, false, S.sound)) { S.sound = !S.sound; Game.Persist(); Snd.Play("ui_select"); }
-        T("Дыбысты қосу/өшіру", 360, 232, 14, H("#b8a8c8"), true, false);
-        T("Әуен", 180, 311, 18, H("#fff3dc"), true);
-        SetBar(232, 296, 200, S.volMusic);
-        T("Әсерлер", 180, 375, 18, H("#fff3dc"), true);
-        SetBar(252, 360, 180, S.volSfx);
-        if (Ui.DzBtn("−", 110, 280, 54, 46, false, true, null, true)) { S.volMusic = Mathf.Clamp01(Mathf.Round((S.volMusic - 0.1f) * 10) / 10f); Game.Persist(); }
-        if (Ui.DzBtn("+", 500, 280, 54, 46, false, true, null, true)) { S.volMusic = Mathf.Clamp01(Mathf.Round((S.volMusic + 0.1f) * 10) / 10f); Game.Persist(); }
-        if (Ui.DzBtn("−", 110, 344, 54, 46, false, true, null, true)) { S.volSfx = Mathf.Clamp01(Mathf.Round((S.volSfx - 0.1f) * 10) / 10f); Game.Persist(); Snd.Play("ui_move"); }
-        if (Ui.DzBtn("+", 500, 344, 54, 46, false, true, null, true)) { S.volSfx = Mathf.Clamp01(Mathf.Round((S.volSfx + 0.1f) * 10) / 10f); Game.Persist(); Snd.Play("ui_move"); }
+        Ui.DzPanel(80, 120, 560, 334, "felt", true);
+        T("ДЫБЫС", 110, 172, 24, H("#ffd36b"), true);
+        if (Ui.DzBtn(S.sound ? "ДЫБЫС ҚОСУЛЫ" : "ДЫБЫС ӨШІК", 110, 190, 230, 46, false, true, null, true, true, false, S.sound)) { S.sound = !S.sound; Game.Persist(); Snd.Play("ui_select"); }
+        if (Ui.DzBtn("♪ МӘЗІР КҮЙІ", 360, 190, 250, 46, false, true, null, true)) { KmOpen(); return; }
+        // веб: STG — жалпы дыбыс, музыка, әсерлер (жолақты басып не сүйреп те өзгертуге болады)
+        S.volMaster = VolRow("Жалпы", 252, S.volMaster, true);
+        S.volMusic = VolRow("Әуен", 310, S.volMusic, false);
+        S.volSfx = VolRow("Әсерлер", 368, S.volSfx, true);
         // тіл
         Ui.DzPanel(670, 120, 550, 300, "felt", true);
         T("ТІЛ", 700, 176, 24, H("#ffd36b"), true);
@@ -83,6 +79,24 @@ public partial class GameRoot
             Game.Persist(); Snd.Play("ui_select");
         }
         Ui.Text("Кішкентай балаларға арналған: жау баяу әрі әлсіз соғады, викторинада 5 дұрыс жауап жеткілікті, рух тезірек толады.", 440, 514, 720, 120, 16, H("#fff3dc"), TextAnchor.UpperLeft, true);
+    }
+    /// <summary>Бір дыбыс жолы: «−», атауы, жолақ (басып/сүйреп), «+».</summary>
+    static float VolRow(string label, float y, float v, bool preview)
+    {
+        float v0 = v;
+        T(label, 176, y + 31, 17, H("#fff3dc"), true);
+        float bx = 262, bw = 170;
+        SetBar(bx, y + 16, bw, v);
+        if (Ui.DzBtn("−", 110, y, 54, 46, false, true, null, true)) v = Mathf.Clamp01(Mathf.Round((v - 0.1f) * 10) / 10f);
+        if (Ui.DzBtn("+", 500, y, 54, 46, false, true, null, true)) v = Mathf.Clamp01(Mathf.Round((v + 0.1f) * 10) / 10f);
+        Event e = Event.current;
+        if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && !Ui.blockInput)
+        {
+            Vector2 p = Ui.ToVirtual(e.mousePosition);
+            if (p.x >= bx - 10 && p.x <= bx + bw + 10 && p.y >= y + 4 && p.y <= y + 44) { v = Mathf.Clamp01(Mathf.Round((p.x - bx) / bw * 20) / 20f); e.Use(); }
+        }
+        if (Mathf.Abs(v - v0) > 0.001f) { Game.Persist(); if (preview) Snd.Play("ui_move"); }
+        return v;
     }
     /// <summary>Дыбыс деңгейі жолағы (веб: setBar).</summary>
     static void SetBar(float x, float y, float w, float v)

@@ -5,7 +5,7 @@ using UnityEngine;
 public partial class GameRoot
 {
     // ================= ТІК ТІЗІМ =================
-    class SList { public float x, y, w, h, rowH, gap, pad; public float sy, ty, vel; public bool drag, barDrag; public float dragY0, dragS0, moved; }
+    class SList { public float x, y, w, h, rowH, gap, pad; public float sy, ty, vel; public bool drag, barDrag, top; public float dragY0, dragS0, moved; }
     readonly SList slHero = new SList { x = 34, y = 98, w = 792, h = 586, rowH = 90, gap = 6, pad = 6 };
     readonly SList slShop = new SList { x = 868, y = 150, w = 390, h = 534, rowH = 82, gap = 6, pad = 6 };
     const float BAR_W = 14;
@@ -27,6 +27,8 @@ public partial class GameRoot
         bool inside = mp.x >= L.x && mp.x <= L.x + L.w && mp.y >= L.y && mp.y <= L.y + L.h;
         Rect bar = SlBar(L); bool onBar = mp.x >= bar.x - 4 && mp.x <= bar.xMax + 4 && mp.y >= bar.y && mp.y <= bar.yMax;
         float m = SlMax(L, n);
+        // үстіңгі терезе (деңгейлер/күй) ашық тұрғанда астындағы тізім айналмайды
+        if (Ui.blockInput && !L.top && e.type != EventType.Repaint) return -1;
         if (e.type == EventType.ScrollWheel && inside) { L.ty = Mathf.Clamp(L.ty + e.delta.y * 30, 0, m); e.Use(); }
         else if (e.type == EventType.MouseDown && inside) { L.drag = true; L.barDrag = onBar; L.dragY0 = mp.y; L.dragS0 = L.ty; L.moved = 0; L.vel = 0; if (onBar) BarSet(L, mp.y, n); e.Use(); }
         else if (e.type == EventType.MouseDrag && L.drag)

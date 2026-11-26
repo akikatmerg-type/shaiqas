@@ -437,6 +437,15 @@ public partial class FightView : MonoBehaviour
         vskf.Clear(); SkFront(vskf, vadd); Upload(meshSkF, vskf);
         // жарық қабаты (additive): жарқыл, сақина, ұшқын, жылт, қару ізі
         Trail(m.enemy); Trail(m.player);
+        // рух толғанда жауынгердің айналасындағы алтын жарқыл (веб: ГЕЙМПЛЕЙ 2.0)
+        foreach (Fighter f in new[] { m.player, m.enemy })
+        {
+            if (f == null || f.rux < 100 || f.state == Fighter.DEAD) continue;
+            float pul = 0.5f + 0.5f * Mathf.Sin(Time.time * 6), k = f.sc / Db.S;
+            vadd.Save(); vadd.Translate(f.x, f.y - 130 * k); vadd.Scale(1, 1.66f);
+            vadd.Glow(0, 0, 125 * k, Col.Pack(255, 200, 90, (int)((0.16f + 0.1f * pul) * 255)));
+            vadd.Restore();
+        }
         foreach (Prt p in prts)
         {
             float k = Mathf.Clamp01(p.life / p.max);
@@ -485,6 +494,10 @@ public partial class FightView : MonoBehaviour
     static readonly Rect TB = new Rect(1006, 468, 80, 80);   // балалар режимі: U — бір батырмамен әдіс (веб: x1046 y508 r40)
     static readonly Rect TJ = new Rect(1130, 570, 120, 120), TK = new Rect(1000, 600, 110, 100), TX = new Rect(1130, 440, 120, 110);
     bool T(Rect r) { return showTouch && Inp.AnyTouchIn(Ui.R(r)); }
+    // әдіс тақтасының сенсорлық батырмалары (веб: SB_TOUCH)
+    static readonly float[] SBX = { 1000, 1072, 1144, 1216 }; const float SBY = 392;
+    static Rect SbRect(int i) { return new Rect(SBX[i] - 32, SBY - 32, 64, 64); }
+    readonly bool[] prevSB = new bool[4];
 
     void ReadIntent()
     {
@@ -501,6 +514,8 @@ public partial class FightView : MonoBehaviour
         intent.j = Inp.Tap(Inp.J) || (tj && !prevTJ);
         intent.k = Inp.Tap(Inp.K) || (tk && !prevTK);
         intent.l = Inp.Tap(Inp.L) || (tx && !prevTX);
+        intent.sb = Inp.Tap(Inp.N1) ? 1 : Inp.Tap(Inp.N2) ? 2 : Inp.Tap(Inp.N3) ? 3 : Inp.Tap(Inp.N4) ? 4 : 0;
+        for (int i = 0; i < 4; i++) { bool on = m != null && m.SbShown() && i < m.sbSlots.Count() && T(SbRect(i)); if (on && !prevSB[i]) intent.sb = i + 1; prevSB[i] = on; }
         bool tb = m != null && m.KidActive() && T(TB);
         intent.u = Inp.Tap(Inp.U) || (tb && !prevTB); prevTB = tb;
         SkFeed(Inp.Down(Inp.W) || Inp.Down(Inp.UP) || Inp.Down(Inp.SPACE) || tu);
@@ -516,6 +531,10 @@ public partial class FightView : MonoBehaviour
         if (m.flash > 0) Ui.Fill(0, 0, 1280, 720, new Color(1, 0.92f, 0.75f, Mathf.Min(0.35f, m.flash * 1.2f)));
         if (m.dark > 0) Ui.Fill(0, 0, 1280, 720, new Color(0.04f, 0.02f, 0.02f, m.dark * 0.5f));
         Fighter P = m.player, E = m.enemy;
+        // жаны аз кездегі қызыл жиек (веб: ГЕЙМПЛЕЙ 2.0)
+        if (m.phase == Match.FIGHT && P.hp > 0 && P.hp < P.maxHp * 0.25f && !m.paused && !P.ai)
+            Ui.Vignette(new Color(0.78f, 0.08f, 0.04f, 0.25f + 0.2f * Mathf.Sin(Time.time * 7)));
+        PopsHud();
         float hk = m.phase == Match.INTRO && m.round == 1 ? Mathf.Clamp01(m.pt * 2.4f) : 1; hk = 1 - (1 - hk) * (1 - hk) * (1 - hk);
         float oy = -(1 - hk) * 120;
         HpBar(P, false, oy); HpBar(E, true, oy);
@@ -541,6 +560,7 @@ public partial class FightView : MonoBehaviour
         if (P.rux >= 100) Ui.TextO("L — РУХ СОҚҚЫСЫ!", 128, 92 + oy, 300, 22, 15, Ui.GOLD, TextAnchor.MiddleLeft, true, 1.5f);
         // сөздер (пергамент көпіршіктер)
         SkHud();
+        SbHud();
         KidWarnHud();
         if (m.mode == "arena") ArenaHud();
         for (int i = 0; i < m.says.Count(); i++)
@@ -587,7 +607,8 @@ public partial class FightView : MonoBehaviour
             Ui.Fill(410, 334, 460, 2.5f, Ui.GOLD); Ui.Img("Art/ui/ram", 620, 312, 40, 20);
             Ui.TextO(m.roundWinner, 0, 344, 1280, 40, 26, Ui.CREAM, TextAnchor.MiddleCenter, true, 3);
         }
-        if (m.phase == Match.MATCHEND && m.pt > 0.8f) { DrawResult(); return; }
+        ZhPrePanel();
+        if (m.phase == Match.MATCHEND && m.pt > 0.8f) { DrawResult(); ZhMatchPanel(); return; }
         // үзіліс
         if (m.phase != Match.MATCHEND && !m.paused && Ui.Btn("II", 1214, 92, 52, 48, false, true, 20)) { m.paused = true; pauseT = Time.unscaledTime; }
         if (m.paused) { DrawPause(); return; }
@@ -665,7 +686,7 @@ public partial class FightView : MonoBehaviour
         if (Ui.DzBtn(ex, 460, 418, 360, 58))
         {
             m.paused = false; m.live = false;
-            if (tourOut) { m.run.outd = true; Game.S.tour[m.chapter] = Mathf.Max(Game.S.tour[m.chapter], m.run.stage); Game.Persist(); GameRoot.I.OpenMapHub(m.chapter); }
+            if (tourOut) { m.TourForfeit(); GameRoot.I.Toast("Турнирден шықтың — бұл жеңіліс болып есептелді"); GameRoot.I.OpenMapHub(m.chapter); }
             else if (m.mode == "campaign") GameRoot.I.OpenMap(m.chapter);
             else if (m.mode == "quick" || m.mode == "arena") GameRoot.I.Go(GameRoot.LOBBY);
             else GameRoot.I.OpenMapHub(m.chapter);
@@ -725,10 +746,10 @@ public partial class FightView : MonoBehaviour
             Ui.TextO(rs, 640 - rw / 2 + 46, y - 26, rw - 46, 36, 26, new Color32(255, 214, 120, 255), TextAnchor.MiddleLeft);
             y += 34;
         }
-        else if (!won) { Ui.TextS("Бұқар жырау: «Қайта тұр, балам. Батыр бір жеңілістен сынбайды.»", 370, y - 20, 540, 56, 19, new Color32(240, 228, 208, 255), TextAnchor.UpperCenter, false); y += 52; }
+        else if (!won && m.zhHead == null) { Ui.TextS("Бұқар жырау: «Қайта тұр, балам. Батыр бір жеңілістен сынбайды.»", 370, y - 20, 540, 56, 19, new Color32(240, 228, 208, 255), TextAnchor.UpperCenter, false); y += 52; }
         if (m.mode == "quick") Ui.TextS("Еркін ұрыс — жаттығу үшін: теңге мен тәжірибе берілмейді", 290, y - 10, 700, 24, 15, new Color(1, 0.95f, 0.86f, 0.75f), TextAnchor.MiddleCenter, false);
         else if (m.xpGot > 0) Ui.TextS("+" + m.xpGot + " тәжірибе" + (m.lvlCoins > 0 ? " · ЖАҢА ДЕҢГЕЙ! +" + m.lvlCoins + " теңге" : ""), 340, y - 10, 600, 24, 16, Ui.CREAM, TextAnchor.MiddleCenter, false);
-        if (m.mode == "campaign" && won && U.Len(m.zhWin) > 0) Ui.TextS("Бұқар жырау: " + m.zhWin, 360, 600, 560, 44, 16, new Color32(232, 220, 203, 255), TextAnchor.UpperCenter, false);
+        if (m.mode == "campaign" && won && U.Len(m.zhWin) > 0 && m.zhHead == null) Ui.TextS("Бұқар жырау: " + m.zhWin, 360, 600, 560, 44, 16, new Color32(232, 220, 203, 255), TextAnchor.UpperCenter, false);
         // батырмалар (веб: buildUI matchEnd)
         if (pt2 < 0.4f) return;
         bool multi = m.mode == "tour" || m.mode == "surv" || m.mode == "boss";
