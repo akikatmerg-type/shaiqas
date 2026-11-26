@@ -42,7 +42,7 @@ public static class Progress
     public const int MAXL = 20;
     public static int Need(int L) { return Mathf.RoundToInt(30 + 15 * (L - 1) + (L - 1) * (L - 1)); }
     public static int LevelOf(int xp) { int L = 1, acc = 0; while (L < MAXL && xp >= acc + Need(L)) { acc += Need(L); L++; } return L; }
-    public static int Level() { return LevelOf(Game.S.xp); }
+    public static int Level() { return TestUnlockAll ? MAXL : LevelOf(Game.S.xp); }
     public static int XpInto() { int L = 1, acc = 0, xp = Game.S.xp; while (L < MAXL && xp >= acc + Need(L)) { acc += Need(L); L++; } return xp - acc; }
     public static int LvReward(int L) { return L <= 1 ? 0 : Mathf.RoundToInt((30f * L + 8f * L * L) / 10f) * 10; }
     /// <summary>Тәжірибе қосу. Қайтарады: жаңа деңгей үшін берілген теңге (0 — деңгей өзгермеді).</summary>

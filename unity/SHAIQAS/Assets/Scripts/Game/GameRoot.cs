@@ -71,12 +71,47 @@ public partial class GameRoot : MonoBehaviour
         Destroy(t);
     }
 
+    bool benchOn;
+    System.Collections.IEnumerator Bench()
+    {
+        benchOn = true;
+        Match mm = match; Fighter P = mm.player, E = mm.enemy; SkDef d = Skills.By(mm.arenaSel);
+        if (d == null) { benchOn = false; yield break; }
+        // сахна: жау алдында 260 бірлікте тыныш тұрады, ойыншы әдісті бірден бастайды
+        E.active = false; E.state = Fighter.IDLE; E.hp = E.hpLag = E.maxHp; E.x = Mathf.Clamp(P.x + P.facing * 260, 120, Db.ARENA - 120); E.facing = -P.facing; E.vx = 0; E.push = 0;
+        SkState T = Skills.S(P); for (int i = 0; i < T.cd.Length; i++) T.cd[i] = 0;
+        P.rux = 100; P.sk = null; P.state = Fighter.IDLE; P.vx = 0; P.push = 0; P.y = Db.GROUND; P.vy = 0;
+        if (d.air) { P.y = Db.GROUND - 200; P.vy = -100; P.state = Fighter.JUMP; }
+        yield return null;
+        Skills.Start(P, d, false);
+        string dir = Application.dataPath + "/../Shots/burst";
+        System.IO.Directory.CreateDirectory(dir);
+        for (int f = 0; f < 24; f++)
+        {
+            yield return new WaitForEndOfFrame();
+            Texture2D t = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+            t.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0); t.Apply();
+            System.IO.File.WriteAllBytes(dir + "/" + d.id + "_" + (f < 10 ? "0" : "") + f + ".png", t.EncodeToPNG());
+            Destroy(t);
+            float until = Time.unscaledTime + 0.06f;
+            while (Time.unscaledTime < until) yield return null;
+        }
+        E.active = true; benchOn = false;
+        Toast("стенд жазылды: " + d.name);
+    }
+
     void Update()
     {
         Inp.Poll();
         // F12 — скриншот (жоба папкасындағы Shots/ ішіне): веб-нұсқамен пиксель бойынша салыстыру үшін
         if (Application.isEditor && Inp.Tap(Inp.F12)) StartCoroutine(Shot());
         if (Application.isEditor && Inp.Tap(Inp.F10)) { Skills.TestUnlock = !Skills.TestUnlock; Toast(Skills.TestUnlock ? "тест: барлық әдіс ашық, рух толы" : "тест: әдістер қалыпты"); }
+        // F9 — әдіс стенді (еркін алаңда): таңдалған әдісті қолданып, 24 кадрды Shots/burst/ ішіне жазады; F8 — келесі әдіс
+        if (Application.isEditor && screen == FIGHT && match != null && U.Eq(match.mode, "arena"))
+        {
+            if (Inp.Tap(Inp.F8)) { Skills.Init(); int ci = 0; for (int i = 0; i < Skills.All.Count(); i++) if (Skills.All.Get(i).id == match.arenaSel) ci = i; match.arenaSel = Skills.All.Get((ci + 1) % Skills.All.Count()).id; Toast("стенд: " + Skills.By(match.arenaSel).name); }
+            if (Inp.Tap(Inp.F9) && !benchOn) StartCoroutine(Bench());
+        }
         if (Application.isEditor && Inp.Tap(Inp.F11)) { StageLive.dbg = (StageLive.dbg + 1) % 15; Toast("debug: " + StageLive.dbg); }
         float dt = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
         LevelWatch(dt);

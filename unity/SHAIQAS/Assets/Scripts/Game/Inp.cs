@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 
 public static class Inp
 {
-    public const int A = 0, D = 1, W = 2, S = 3, J = 4, K = 5, L = 6, LEFT = 7, RIGHT = 8, UP = 9, DOWN = 10, SPACE = 11, ENTER = 12, ESC = 13, F12 = 14, F11 = 15, F10 = 16, U = 17, N = 18;
+    public const int A = 0, D = 1, W = 2, S = 3, J = 4, K = 5, L = 6, LEFT = 7, RIGHT = 8, UP = 9, DOWN = 10, SPACE = 11, ENTER = 12, ESC = 13, F12 = 14, F11 = 15, F10 = 16, U = 17, F9 = 18, F8 = 19, N = 20;
     static bool[] now = new bool[N], prev = new bool[N];
     public static Vector2[] touches = new Vector2[10];   // экран координаттары (y — жоғарыдан төмен)
     public static int touchCount;
@@ -23,7 +23,7 @@ public static class Inp
             now[A] = kb.aKey.isPressed; now[D] = kb.dKey.isPressed; now[W] = kb.wKey.isPressed; now[S] = kb.sKey.isPressed;
             now[J] = kb.jKey.isPressed; now[K] = kb.kKey.isPressed; now[L] = kb.lKey.isPressed;
             now[LEFT] = kb.leftArrowKey.isPressed; now[RIGHT] = kb.rightArrowKey.isPressed; now[UP] = kb.upArrowKey.isPressed; now[DOWN] = kb.downArrowKey.isPressed;
-            now[SPACE] = kb.spaceKey.isPressed; now[ENTER] = kb.enterKey.isPressed; now[ESC] = kb.escapeKey.isPressed; now[F12] = kb.f12Key.isPressed; now[F11] = kb.f11Key.isPressed; now[F10] = kb.f10Key.isPressed; now[U] = kb.uKey.isPressed;
+            now[SPACE] = kb.spaceKey.isPressed; now[ENTER] = kb.enterKey.isPressed; now[ESC] = kb.escapeKey.isPressed; now[F12] = kb.f12Key.isPressed; now[F11] = kb.f11Key.isPressed; now[F10] = kb.f10Key.isPressed; now[U] = kb.uKey.isPressed; now[F9] = kb.f9Key.isPressed; now[F8] = kb.f8Key.isPressed;
         }
         else for (int i = 0; i < N; i++) now[i] = false;
         Touchscreen ts = Touchscreen.current;
@@ -47,7 +47,7 @@ public static class Inp
         now[A] = Input.GetKey(KeyCode.A); now[D] = Input.GetKey(KeyCode.D); now[W] = Input.GetKey(KeyCode.W); now[S] = Input.GetKey(KeyCode.S);
         now[J] = Input.GetKey(KeyCode.J); now[K] = Input.GetKey(KeyCode.K); now[L] = Input.GetKey(KeyCode.L);
         now[LEFT] = Input.GetKey(KeyCode.LeftArrow); now[RIGHT] = Input.GetKey(KeyCode.RightArrow); now[UP] = Input.GetKey(KeyCode.UpArrow); now[DOWN] = Input.GetKey(KeyCode.DownArrow);
-        now[SPACE] = Input.GetKey(KeyCode.Space); now[ENTER] = Input.GetKey(KeyCode.Return); now[ESC] = Input.GetKey(KeyCode.Escape); now[F12] = Input.GetKey(KeyCode.F12); now[F11] = Input.GetKey(KeyCode.F11); now[F10] = Input.GetKey(KeyCode.F10); now[U] = Input.GetKey(KeyCode.U);
+        now[SPACE] = Input.GetKey(KeyCode.Space); now[ENTER] = Input.GetKey(KeyCode.Return); now[ESC] = Input.GetKey(KeyCode.Escape); now[F12] = Input.GetKey(KeyCode.F12); now[F11] = Input.GetKey(KeyCode.F11); now[F10] = Input.GetKey(KeyCode.F10); now[U] = Input.GetKey(KeyCode.U); now[F9] = Input.GetKey(KeyCode.F9); now[F8] = Input.GetKey(KeyCode.F8);
         for (int i = 0; i < Input.touchCount && touchCount < touches.Length; i++)
         {
             Touch t = Input.GetTouch(i);

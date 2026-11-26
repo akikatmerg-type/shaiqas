@@ -71,16 +71,8 @@ public partial class FightView
     void SkBack(VMesh v, VMesh va)
     {
         float T = Time.time;
-        for (int i = 0; i < m.spikes.Count(); i++)
-        {
-            float[] s = m.spikes.Get(i); float k = s[5] / s[4], hk = k < 0.18f ? 1 - (1 - k / 0.18f) * (1 - k / 0.18f) * (1 - k / 0.18f) : k > 0.7f ? 1 - (k - 0.7f) / 0.3f : 1, h = s[1] * hk, w = s[2];
-            if (h < 2) continue;
-            v.Save(); v.Translate(s[0], Db.GROUND + 6); v.Rotate(s[3]);
-            v.FillC(C(106, 76, 50)); Tri3(v, -w * 0.9f, 0, -w * 0.45f, -h * 0.45f, -w * 0.05f, 0);
-            v.QuadC(-w / 2, 0, w / 2, 0, w * 0.08f, -h, w * 0.08f, -h, C(74, 52, 36), C(74, 52, 36), C(226, 189, 132), C(226, 189, 132));
-            v.FillC(Col.Pack(255, 236, 200, 89)); Tri3(v, -w * 0.1f, -h * 0.2f, w * 0.08f, -h, w * 0.08f, -h * 0.25f);
-            v.Restore();
-        }
+        SkArt.Spikes(v, va, m);
+        for (int i = 0; i < m.skProj.Count(); i++) { SkProj p = m.skProj.Get(i); if (p.kind == "earth") SkArt.EarthWave(v, va, p, T); }
         SkBackF(v, va, m.player, histP, T); SkBackF(v, va, m.enemy, histE, T);
     }
     void SkBackF(VMesh v, VMesh va, Fighter f, List<PoseRec> hist, float T)
@@ -104,7 +96,7 @@ public partial class FightView
             Painter.Draw(v, f, Looks.For(f), Col.WithA(C(186, 160, 255), a), 0, 0);
             Pz.Copy(f.cur, keep); f.x = kx; f.y = ky; f.facing = kf;
         }
-        if (S.frost > 0) { v.FillC(Col.WithA(C(223, 246, 255), Mathf.Clamp01(S.frost) * 0.55f)); v.Ellipse(f.x, Db.GROUND + 2, 80, 12, 0); }
+        SkArt.Frost(v, va, f, T);
         if (S.hot > 0) { va.FillC(Col.WithA(Col.Parse(Skills.KIND_COL[7]), Mathf.Clamp01(S.hot) * 0.5f)); va.Save(); va.Translate(f.x, Db.GROUND - 2); va.Scale(1, 14f / 70f); va.Ring(0, 0, 70 + 8 * Mathf.Sin(T * 6), 3 * 5); va.Restore(); }
     }
 
@@ -126,17 +118,7 @@ public partial class FightView
                     Arc(va, p.x + off, yy, rw, rw * 0.26f, rot % 6.2832f, 4.2f, 2.6f);
                 }
             }
-            else if (p.kind == "ice")
-            {
-                va.Save(); va.Translate(p.x, p.y); va.Scale(1, 40f / 70f); va.Glow(0, 0, 70, Col.WithA(ic, 0.6f * k)); va.Restore();
-                va.FillC(Col.WithA(C(223, 246, 255), 0.5f * k));
-                for (int j = 0; j < 3; j++) { lx[0] = p.x + dir * (-30 - j * 6); ly[0] = p.y - 6 + j * 6; lx[1] = p.x + dir * (-90 - j * 14); ly[1] = ly[0]; va.Thin(lx, ly, 2, 2); }
-                v.Save(); v.Translate(p.x, p.y); v.Scale(dir, 1);
-                v.FillC(Col.WithA(C(234, 252, 255), k)); Tri3(v, 30, 0, 2, -9, -30, 0); Tri3(v, 30, 0, -30, 0, 2, 9);
-                v.FillC(Col.WithA(C(143, 214, 246), k)); Tri3(v, 30, 0, 2, 9, -30, 0);
-                v.FillC(Col.WithA(C(255, 255, 255), k)); lx[0] = -26; ly[0] = 0; lx[1] = 28; ly[1] = 0; v.Thin(lx, ly, 2, 1.2f);
-                v.Restore();
-            }
+            else if (p.kind == "ice") SkArt.IceLance(v, va, p, T);
             else if (p.kind == "lasso" && p.owner != null)
             {
                 Vector2 hnd = Hand(p.owner);
@@ -173,17 +155,7 @@ public partial class FightView
             va.FillC(Col.Pack(190, 255, 236, 140));
             for (int i = 0; i < 4; i++) { float r = 120 + i * 26, ph = T * 14 + i; Arc(va, f.x, f.y - 60 - i * 40, r, r * 0.22f, ph % 6.28f, 3.6f, 3); }
         }
-        if (S.ice > 0 && f.state != Fighter.DEAD)
-        {
-            float a = Mathf.Clamp01(S.ice * 4), w = 74 * sc, h = 270 * sc;
-            v.FillC(Col.WithA(C(200, 240, 255), a * 0.5f)); v.Quad(f.x - w, f.y - h, f.x + w, f.y - h, f.x + w, f.y + 4, f.x - w, f.y + 4);
-            v.FillC(Col.WithA(C(255, 255, 255), a * 0.9f));
-            zx[0] = f.x - w; zy[0] = f.y - h; zx[1] = f.x + w; zy[1] = f.y - h; zx[2] = f.x + w; zy[2] = f.y + 4; zx[3] = f.x - w; zy[3] = f.y + 4; zx[4] = zx[0]; zy[4] = zy[0];
-            v.Thin(zx, zy, 5, 2);
-            v.FillC(Col.WithA(C(255, 255, 255), a * 0.6f));
-            lx[0] = f.x - w * 0.6f; ly[0] = f.y - h * 0.8f; lx[1] = f.x - w * 0.2f; ly[1] = f.y - h * 0.55f; v.Thin(lx, ly, 2, 2);
-            lx[0] = f.x + w * 0.5f; ly[0] = f.y - h * 0.3f; lx[1] = f.x + w * 0.1f; ly[1] = f.y - h * 0.1f; v.Thin(lx, ly, 2, 2);
-        }
+        SkArt.IceBlock(v, va, f, T);
         if (S.stun > 0 && f.state != Fighter.DOWN && f.state != Fighter.DEAD && !(S.ice > 0))
             for (int i = 0; i < 3; i++) { float a = T * 6 + i * 2.09f; v.FillC(C(255, 220, 90)); v.Star(f.x + Mathf.Cos(a) * 34 * sc, hy + Mathf.Sin(a) * 9, 8, T * 3); }
     }

@@ -36,7 +36,7 @@ public class SkProj
 public class SkState
 {
     public float[] cd = new float[24];
-    public float stun, slow, burn, hot, frost, ice, parry, wantT, aiGap, refill;
+    public float stun, slow, burn, hot, frost, ice, iceAge, parry, wantT, aiGap, refill;
     public bool slowOn;
     public float pullTo, pullT;
     public float cloneT, cloneFade; public int cloneN, cloneQ; public float[] cloneAt = new float[8]; public Move[] cloneCm = new Move[8];
@@ -282,18 +282,18 @@ public static class Skills
         else if (U.Eq(id, "sadaq")) { Anim(f, "thrust", 0.16f, 0.1f, 0.26f); f.vx = -f.facing * 300; }
         else if (U.Eq(id, "qalqan")) { m = Anim(f, "throw", 0.04f, 0.42f, 0.16f); m.pw = "guard"; m.ps = "guard"; S(f).parry = 0.46f; f.vx = 0; }
         else if (U.Eq(id, "burkit")) { m = Anim(f, "akick", 0.05f, 0.7f, 0.1f); m.air = true; m.after = true; m.foot = true; f.vx = f.facing * 560; f.vy = 1150; }
-        else if (U.Eq(id, "shapagat")) { m = Anim(f, "rise", 0.2f, 0.3f, 0.3f); m.pw = "guard"; m.ps = "victory"; f.vx = 0; S(f).hot = 3; if (g != null) g.flash = Mathf.Max(g.flash, 0.08f); }
+        else if (U.Eq(id, "shapagat")) { m = Anim(f, "rise", 0.2f, 0.3f, 0.3f); m.pw = "crouch"; m.ps = "castHeal"; f.vx = 0; S(f).hot = 3; if (g != null) g.flash = Mathf.Max(g.flash, 0.08f); }
         else if (U.Eq(id, "dauyl") || U.Eq(id, "ayaz")) { Anim(f, "thrust", 0.14f, U.Eq(id, "dauyl") ? 0.12f : 0.1f, 0.3f); f.vx = 0; }
         else if (U.Eq(id, "tulpar")) { m = Anim(f, "thrust", 0.08f, 0.44f, 0.26f); m.pw = "dashF"; m.ps = "thrustS"; m.after = true; f.charging = true; f.inv = 0.62f; s.n = 0; Dust(f, f.x, -f.facing, 12); }
         else if (U.Eq(id, "arqan")) { Anim(f, "thrust", 0.12f, 0.3f, 0.3f); f.vx = 0; }
         else if (U.Eq(id, "jer")) { Anim(f, "heavy", 0.22f, 0.1f, 0.42f); f.vx = 0; }
         else if (U.Eq(id, "jalyn")) { m = Anim(f, "rise", 0.04f, 0.28f, 0.3f); m.air = true; m.anti = true; m.after = true; f.inv = 0.22f; f.vy = -840; f.vx = f.facing * 260; f.y -= 2; }
-        else if (U.Eq(id, "naizagai")) { m = Anim(f, "rise", 0.3f, 0.3f, 0.32f); m.pw = "guard"; m.ps = "victory"; f.vx = 0; s.tx = o != null ? o.x : f.x + f.facing * 300; }
+        else if (U.Eq(id, "naizagai")) { m = Anim(f, "rise", 0.3f, 0.3f, 0.32f); m.pw = "crouch"; m.ps = "castUp"; f.vx = 0; s.tx = o != null ? o.x : f.x + f.facing * 300; }
         else if (U.Eq(id, "quiyn")) { m = Anim(f, "spin", 0.1f, 0.78f, 0.3f); m.pw = "heavyW"; m.ps = "lightS"; m.alt = "light2S"; m.hits = 5; m.spin = true; m.after = true; f.vx = 0; s.n = 0; }
-        else if (U.Eq(id, "aiqai")) { m = Anim(f, "heavy", 0.22f, 0.32f, 0.36f); m.pw = "heavyW"; m.ps = "victory"; f.vx = 0; }
-        else if (U.Eq(id, "aruaq")) { m = Anim(f, "rise", 0.25f, 0.2f, 0.3f); m.pw = "guard"; m.ps = "victory"; f.vx = 0; SkState T = S(f); T.cloneT = 9; T.cloneN = 3; T.cloneFade = 0; T.cloneQ = 0; if (g != null) g.flash = Mathf.Max(g.flash, 0.1f); }
+        else if (U.Eq(id, "aiqai")) { m = Anim(f, "heavy", 0.22f, 0.32f, 0.36f); m.pw = "heavyW"; m.ps = "castRoar"; f.vx = 0; }
+        else if (U.Eq(id, "aruaq")) { m = Anim(f, "rise", 0.25f, 0.2f, 0.3f); m.pw = "crouch"; m.ps = "castSpirit"; f.vx = 0; SkState T = S(f); T.cloneT = 9; T.cloneN = 3; T.cloneFade = 0; T.cloneQ = 0; if (g != null) g.flash = Mathf.Max(g.flash, 0.1f); }
         else if (U.Eq(id, "otty")) { s.ph = 0; OttyPhase(f, 0); }
-        else if (U.Eq(id, "boran")) { m = Anim(f, "rise", 0.3f, 0.3f, 0.32f); m.pw = "guard"; m.ps = "victory"; f.vx = 0; }
+        else if (U.Eq(id, "boran")) { m = Anim(f, "rise", 0.3f, 0.3f, 0.32f); m.pw = "crouch"; m.ps = "castUp"; f.vx = 0; }
         else if (U.Eq(id, "alpamys"))
         {
             m = Anim(f, "thrust", 0.2f, 0.3f, 0.2f); m.pw = "dashF"; m.ps = "thrustS"; m.special = true; m.after = true;
@@ -554,7 +554,7 @@ public static class Skills
         if (T.hot > 0) { T.hot -= dt; if (alive) f.hp = Mathf.Min(f.maxHp, f.hp + 9 * dt); }
         if (T.burn > 0) { T.burn -= dt; if (alive && f.hp > 1) f.hp = Mathf.Max(1, f.hp - 2.4f * dt); }
         if (T.frost > 0) { T.frost -= dt; if (alive && f.hp > 1) f.hp = Mathf.Max(1, f.hp - 2.6f * dt); }
-        if (T.ice > 0) T.ice -= dt;
+        if (T.ice > 0) { T.ice -= dt; T.iceAge += dt; } else T.iceAge = 0;
         if (T.slow > 0 && alive)
         {
             if (!T.slowOn) { T.slowOn = true; f.speed *= 0.55f; f.atkSpd *= 0.75f; }

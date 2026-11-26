@@ -242,8 +242,15 @@ public static class Tut
         for (int i = 1; i < rn; i++) UR = Rect.MinMaxRect(Mathf.Min(UR.xMin, rs[i].xMin), Mathf.Min(UR.yMin, rs[i].yMin), Mathf.Max(UR.xMax, rs[i].xMax), Mathf.Max(UR.yMax, rs[i].yMax));
 
         // панель өлшемі
-        string tx = Game.Fix(s.S("tx")), rt = ru ? Game.Fix(s.S("ru")) : null;
+        // телефонда — сенсорлық батырмаларға арналған мәтін (txT/ruT), {N}/{M} — викторина сандары
+        bool tch = Application.isMobilePlatform;
+        string tx = Game.Fix(tch && U.Len(s.S("txT")) > 0 ? s.S("txT") : s.S("tx")), rt = ru ? Game.Fix(tch && U.Len(s.S("ruT")) > 0 ? s.S("ruT") : s.S("ru")) : null;
+        if (U.Len(tx) == 0) { if (step < lesson.Count() - 1) step++; else { Game.S.tutDone.Add(key); key = null; } return; }   // бос қадам — өткізіп жібереміз
+        tx = tx.Replace("{N}", U.Int(Db.QZ_N)).Replace("{M}", U.Int(Progress.QzPassMin())); if (rt != null) rt = rt.Replace("{N}", U.Int(Db.QZ_N)).Replace("{M}", U.Int(Progress.QzPassMin()));
         float w = 620, th = Ui.TextHeight(tx, w - 56, 19, true), rh = U.Len(rt) > 0 ? Ui.TextHeight(rt, w - 56, 14, true) + 10 : 0;
+        // кейбір кадрларда (ұрыс экраны) CalcHeight 0 қайтарады — мәтін жоғалып кетпесін: әріп санымен бағалаймыз
+        float estT = Mathf.Ceil(U.Len(tx) * 10.2f / (w - 56)) * 25, estR = U.Len(rt) > 0 ? Mathf.Ceil(U.Len(rt) * 7.4f / (w - 56)) * 18 + 10 : 0;
+        th = Mathf.Max(th, estT); rh = Mathf.Max(rh, estR);
         float h = 98 + th + rh + 60;
         // мақсатты орын: нысананың жанында (оң, сол, асты, үсті), онымен қабаттаспай
         float gx = 640 - w / 2, gy = 720 - h - 22;

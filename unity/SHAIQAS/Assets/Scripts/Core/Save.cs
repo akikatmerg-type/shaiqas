@@ -103,8 +103,32 @@ public static class Game
         store = st;
         string t = st == null ? null : st.Get(KEY);
         S = SaveData.FromJson(t, Db.NCH);
+        ApplyTest();
     }
-    public static void Persist() { if (store != null) store.Set(KEY, S.ToJson()); }
+    public static void Persist() { ApplyTest(); if (store != null) store.Set(KEY, S.ToJson()); }
+
+    /// <summary>Тексеру ойыншысы: аты «Тест» болса — барлық тарау, әдіс, деңгей, қару мен батыр ашық.</summary>
+    public static bool TestMode()
+    {
+        string n = S == null || S.name == null ? "" : U.Lower(U.Trim(S.name));
+        // латынның ұқсас әріптері (e, c, t) кирилмен шатасса да танимыз
+        n = U.Replace(U.Replace(n, "e", "е"), "c", "с");
+        return U.Eq(n, "тест") || U.Eq(n, "teст") || U.Eq(n, "test") || U.Eq(n, "tест") || U.Eq(n, "tеst");
+    }
+    static bool testOn;
+    static void Own(Lst<string> L, JNode order) { if (order == null) return; for (int i = 0; i < order.Count(); i++) { string id = order.At(i).Str(); if (!L.Contains(id)) L.Add(id); } }
+    static void ApplyTest()
+    {
+        bool t = TestMode();
+        if (t)
+        {
+            Progress.TestUnlockAll = true; Skills.TestUnlock = true; testOn = true;
+            // бәрі ашық: батырлар, қару, сауыт, бас киім — тегін иеленеді, теңге шексіз дерлік
+            Own(S.heroes, Db.HeroOrder); Own(S.ownWeapon, Db.WeaponOrder); Own(S.ownArmor, Db.ArmorOrder); Own(S.ownHelm, Db.HelmOrder);
+            if (S.coins < 999999) S.coins = 999999;
+        }
+        else if (testOn) { Progress.TestUnlockAll = false; Skills.TestUnlock = false; testOn = false; }   // атын өзгертсе — қалыпты ойын
+    }
 
     // ----- ойыншының аты (сюжеттегі «Бауыржан» орнына) -----
     public static string PlayerName() { return U.Len(S.name) > 0 ? S.name : Db.NAME_DEF; }

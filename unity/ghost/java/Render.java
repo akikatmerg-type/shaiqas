@@ -30,7 +30,11 @@ public class Render {
         g.drawImage(im, at, null);
         continue;
       }
-      g.setColor(col(m.col[a]));
+      int ca = m.col[a], cb = m.col[b], cc = m.col[c];
+      if (ca == cb && cb == cc) g.setColor(col(ca));
+      else { // градиенттің жуықтауы: үш түстің орташасы
+        int A = (((ca >>> 24) + (cb >>> 24) + (cc >>> 24)) / 3), R = (((ca >> 16) & 255) + ((cb >> 16) & 255) + ((cc >> 16) & 255)) / 3, Gq = (((ca >> 8) & 255) + ((cb >> 8) & 255) + ((cc >> 8) & 255)) / 3, B = ((ca & 255) + (cb & 255) + (cc & 255)) / 3;
+        g.setColor(new Color(R, Gq, B, A)); }
       Path2D p = new Path2D.Float(); p.moveTo(m.vx[a], m.vy[a]); p.lineTo(m.vx[b], m.vy[b]); p.lineTo(m.vx[c], m.vy[c]); p.closePath();
       g.fill(p);
     }
