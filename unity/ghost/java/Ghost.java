@@ -155,6 +155,11 @@ public class Ghost {
       boolean live3 = hm.player.plume != null && hm.player.plume.ok && hm.player.tas.ok && hm.enemy.hatc.ok;
       check(okh && md < 520 && live3, "үкі/сәлде/шашақ тізбектері: іске қосылды, NaN жоқ (max " + (int) md + ")");
       System.out.println("[tassel] үкі (" + Cloth.HatBase(hm.player.hat) + "), найза шашағы, сәлде ұшы (" + Cloth.HatBase(hm.enemy.hat) + "): тұрақты, ең алыс " + (int) md + " px"); }
+    { int qc0 = Game.S.coins, qx0 = Game.S.xp; Match qm = new Match(); qm.StartQuick(1, 0); qm.phase = Match.FIGHT; qm.player.active = true; qm.enemy.active = true;
+      Move qb = Move.Base("l1"); qb.dmg = 9999; qm.enemy.TakeHit(qb, 1, true, qm.player);
+      for (int f = 0; f < 60 * 8 && qm.phase != Match.MATCHEND; f++) { qm.Update(1f / 60, null); qm.fx.Clear(); }
+      check(qm.won && Game.S.coins == qc0 && Game.S.xp == qx0 && qm.reward == 0 && qm.xpGot == 0, "еркін ұрыс: теңге мен тәжірибе берілмейді");
+      System.out.println("[quick] жеңіс: теңге " + qc0 + "→" + Game.S.coins + ", тәжірибе " + qx0 + "→" + Game.S.xp); }
     { Match km2 = new Match(); km2.StartQuick(0, 0); km2.phase = Match.FIGHT; km2.player.active = true; km2.enemy.active = true;
       Move kb = Move.Base("l1"); kb.dmg = 9999; km2.enemy.TakeHit(kb, -1, true, km2.player);
       boolean flew = km2.enemy.hatOff != null; float topY = 9999;

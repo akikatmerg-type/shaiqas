@@ -390,7 +390,7 @@ public class Match
             zhWin = Game.Fix(Db.ZhWin.At((int)(U.Rand() * Db.ZhWin.Count())).Str());
         }
         else if (U.Eq(mode, "train") && won) { reward = (15 + chapter * 6) * 2; runMsg = "Жаттығу сәтті өтті!"; }
-        else if (U.Eq(mode, "quick") && won) reward = (int)((25 + chapter * 10) * ECO_K);
+        // еркін ұрыс — тек ойын үшін: теңге де, тәжірибе де берілмейді
         else if (U.Eq(mode, "tour")) EndTour(S);
         else if (U.Eq(mode, "surv")) EndSurv(S);
         else if (U.Eq(mode, "duel")) EndDuel(S);
@@ -401,7 +401,8 @@ public class Match
         // тәжірибе (веб: skMatchXp)
         xpGot = !won ? 8 : Mathf.RoundToInt(24 + chapter * 6 + stageIdx * 4 + (enemy.boss ? 30 : 0));
         if (U.Eq(mode, "train") && won) xpGot = Mathf.RoundToInt(xpGot * 0.6f);
-        lvlCoins = Progress.GainXp(xpGot);
+        if (U.Eq(mode, "quick")) xpGot = 0;
+        lvlCoins = xpGot > 0 ? Progress.GainXp(xpGot) : 0;
         Medals.Check(medalsNew);
         Game.Persist();
     }
@@ -510,7 +511,7 @@ public class Match
         sndQ.Add("skill_cast"); sndQ.Add("skill_" + d.kind);
         if (U.Eq(d.id, "tulpar")) sndQ.Add("horse");
         if (U.Eq(d.id, "boran")) sndQ.Add("blizzard");
-        if (!isAi && f == player && Skills.FirstUse(d)) { skFirstName = d.name; skFirstT = 0; }
+        if (!isAi && f == player && !U.Eq(mode, "quick") && Skills.FirstUse(d)) { skFirstName = d.name; skFirstT = 0; }
         if (!isAi && f == player && U.Eq(mode, "arena") && arenaSel != null && U.Eq(d.id, arenaSel)) { arenaOk = d.id; arenaN++; arenaOkT = 0; }
     }
     public void SkillFail(Fighter f) { sndQ.Add("skill_fail"); }
