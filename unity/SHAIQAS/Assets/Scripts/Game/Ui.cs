@@ -27,7 +27,7 @@ public static class Ui
         float sw = Screen.width, sh = Screen.height;
         k = Mathf.Min(sw / 1280f, sh / 720f);
         ox = (sw - 1280f * k) * 0.5f; oy = (sh - 720f * k) * 0.5f;
-        clicked = false;
+        clicked = false; regN = 0;
         if (st == null)
         {
             st = new GUIStyle();
@@ -38,6 +38,22 @@ public static class Ui
     public static Rect R(Rect v) { return R(v.x, v.y, v.width, v.height); }
     static float clipOx, clipOy;
     /// <summary>Тіктөртбұрышпен кесу (виртуал координаттар сақталады): ішінде бәрі бұрынғыдай R() арқылы салынады.</summary>
+    // ---- ұстаз үшін: батырмалар тіркеледі (белгісі → орны), ал ұстаз ашық тұрғанда астындағылар басылмайды ----
+    public static bool blockInput;
+    public static string[] regL = new string[64]; public static Rect[] regR = new Rect[64]; public static int regN;
+    static void Reg(string label, float x, float y, float w, float h) { if (regN < 64) { regL[regN] = label; regR[regN] = new Rect(x, y, w, h); regN++; } }
+    public static bool FindReg(string label, out Rect r) { for (int i = regN - 1; i >= 0; i--) if (regL[i] == label) { r = regR[i]; return true; } r = new Rect(); return false; }
+    /// <summary>Көрінбейтін батырма (ұстаз ашық тұрса — басылмайды, бірақ сурет салына береді).</summary>
+    public static bool GB(Rect r) { bool hit = GUI.Button(r, GUIContent.none, GUIStyle.none); return hit && !blockInput; }
+    /// <summary>Сызық (экранда бұрылған жіңішке тіктөртбұрыш).</summary>
+    public static void Line(float x0, float y0, float x1, float y1, float w, Color c)
+    {
+        float dx = x1 - x0, dy = y1 - y0, len = Mathf.Sqrt(dx * dx + dy * dy); if (len < 0.5f) return;
+        Matrix4x4 m0 = GUI.matrix; Rect r = R(x0, y0 - w / 2, len, w);
+        GUIUtility.RotateAroundPivot(Mathf.Atan2(dy, dx) * Mathf.Rad2Deg, new Vector2(r.x, r.y + r.height / 2));
+        Color o = GUI.color; GUI.color = c; GUI.DrawTexture(r, white); GUI.color = o;
+        GUI.matrix = m0;
+    }
     public static void BeginClip(float x, float y, float w, float h)
     {
         Rect r = R(x, y, w, h); GUI.BeginClip(r);
@@ -284,8 +300,8 @@ public static class Ui
     /// <summary>Веб-стильдегі батырма: басылса true. icon — эмблема (map, batyr, arms, fight, ...).</summary>
     public static bool DzBtn(string label, float x, float y, float w, float h, bool primary = false, bool enabled = true, string icon = null, bool small = false, bool tab = false, bool tiny = false, bool active = false)
     {
-        Rect r = R(x, y, w, h);
-        bool hover = enabled && GUI.enabled && r.Contains(Event.current.mousePosition);
+        Rect r = R(x, y, w, h); Reg(label, x, y, w, h);
+        bool hover = enabled && GUI.enabled && !blockInput && r.Contains(Event.current.mousePosition);
         string kind = !enabled ? "dis" : active ? "act" : primary ? (hover ? "priH" : "pri") : (hover ? "norH" : "nor");
         string shp = icon != null ? "ar" : tab ? "tb" : primary ? "pt" : "ch";
         int ih = h >= 56 ? 62 : 48;
@@ -305,8 +321,8 @@ public static class Ui
             int size = tiny ? 17 : small ? 22 : 30, sz = Fit(label, w - (primary ? 44 : 20), size);
             TextO(label, x + dx, y + dy, w, h, sz, tc, TextAnchor.MiddleCenter, true, Mathf.Max(1.5f, sz * 0.08f));
         }
-        if (!enabled) { if (GUI.enabled && GUI.Button(r, GUIContent.none, GUIStyle.none)) Snd.Play("ui_error", 0.7f); return false; }
-        bool hit = GUI.Button(r, GUIContent.none, GUIStyle.none);
+        if (!enabled) { if (GUI.enabled && GB(r)) Snd.Play("ui_error", 0.7f); return false; }
+        bool hit = GB(r);
         if (hit) { clicked = true; Snd.Play(primary ? "ui_select" : "ui_move", 0.8f); }
         return hit;
     }
@@ -318,13 +334,13 @@ public static class Ui
     }
     /// <summary>Мөлдір аймақ-батырма (сурет үстінде).</summary>
     /// <summary>Көрінбейтін батырма: тіктөртбұрышқа басылса true.</summary>
-    public static bool Click(float x, float y, float w, float h) { return GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none); }
+    public static bool Click(float x, float y, float w, float h) { return GB(R(x, y, w, h)); }
     /// <summary>Тек тінтуір үстінде ме (басуды «жемейді» — Hot/Click-тен айырмашылығы).</summary>
     public static bool Over(float x, float y, float w, float h) { return Event.current != null && R(x, y, w, h).Contains(Event.current.mousePosition); }
     /// <summary>Батырма сияқты басу + дыбыс (басуды жейді — астындағы Click енді ұстамайды).</summary>
     public static bool Hot(float x, float y, float w, float h)
     {
-        bool hit = GUI.Button(R(x, y, w, h), GUIContent.none, GUIStyle.none);
+        bool hit = GB(R(x, y, w, h));
         if (hit) { clicked = true; Snd.Play("ui_move", 0.6f); }
         return hit;
     }
@@ -340,20 +356,32 @@ public static class Ui
     {
         if (lite) Img("Art/ui/topbar_lite", 0, 0, 1280, 110);
         else Img("Art/ui/topbar_bg", 0, 0, 1280, 100);
-        // деңгей белгісі
-        int L = Progress.Level();
-        DzPanelSmall(192, 10, 180, 50);
-        Medal(212, 35, 18, "");
-        TextO(U.Int(L), 194, 17, 36, 36, 20, new Color32(42, 20, 6, 255), TextAnchor.MiddleCenter, true, 0.5f);
-        Text("ДЕҢГЕЙ", 238, 14, 130, 22, 14, CREAM, TextAnchor.MiddleLeft, true);
-        Bar(238, 38, 124, 8, L >= Progress.MAXL ? 1 : Progress.XpInto() / (float)Progress.Need(L), GOLD, new Color(0, 0, 0, 0.6f));
+        // деңгей белгісі (веб: лоббиде skLevelBox(24,12), басқа экрандарда lvBadge(192,10))
+        if (lite) LevelBox(24, 12, 300, 56, true); else LevelBox(192, 10, 236, 54, false);
         if (title != null) Ribbon(640, 38, 380, title, 26);
-        // теңге
+        // теңге (веб: coinPill — ені санның өлшеміне қарай)
         string cs = U.Int(Game.S.coins);
-        float tw = Mathf.Max(60, cs.Length * 15 + 56);
-        DzPanelSmall(1280 - 40 - tw, 16, tw, 44);
-        Img("Art/icons/coin", 1280 - 40 - tw + 6, 20, 36, 36);
-        TextO(cs, 1280 - 40 - tw + 44, 16, tw - 50, 44, 24, CREAM, TextAnchor.MiddleLeft);
+        float tw = TextW(cs, 26) + 70, cx = 1280 - 64 - TextW(cs, 26) - 30;
+        Fill(cx, 18, tw, 40, new Color32(14, 10, 26, 219)); Frame(cx, 18, tw, 40, GOLD, 2);
+        Img("Art/icons/coin", cx + 24 - 15, 38 - 15, 30, 30);
+        TextO(cs, cx + 46, 18, tw - 52, 40, 26, new Color32(255, 243, 214, 255), TextAnchor.MiddleLeft, true, 2);
+    }
+    /// <summary>Деңгей тақтасы: медальонда нөмір, «ДЕҢГЕЙ», тәжірибе жолағы және сандары.</summary>
+    static void LevelBox(float x, float y, float w, float h, bool lobby)
+    {
+        int L = Progress.Level(), need = L >= Progress.MAXL ? 0 : Progress.Need(L), into = Progress.XpInto();
+        float k = need > 0 ? Mathf.Clamp01(into / (float)need) : 1, mx = x + (lobby ? 30 : 28), my = y + (lobby ? 28 : 27), mr = lobby ? 23 : 22;
+        Fill(x, y, w, h, new Color32(14, 10, 26, 219)); Frame(x, y, w, h, GOLD, 2);
+        Circle(mx, my, mr, GOLD); Circle(mx, my, mr - 3, new Color32(122, 22, 22, 255)); Circle(mx - 3, my - 4, mr - 9, new Color32(170, 44, 34, 255));
+        int ns = L >= 10 ? (lobby ? 22 : 20) : (lobby ? 26 : 24);
+        TextO(U.Int(L), mx - 24, my - 18, 48, 36, ns, new Color32(255, 214, 107, 255), TextAnchor.MiddleCenter, true, 2);
+        float tx = x + (lobby ? 62 : 58), bw = w - (lobby ? 76 : 70);
+        TextO("ДЕҢГЕЙ", tx, y + 6, 120, 22, 17, new Color32(255, 227, 160, 255), TextAnchor.MiddleLeft, true, 2);
+        if (lobby) { int nOpen = 0; Skills.Init(); for (int i = 0; i < Skills.All.Count(); i++) if (Skills.Unlocked(Skills.All.Get(i))) nOpen++;
+            Text("Әдістер: " + nOpen + "/" + Skills.All.Count(), x + w - 152, y + 7, 140, 20, 13, new Color(1, 0.9f, 0.75f, 0.75f), TextAnchor.MiddleRight, true); }
+        Fill(tx, y + 30, bw, lobby ? 9 : 8, new Color(0, 0, 0, 0.5f)); Frame(tx, y + 30, bw, lobby ? 9 : 8, new Color(0.96f, 0.77f, 0.36f, 0.4f), 1);
+        if (k > 0) Grad3(tx + 2, y + 32, (bw - 4) * k, (lobby ? 9 : 8) - 4, new Color32(255, 232, 150, 255), new Color32(242, 184, 64, 255), new Color32(168, 110, 30, 255));
+        Text(need > 0 ? (lobby ? "Тәжірибе: " : "") + into + " / " + need : "Ең жоғары деңгей!", tx, y + 40, bw, 16, lobby ? 12 : 11, new Color(1, 0.9f, 0.75f, 0.72f), TextAnchor.MiddleLeft, true);
     }
     /// <summary>Шағын қараңғы тақта (белгі/пилюля).</summary>
     public static void DzPanelSmall(float x, float y, float w, float h)

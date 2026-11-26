@@ -211,32 +211,115 @@ public static class Tut
     }
     public static bool Active() { return key != null; }
 
+    // панельдің ағымдағы орны (нысанаға қарай жылжиды)
+    static float pxCur = -1, pyCur = -1; static string lastKey; static int lastStep = -1; static float stepT;
+    static Rect[] rs = new Rect[8]; static int rn;
+
+    /// <summary>Нысаналар (веб: tutRects): батырма белгісі немесе [x,y,w,h].</summary>
+    static void Targets(JNode tg)
+    {
+        rn = 0; if (tg.IsNull() || tg.Count() == 0) return;
+        if (tg.At(0).IsNum()) { if (tg.Count() == 4) rs[rn++] = new Rect(tg.At(0).F(), tg.At(1).F(), tg.At(2).F(), tg.At(3).F()); return; }
+        for (int i = 0; i < tg.Count() && rn < rs.Length; i++)
+        {
+            JNode it = tg.At(i);
+            if (it.IsArr() && it.Count() == 4 && it.At(0).IsNum()) rs[rn++] = new Rect(it.At(0).F(), it.At(1).F(), it.At(2).F(), it.At(3).F());
+            else if (it.IsArr()) { for (int j = 0; j < it.Count() && rn < rs.Length; j++) { JNode q = it.At(j); if (q.IsArr() && q.Count() == 4) rs[rn++] = new Rect(q.At(0).F(), q.At(1).F(), q.At(2).F(), q.At(3).F()); } }
+            else { Rect r; if (Ui.FindReg(it.Str(), out r)) rs[rn++] = r; }
+        }
+    }
+
     public static void Draw(string screen)
     {
-        if (key == null) return;
+        if (key == null) { pxCur = -1; return; }
         JNode s = lesson.At(step);
         bool ru = Game.S.ru;
-        JNode tg = s.Get("tg");
-        Ui.Fill(0, 0, 1280, 720, new Color(0, 0, 0, 0.45f));
-        if (tg.Count() == 4)
+        if (key != lastKey || step != lastStep) { lastKey = key; lastStep = step; stepT = 0; }
+        stepT += Time.unscaledDeltaTime;
+        float T = Time.unscaledTime, a = Pz.EaseOut3(Mathf.Clamp01(stepT / 0.3f));
+        Targets(s.Get("tg"));
+        bool hasU = rn > 0; Rect UR = hasU ? rs[0] : new Rect();
+        for (int i = 1; i < rn; i++) UR = Rect.MinMaxRect(Mathf.Min(UR.xMin, rs[i].xMin), Mathf.Min(UR.yMin, rs[i].yMin), Mathf.Max(UR.xMax, rs[i].xMax), Mathf.Max(UR.yMax, rs[i].yMax));
+
+        // панель өлшемі
+        string tx = Game.Fix(s.S("tx")), rt = ru ? Game.Fix(s.S("ru")) : null;
+        float w = 620, th = Ui.TextHeight(tx, w - 56, 19, true), rh = U.Len(rt) > 0 ? Ui.TextHeight(rt, w - 56, 14, true) + 10 : 0;
+        float h = 98 + th + rh + 60;
+        // мақсатты орын: нысананың жанында (оң, сол, асты, үсті), онымен қабаттаспай
+        float gx = 640 - w / 2, gy = 720 - h - 22;
+        if (hasU)
         {
-            float x = tg.At(0).F(), y = tg.At(1).F(), w = tg.At(2).F(), h = tg.At(3).F();
-            Ui.Fill(x - 4, y - 4, w + 8, 4, Ui.GOLD); Ui.Fill(x - 4, y + h, w + 8, 4, Ui.GOLD);
-            Ui.Fill(x - 4, y, 4, h, Ui.GOLD); Ui.Fill(x + w, y, 4, h, Ui.GOLD);
+            float cy = UR.center.y - h / 2, cx = UR.center.x - w / 2;
+            float[] cxs = { UR.xMax + 34, UR.xMin - 34 - w, cx, cx, 640 - w / 2, 640 - w / 2 };
+            float[] cys = { cy, cy, UR.yMax + 34, UR.yMin - 34 - h, 720 - h - 22, 92 };
+            for (int i = 0; i < cxs.Length; i++)
+            {
+                float qx = Mathf.Clamp(cxs[i], 16, 1280 - w - 16), qy = Mathf.Clamp(cys[i], 16, 720 - h - 16);
+                bool hit = !(qx + w < UR.xMin - 14 || qx > UR.xMax + 14 || qy + h < UR.yMin - 14 || qy > UR.yMax + 14);
+                if (!hit) { gx = qx; gy = qy; break; }
+            }
         }
-        float by = tg.Count() == 4 && tg.At(1).F() > 360 ? 40 : 470;
-        Ui.Panel(150, by, 980, 200, new Color(0.96f, 0.88f, 0.7f, 0.98f), Ui.GOLD);
-        Ui.Img("Art/lobby/zhyrau", 160, by + 8, 130, 182);
-        Ui.Text("Бұқар жырау", 300, by + 10, 600, 30, 20, new Color32(125, 23, 25, 255), TextAnchor.MiddleLeft, true);
-        Ui.Text(Game.Fix(s.S("tx")), 300, by + 42, 810, 110, 19, Ui.INK);
-        if (ru) Ui.Text(Game.Fix(s.S("ru")), 300, by + 150, 600, 44, 14, new Color(0.35f, 0.25f, 0.15f));
-        bool last = step >= lesson.Count() - 1;
-        if (Ui.Btn(last ? "ТҮСІНДІМ ✔" : "КЕЛЕСІ ▶", 930, by + 146, 180, 44, true, true, 17))
+        if (pxCur < 0) { pxCur = gx; pyCur = gy; }
+        float sp = Mathf.Min(1, Time.unscaledDeltaTime * 7);
+        pxCur += (gx - pxCur) * sp; pyCur += (gy - pyCur) * sp;
+        float px = pxCur, py = pyCur;
+
+        // қараңғылау: нысананың «терезесі» ашық қалады
+        Color dim = new Color(0.03f, 0.02f, 0.07f, 0.66f * a);
+        if (hasU)
+        {
+            float p = 10, x0 = UR.xMin - p, y0 = UR.yMin - p, x1 = UR.xMax + p, y1 = UR.yMax + p;
+            Ui.Fill(0, 0, 1280, y0, dim); Ui.Fill(0, y1, 1280, 720 - y1, dim);
+            Ui.Fill(0, y0, x0, y1 - y0, dim); Ui.Fill(x1, y0, 1280 - x1, y1 - y0, dim);
+            float pul = 0.55f + 0.45f * Mathf.Sin(T * 5);
+            for (int i = 0; i < rn; i++)
+            {
+                Rect r = rs[i]; Color gc = new Color(1, 0.84f, 0.42f, (0.6f + 0.4f * pul) * a);
+                Ui.Frame(r.x - 8, r.y - 8, r.width + 16, r.height + 16, gc, 3.5f);
+                Ui.Frame(r.x - 12, r.y - 12, r.width + 24, r.height + 24, new Color(1, 0.84f, 0.42f, 0.25f * pul * a), 2);
+            }
+            // нұсқағыш: панельден нысанаға қарай қозғалатын нүктелі жебе
+            float tx0 = UR.center.x, ty0 = UR.center.y, ax = Mathf.Clamp(tx0, px + 40, px + w - 40), ay = ty0 < py ? py : ty0 > py + h ? py + h : py + h / 2;
+            if (ty0 >= py && ty0 <= py + h) { ax = tx0 < px ? px : px + w; ay = Mathf.Clamp(ty0, py + 30, py + h - 30); }
+            float dx = tx0 - ax, dy = ty0 - ay, d = Mathf.Sqrt(dx * dx + dy * dy);
+            if (d > 1)
+            {
+                float ux = dx / d, uy = dy / d, hw = UR.width / 2 + 16, hh = UR.height / 2 + 16;
+                float inside = Mathf.Min(Mathf.Abs(ux) > 1e-4f ? hw / Mathf.Abs(ux) : 1e9f, Mathf.Abs(uy) > 1e-4f ? hh / Mathf.Abs(uy) : 1e9f);
+                float edge = Mathf.Max(0, d - inside), bob = 6 * Mathf.Sin(T * 6);
+                if (edge > 36)
+                {
+                    float ex = ax + ux * (edge - 10 + bob), ey = ay + uy * (edge - 10 + bob);
+                    Color ac = new Color(1, 0.84f, 0.42f, 0.9f * a);
+                    float off = (T * 30) % 19;
+                    for (float q = 14 + off; q < edge - 24 + bob; q += 19) Ui.Line(ax + ux * q, ay + uy * q, ax + ux * Mathf.Min(q + 10, edge - 24 + bob), ay + uy * Mathf.Min(q + 10, edge - 24 + bob), 4, ac);
+                    float nx = -uy, ny = ux;
+                    Ui.Line(ex, ey, ex - ux * 18 + nx * 12, ey - uy * 18 + ny * 12, 5, ac);
+                    Ui.Line(ex, ey, ex - ux * 18 - nx * 12, ey - uy * 18 - ny * 12, 5, ac);
+                }
+            }
+        }
+        else Ui.Fill(0, 0, 1280, 720, dim);
+
+        // панель
+        Color o = GUI.color; GUI.color = new Color(1, 1, 1, a);
+        float yy = py + (1 - a) * 16;
+        Ui.DzPanel(px, yy, w, h, "parch", true);
+        Ui.Medal(px + 58, yy + 60, 36, "");
+        Ui.Portrait("Art/ui/por_zhyrau", px + 58, yy + 60, 32);
+        Ui.Text("Бұқар жырау", px + 108, yy + 34, 300, 30, 22, new Color32(138, 26, 18, 255), TextAnchor.MiddleLeft, true);
+        int n = lesson.Count();
+        for (int i = 0; i < n; i++) Ui.Circle(px + w - 30 - (n - 1 - i) * 16, yy + 48, i == step ? 5 : 3.5f, i == step ? (Color)new Color32(138, 26, 18, 255) : new Color32(138, 90, 42, 120));
+        Ui.Text(tx, px + 28, yy + 92, w - 56, th + 6, 19, new Color32(42, 26, 16, 255), TextAnchor.UpperLeft, true);
+        if (rh > 0) Ui.Text(rt, px + 28, yy + 98 + th, w - 56, rh, 14, new Color32(122, 90, 58, 255), TextAnchor.UpperLeft, true);
+        bool last = step >= n - 1;
+        float by = yy + h - 56;
+        if (Ui.DzBtn(last ? "ТҮСІНДІМ ✔" : "КЕЛЕСІ ▶", px + w - 250, by, 228, 46, true, true, null, true))
         {
             if (last) { Game.S.tutDone.Add(key); Game.Persist(); key = null; } else step++;
         }
-        if (Ui.Btn("ӨТКІЗУ", 820, by + 146, 100, 44, false, true, 15)) { Game.S.tutDone.Add(key); Game.Persist(); key = null; }
-        // ұстаз ашық тұрғанда астындағы батырмалар басылмасын
-        GUI.Button(Ui.R(0, 0, 1280, 720), GUIContent.none, GUIStyle.none);
+        else if (!last && Ui.DzBtn("ӨТКІЗУ", px + 22, by + 4, 150, 40, false, true, null, true, false, true)) { Game.S.tutDone.Add(key); Game.Persist(); key = null; }
+        GUI.color = o;
+        if (key != null && Event.current.type == EventType.Layout && (Inp.Tap(Inp.ENTER) || Inp.Tap(Inp.SPACE))) { if (last) { Game.S.tutDone.Add(key); Game.Persist(); key = null; } else step++; }
     }
 }

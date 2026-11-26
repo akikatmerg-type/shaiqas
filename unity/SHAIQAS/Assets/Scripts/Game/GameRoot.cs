@@ -197,7 +197,8 @@ public partial class GameRoot : MonoBehaviour
     {
         Ui.Begin();
         GUI.depth = 0;
-        GUI.enabled = !Tut.Active();
+        GUI.enabled = true;
+        Ui.blockInput = Tut.Active();   // астындағы экран толық көрінеді, бірақ басылмайды
         switch (screen)
         {
             case NAME: DrawName(); break;
@@ -217,7 +218,7 @@ public partial class GameRoot : MonoBehaviour
             case SHOP: DrawShop(); break;
             case HEROES: DrawHeroes(); break;
         }
-        GUI.enabled = true;
+        Ui.blockInput = false;
         Tut.Draw(screen);
         if (toastT > 0)
         {

@@ -97,7 +97,7 @@ public partial class GameRoot
             Color o = GUI.color; GUI.color = new Color(1, 1, 1, k);
             Card(Skills.All.Get(idx), r.x + (1 - k) * 40, r.y, r.width, r.height, idx == guideSel);
             GUI.color = o;
-            if (GUI.Button(Ui.R(r.x, r.y, r.width, r.height), GUIContent.none, GUIStyle.none) && guideSel != idx) { guideSel = idx; guideDemo = 0; Snd.Play("ui_move", 0.5f, 0); }
+            if (Ui.GB(Ui.R(r.x, r.y, r.width, r.height)) && guideSel != idx) { guideSel = idx; guideDemo = 0; Snd.Play("ui_move", 0.5f, 0); }
         }
         Ui.TextO((pg + 1) + " / " + pages, 644, 662, 100, 30, 22, new Color32(255, 227, 160, 255), TextAnchor.MiddleCenter, true, 2);
         for (int i = 0; i < pages; i++) Ui.Circle(676 + i * 18, 700, 4, i == pg ? (Color)new Color32(244, 197, 92, 255) : new Color32(244, 197, 92, 77));
