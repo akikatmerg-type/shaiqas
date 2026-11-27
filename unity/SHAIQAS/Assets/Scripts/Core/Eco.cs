@@ -6,7 +6,7 @@ public class DiffInfo
     public int stars, k;
     public string label, col, colL, why;
     public bool weak;
-    public float pay, d, rec, power;
+    public float pay, d, rec, power, ratio;
 }
 
 public static class Eco
@@ -14,7 +14,7 @@ public static class Eco
     public static readonly string[] NAMES = { "ӨТЕ ЖЕҢІЛ", "ЖЕҢІЛ", "ҚАЛЫПТЫ", "ҚИЫН", "ӨТЕ ҚИЫН" };
     public static readonly string[] COL = { "#2a8a2e", "#3f9a2a", "#b07a12", "#c8401c", "#b01414" };
     public static readonly string[] COL_L = { "#7ee06a", "#a8e070", "#ffd36b", "#ff9a5a", "#ff6a5a" };
-    public static readonly string[] WHY = { "жабдығың өте мықты", "жабдығың мықты", "жабдығың лайық", "жабдығың әлсіз", "жабдығың тым әлсіз" };
+    public static readonly string[] WHY = { "сен әлдеқайда мықтысың", "сен мықтырақсың", "күштерің тең", "жау мықтырақ", "жау әлдеқайда мықты" };
     static readonly float[] PAY = { 1, 1, 1, 1.15f, 1.3f };
     static float[] kp;
 
@@ -71,9 +71,28 @@ public static class Eco
         ch = Mathf.Clamp(ch, 0, Db.NCH - 1); si = Mathf.Clamp(si, 0, 3);
         DiffInfo I = new DiffInfo();
         I.rec = Db.J("ECO_REC").At(ch * 4 + si).F(); I.power = GearPower(); I.d = GearLevel(I.power) - I.rec;
-        float d = I.d; int k = d >= 3 ? 0 : d >= 1.25f ? 1 : d > -1.5f ? 2 : d > -3.5f ? 3 : 4;
+        // шынайы баға: ойыншы мен жаудың нақты күші (денсаулық, соққы, қорғаныс, жаудың қорғануы) — тек жабдық деңгейі емес
+        I.ratio = Threat(ch, si);
+        float q = I.ratio; int k = q < 0.62f ? 0 : q < 0.9f ? 1 : q < 1.25f ? 2 : q < 1.75f ? 3 : 4;
         I.k = k; I.stars = k + 1; I.label = NAMES[k]; I.weak = k >= 3; I.col = COL[k]; I.colL = COL_L[k]; I.why = WHY[k]; I.pay = PAY[k];
         return I;
+    }
+    /// <summary>Қауіп: жауды жығуға кететін «соққы саны» / ойыншы құлағанша жау соғатын «соққы саны».
+    /// 1-ден кіші — ойыншыға ыңғайлы. Жаудың қорғануы оның денсаулығын іс жүзінде көбейтеді; балалар режимі ескеріледі.</summary>
+    public static float Threat(int ch, int si)
+    {
+        SaveData S = Game.S;
+        JNode e = Db.Ch(ch).Get("enemies").At(si); bool boss = e.Bk("boss");
+        float[] r = Match.EnemyStats(ch, si, boss, true, si);
+        JNode wp = Db.Weapons.Get(S.eqWeapon), ar = Db.Armors.Get(S.eqArmor), hm = Db.Helms.Get(S.eqHelm), m = Db.Hero(S.hero).Get("mods");
+        if (wp.IsNull()) wp = Db.Weapons.Get("soyil"); if (ar.IsNull()) ar = Db.Armors.Get("chapan"); if (hm.IsNull()) hm = Db.Helms.Get("kalpak");
+        float pDef = Mathf.Min(0.5f, Num(ar, "def", 0) + Num(hm, "def", 0) + Num(m, "def", 0));
+        float pOff = Num(wp, "dmg", 1) * Num(m, "dmg", 1) * Mathf.Pow(Mathf.Max(0.3f, Num(wp, "spd", 1) * Num(m, "atkSpd", 1)), 0.6f) * (1 - r[2]);
+        float eDmg = r[1], eBlock = r[5];
+        if (S.kid) { eDmg *= 0.6f; eBlock *= 0.55f; }
+        float eOff = eDmg * (1 - pDef);
+        float eEhp = r[0] * (1 + eBlock * 0.8f), pEhp = Match.PlayerHp(S.hero) * (1 + Num(m, "regen", 0) * 0.05f);
+        return (eEhp / Mathf.Max(0.05f, pOff)) / (pEhp / Mathf.Max(0.05f, eOff));
     }
     /// <summary>Ең арзан жақсарту кеңесі (веб: ecoTips, бірінші жол).</summary>
     /// <summary>Веб: ecoTips сұрыптауы — алдымен тегін, сосын жеткілікті ең арзаны, болмаса бағасына шаққанда ең пайдалысы.</summary>

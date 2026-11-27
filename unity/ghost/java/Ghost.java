@@ -102,7 +102,7 @@ public class Ghost {
     }
     Progress.TestUnlockAll = false;
     { DiffInfo d0 = Eco.Stage(0, 0), d9 = Eco.Stage(8, 3);
-      check(d0.label.equals("ҚАЛЫПТЫ") && d9.stars >= 4, "қиындық: I.1 жеңіл (" + d0.label + "), IX.4 қиын (" + d9.label + ")");
+      check(d0.stars <= 3 && d9.stars >= 4, "қиындық: I.1 жеңіл (" + d0.label + "), IX.4 қиын (" + d9.label + ")");
       check(Eco.Kit(20) > Eco.Kit(1) && Eco.GearLevel(Eco.Kit(5)) > 4.9f && Eco.GearLevel(Eco.Kit(5)) < 5.1f, "жабдық деңгейі кері функция");
       System.out.println("[eco] I.1: " + d0.label + " · IX.4: " + d9.label + " · кеңес: " + Eco.Tip(8, 3)); }
     // --- әдістер: тізбекті тану және әр әдістің әсері (манекенге қарсы) ---

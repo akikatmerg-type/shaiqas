@@ -93,7 +93,7 @@ public class Match
         f.hat = U.Eq(S.eqHelm, "kalpak") ? hr.S("hat") : hm.S("look");
         f.beard = hr.Bk("beard"); f.big = hr.Bk("big"); f.slim = hr.Bk("slim");
         f.def = Mathf.Min(0.5f, arm.Fk("def") + hm.Fk("def") + m.Fk("def"));
-        f.maxHp = 110 + m.Fk("hp");
+        f.maxHp = PlayerHp(heroId);
         f.speed = 300 * m.Get("move").F(1);
         f.dmgMul = m.Get("dmg").F(1); f.atkSpd = m.Get("atkSpd").F(1); f.ruxMul = m.Get("rux").F(1); f.regen = m.Fk("regen");
         f.accent = U.Eq(S.eqHelm, "altyn") ? "#ffd84d" : GOLD;
@@ -103,30 +103,44 @@ public class Match
         return f;
     }
 
+    /// <summary>Ойыншының денсаулығы: батыр + деңгей (әр деңгей +3) — тәжірибе жинау ұрыста да пайдалы.</summary>
+    public static float PlayerHp(string heroId) { return 110 + Db.Hero(heroId).Get("mods").Fk("hp") + (Progress.Level() - 1) * 3; }
+
+    // ---------- жау күші (теңгерім 2.0): кейінгі тараулар қиын, бірақ жақсы жабдықпен жеңуге болады ----------
+    // [0] hp, [1] dmgMul, [2] def, [3] speed, [4] aggr, [5] block, [6] crouch, [7] combo, [8] special
+    public static float[] EnemyStats(int ch, int idx, bool boss, bool campaign, int stageIdx)
+    {
+        float t = ch * 0.55f + idx * 0.25f;
+        float[] r = new float[9];
+        r[0] = Mathf.Round(90 + ch * 10 + idx * 10 + (boss ? 30 : 0));
+        r[1] = 0.8f + ch * 0.06f + idx * 0.05f + (boss ? 0.1f : 0);
+        r[2] = ch * 0.03f + (boss ? 0.03f : 0);
+        r[3] = 270 + ch * 8;
+        r[4] = Pz.Clamp(0.45f + t * 0.1f, 0, 0.9f); r[5] = Pz.Clamp(0.22f + t * 0.08f, 0, 0.6f);
+        r[6] = Pz.Clamp(0.12f + t * 0.08f, 0, 0.5f); r[7] = Pz.Clamp(0.25f + t * 0.12f, 0, 0.75f); r[8] = 0.5f + ch * 0.12f;
+        if (campaign)
+        {
+            // кезең нөмірі бойынша (веб: campDiff), жұмсартылған
+            int s = Mathf.Clamp(ch * 4 + stageIdx, 0, Db.NCH * 4 - 1); bool bs = stageIdx == 3;
+            r[0] = Mathf.Round(r[0] * (1 + s * 0.008f + (bs ? 0.06f : 0)));
+            r[1] *= 1 + s * 0.006f + (bs ? 0.04f : 0);
+            float ai = s * 0.003f;
+            r[4] = Pz.Clamp(r[4] + ai, 0.05f, 0.95f); r[5] = Pz.Clamp(r[5] + ai, 0.05f, 0.65f); r[7] = Pz.Clamp(r[7] + ai, 0.05f, 0.8f);
+        }
+        return r;
+    }
+
     public Fighter MakeEnemy(int ch, int idx, float px)
     {
         JNode C = Db.Ch(ch), e = C.Get("enemies").At(idx);
         bool boss = e.Bk("boss");
-        float t = ch * 0.55f + idx * 0.25f;
         Fighter f = new Fighter();
         f.name = e.S("name"); f.ai = true; f.weapon = e.S("weapon"); f.hat = e.S("hat"); f.coat = e.S("coat"); f.accent = C.S("accent");
         f.boss = boss; f.beard = boss; f.x = px;
-        f.maxHp = Mathf.Round(90 + ch * 24 + idx * 12 + (boss ? 40 : 0));
-        f.dmgMul = 0.8f + ch * 0.14f + idx * 0.06f + (boss ? 0.15f : 0);
-        f.def = ch * 0.045f + (boss ? 0.05f : 0);
-        f.speed = 270 + ch * 8;
-        f.aiAggr = Pz.Clamp(0.45f + t * 0.14f, 0, 1); f.aiBlock = Pz.Clamp(0.22f + t * 0.13f, 0, 0.8f);
-        f.aiCrouch = Pz.Clamp(0.12f + t * 0.1f, 0, 0.6f); f.aiComboP = Pz.Clamp(0.25f + t * 0.18f, 0, 0.9f); f.aiSpecial = 0.5f + ch * 0.2f;
+        float[] r = EnemyStats(ch, idx, boss, U.Eq(mode, "campaign"), stageIdx);
+        f.maxHp = r[0]; f.dmgMul = r[1]; f.def = r[2]; f.speed = r[3];
+        f.aiAggr = r[4]; f.aiBlock = r[5]; f.aiCrouch = r[6]; f.aiComboP = r[7]; f.aiSpecial = r[8];
         f.look = "e_" + ch + "_" + idx;
-        if (U.Eq(mode, "campaign"))
-        {
-            // қиындық: кезең нөмірі бойынша (веб: campDiff)
-            int s = Mathf.Clamp(ch * 4 + stageIdx, 0, Db.NCH * 4 - 1); bool bs = stageIdx == 3;
-            f.maxHp = Mathf.Round(f.maxHp * (1 + s * 0.012f + (bs ? 0.06f : 0)));
-            f.dmgMul *= 1 + s * 0.01f + (bs ? 0.04f : 0);
-            float ai = s * 0.004f;
-            f.aiAggr = Pz.Clamp(f.aiAggr + ai, 0.05f, 1); f.aiBlock = Pz.Clamp(f.aiBlock + ai, 0.05f, 1); f.aiComboP = Pz.Clamp(f.aiComboP + ai, 0.05f, 1);
-        }
         f.game = this; f.Init();
         return f;
     }
