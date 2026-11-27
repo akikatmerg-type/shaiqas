@@ -69,10 +69,44 @@ public partial class GameRoot
                 v.Stroke(xs, ys, 3, 1.8f, true);
             }
         }
+        // жайылып жүрген екі жылқы: бас көтеріп-түсіреді, құйрық бұлғайды, кейде бір-екі адым басады
+        GrazeHorse(v, 422 + Mathf.Sin(t * 0.05f) * 14, 562, 1.08f, 1, t, 0.2f, Col.Pack(96, 58, 34, 255), true);
+        GrazeHorse(v, 506 + Mathf.Sin(t * 0.04f + 2) * 10, 563, 1.0f, 1, t, 3.7f, Col.Pack(60, 36, 22, 255), false);
         // алыстағы атты дала бойымен шабады (әр 38 с)
         float rp = Fr((t + 12) / 38f);
         if (rp < 0.6f) StageLive.Rider(v, -80 + rp / 0.6f * 1440, 566, 0.2f, 1, t * 11, "kalpak", true, false);
         Ui.Mesh(v);
+    }
+
+    /// <summary>Жайылған жылқы (оңға қарайды, жерге табан y): мойын бұрышы — жайылу (төмен) мен бас көтеру арасында ауысады.</summary>
+    static void GrazeHorse(VMesh v, float x, float y, float s, float dir, float t, float ph, int col, bool grazer)
+    {
+        // бас көтеру кезеңі: жайылатын жылқы 9 с сайын 2.5 с басын көтереді, екіншісі керісінше — 11 с сайын 3 с жайылады
+        float cyc = grazer ? Fr((t + ph) / 9f) : Fr((t + ph) / 11f);
+        float up = grazer ? (cyc > 0.72f ? Mathf.Sin((cyc - 0.72f) / 0.28f * Mathf.PI) : 0) : (cyc > 0.7f ? 1 - Mathf.Sin((cyc - 0.7f) / 0.3f * Mathf.PI) : 1);
+        float th = Mathf.Lerp(1.05f, -0.75f, up) + (up < 0.3f ? Mathf.Sin(t * 7 + ph) * 0.06f : Mathf.Sin(t * 1.3f + ph) * 0.05f);
+        float br = Mathf.Sin(t * 1.9f + ph) * 0.6f, tail = Mathf.Sin(t * 2.4f + ph * 3) * 5 + Mathf.Sin(t * 5.1f + ph) * 2;
+        v.Save(); v.Translate(x, y); v.Scale(dir * s, s); v.FillC(col);
+        float[] lx = new float[2], ly = new float[2];
+        // аяқтар
+        float[] legX = { 15, 10, -13, -18 };
+        for (int i = 0; i < 4; i++) { lx[0] = legX[i]; ly[0] = -24; lx[1] = legX[i] + (i % 2 == 0 ? 1.5f : -1); ly[1] = 0; v.Stroke(lx, ly, 2, i % 2 == 0 ? 4.2f : 3.6f, true); }
+        // дене
+        v.Ellipse(0, -29 + br, 23, 9.5f, 0);
+        // мойын мен бас
+        float nx = 17 + Mathf.Cos(th) * 20, ny = -32 + br + Mathf.Sin(th) * 20;
+        lx[0] = 15; ly[0] = -32 + br; lx[1] = nx; ly[1] = ny; v.Stroke(lx, ly, 2, 8, true);
+        float hx = nx + Mathf.Cos(th + 0.55f) * 6, hy = ny + Mathf.Sin(th + 0.55f) * 6;
+        v.Ellipse(hx, hy, 8, 4, th + 0.55f);
+        // құлақ
+        float ex = nx - Mathf.Cos(th) * 2, ey = ny - 3; lx[0] = ex; ly[0] = ey; lx[1] = ex - 1 + Mathf.Sin(t * 3 + ph) * 0.8f; ly[1] = ey - 5; v.Stroke(lx, ly, 2, 2, true);
+        // жал (мойын үстінде қара жолақ)
+        v.FillC(Col.Pack(Col.R(col) / 2, Col.G(col) / 2, Col.B(col) / 2, 255));
+        lx[0] = 13; ly[0] = -36 + br; lx[1] = nx - Mathf.Cos(th) * 3; ly[1] = ny - 3; v.Stroke(lx, ly, 2, 3, true);
+        // құйрық
+        float[] tx = { -22, -27 + tail * 0.4f, -25 + tail }, ty = { -33 + br, -24, -14 };
+        v.Stroke(tx, ty, 3, 3.4f, true);
+        v.Restore();
     }
 
     /// <summary>Алдыңғы қабат: желмен тербелген шөп, көбелектер, гүл тозаңы.</summary>
