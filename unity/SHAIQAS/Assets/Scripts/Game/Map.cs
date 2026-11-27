@@ -82,6 +82,7 @@ public partial class GameRoot
         int selI = mapPop != null ? System.Array.IndexOf(SITE_ID, mapPop) : mapSite;
         for (int i = 1; i < 6; i++) DrawSite(i, i == selI, SiteLocked(i), t, ci);
         DrawStorySite(selI == 0, t, ci, open);
+        if (open) MapLife(t, ci, selI);
         if (!open)
         {
             Ui.Fill(24, 92, 1232, 560, new Color(0.08f, 0.05f, 0.03f, 0.35f));

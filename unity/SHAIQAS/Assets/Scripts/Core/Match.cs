@@ -410,7 +410,7 @@ public class Match
         phaseMsgT = 9; waves.Clear(); fx.Clear(); arrows.Clear(); skProj.Clear(); spikes.Clear(); bolts.Clear(); skBuf.Clear();
         Skills.AssignAi(enemy, this, cfg != null ? cfg : FoeCfg.Of(chapter, stageIdx)); weatherT = 0; weatherKind = null;
         KidApply();
-        pops.Clear(); sbSlots = Skills.SbSlots(); sbFailT = 0;
+        pops.Clear(); shouts.Clear(); sbSlots = Skills.SbSlots(); sbFailT = 0;
         if (U.Eq(mode, "tour") && run != null)
         {
             string ru = run.rule; TourSlot sl = run.slots.Get(run.lv.Get(run.stage)[1]);
@@ -434,6 +434,7 @@ public class Match
         else roundMsg = "ҚҰЛАДЫҢ...";
         roundWinner = winner == 1 ? p.name + " раундты ұтты" : winner == 2 ? e.name + " раундты ұтты" : "Тең түсті";
         loser = winner == 1 ? e : winner == 2 ? p : null;
+        if (winner == 1) Shout(p, Pk(WIN_P), 4, true); else if (winner == 2) Shout(e, Pk(WIN_E), 4, true);
         if (winner == 1 && p.hitsTaken == 0) Medal("perfect");
         p.active = false; e.active = false;
         phase = ROUNDEND; pt = 0;
@@ -661,6 +662,7 @@ public class Match
             bool big = (m != null && (m.heavy || m.special)) || dmg >= 14;
             Pop(f.x, hy, "" + (int)Mathf.Round(dmg), big ? "#ffd04a" : "#ffffff", big ? 40 : 30);
             if (f.state == Fighter.DEAD) Pop(f.x, hy - 50, "ЖЕҢІС!", "#ff6a4a", 46);
+            ShoutHit(f, dmg);
         }
         else if (U.Eq(f.skRes, "block") || (m != null && f.guard)) Pop(f.x, hy, "ҚОРҒАДЫ", "#9dd0ff", 24);
     }
@@ -668,6 +670,42 @@ public class Match
     {
         for (int i = 0; i < pops.Count(); i++) { DmgPop d = pops.Get(i); d.t += rdt; d.y -= (70 - d.t * 40) * rdt; d.x += d.vx * rdt; }
         for (int i = pops.Count() - 1; i >= 0; i--) if (pops.Get(i).t > 1.1f) pops.RemoveAt(i);
+    }
+
+    // ================= жауынгерлердің айқайы мен сөздері (комикс бұлты, бас үстінде) =================
+    public Lst<ShoutL> shouts = new Lst<ShoutL>();
+    static readonly string[] CRY_P = { "Аруақ!", "Алаш!", "Айт!", "Ұр!", "Хап!" }, CRY_E = { "Ха!", "Кел!", "Мә!", "Ұр!" };
+    static readonly string[] OUCH = { "Ах!", "Ой!", "Ыһ!", "Әй!" };
+    static readonly string[] TAUNT_P = { "Тұр енді!", "Тағы кел!" }, TAUNT_E = { "Тұр!", "Әлсізсің!" };
+    static readonly string[] LOW_P = { "Беріспеймін!", "Әлі тұрмын!" }, LOW_E = { "Қап!", "Әттең!" };
+    static readonly string[] WIN_P = { "Аруақ!", "Жеңіс біздікі!" }, WIN_E = { "Ха-ха!", "Жеңдім!" };
+    static string Pk(string[] a) { return a[Mathf.Min(a.Length - 1, (int)(U.Rand() * a.Length))]; }
+    /// <summary>Сөз айту (әр жауынгерге 1.8 с үзіліспен; маңыздысы — force).</summary>
+    public void Shout(Fighter f, string txt, int kind, bool force)
+    {
+        if (f == null || !live || U.Eq(mode, "arena")) return;
+        if (!force && clock - f.shoutT < 1.8f) return;
+        f.shoutT = clock;
+        for (int i = shouts.Count() - 1; i >= 0; i--) if (shouts.Get(i).f == f) shouts.RemoveAt(i);
+        ShoutL s = new ShoutL(); s.f = f; s.txt = txt; s.kind = kind; shouts.Add(s);
+    }
+    /// <summary>Соққыны бастағанда: ауыр не рух соққысында айқай.</summary>
+    public void ShoutAttack(Fighter f, Move m)
+    {
+        if (phase != FIGHT || m == null || !(m.heavy || m.special) || U.Rand() > (m.special ? 0.85f : 0.4f)) return;
+        Shout(f, Pk(f == player ? CRY_P : CRY_E), 0, m.special);
+    }
+    void ShoutHit(Fighter f, float dmg)
+    {
+        Fighter o = f.opp;
+        if (f.state == Fighter.DEAD) return;
+        if (f.state == Fighter.DOWN && o != null && U.Rand() < 0.6f) { Shout(o, Pk(o == player ? TAUNT_P : TAUNT_E), 2, false); return; }
+        if (!f.lowSaid && f.hp < f.maxHp * 0.3f) { f.lowSaid = true; Shout(f, Pk(f == player ? LOW_P : LOW_E), 3, true); return; }
+        if (dmg >= 12 && U.Rand() < 0.5f) Shout(f, Pk(OUCH), 1, false);
+    }
+    void ShoutStep(float rdt)
+    {
+        for (int i = shouts.Count() - 1; i >= 0; i--) { ShoutL s = shouts.Get(i); s.t += rdt; if (s.t > 1.25f) shouts.RemoveAt(i); }
     }
 
     // ================= балалар режимі (веб: kidApply) =================
@@ -719,7 +757,7 @@ public class Match
         phaseMsgT += rdt; clock += rdt; skFirstT += rdt;
         if (U.Eq(mode, "arena") && player != null && enemy != null) ArenaStep(rdt);
         KidStep(rdt, input);
-        SbStep(rdt, input); PopStep(rdt);
+        SbStep(rdt, input); PopStep(rdt); ShoutStep(rdt);
 
         float dt = rdt;
         if (slow > 0) { slow -= rdt; dt *= 0.28f; }
@@ -847,4 +885,10 @@ public class DmgPop
 {
     public float x, y, vx, t, size;
     public string txt, col;
+}
+
+/// <summary>Жауынгердің айқайы (комикс бұлты): 0 — айқай, 1 — ауырсыну, 2 — мазақ, 3 — жаны аз, 4 — жеңіс.</summary>
+public class ShoutL
+{
+    public Fighter f; public string txt; public int kind; public float t;
 }

@@ -205,6 +205,43 @@ public static class Ui
         ImgC(path, cx - w / 2, cy - h / 2, w, h, c);
         GUI.matrix = m;
     }
+    /// <summary>«Тірі» сурет: (px, py) тірек нүктесінің айналасында бұрылу (градус) және созылу (sx, sy) — тыныс алу, тербелу, секіру.</summary>
+    public static void ImgPose(string path, float x, float y, float w, float h, float px, float py, float deg, float sx, float sy, float alpha = 1)
+    {
+        Matrix4x4 m = GUI.matrix;
+        Vector2 pv = new Vector2(ox + px * k, oy + py * k);
+        GUIUtility.ScaleAroundPivot(new Vector2(sx, sy), pv);
+        if (deg != 0) GUIUtility.RotateAroundPivot(deg, pv);
+        Img(path, x, y, w, h, alpha);
+        GUI.matrix = m;
+    }
+    // ---- векторлық суреттер (VMesh: құс, атты, шаң) интерфейс үстінде ----
+    static Material glMat;
+    /// <summary>VMesh-ті экранға салу (виртуал 1280×720 координатында). Тек Repaint кезінде; GUI.color әсер етпейді — түстің мөлдірлігі VMesh-тің өзінде.</summary>
+    public static void Mesh(VMesh vm)
+    {
+        if (Event.current.type != EventType.Repaint || vm.nt == 0) return;
+        if (glMat == null)
+        {
+            Shader sh = Resources.Load<Shader>("Shaders/ShaiqasSprite");
+            if (sh == null || !sh.isSupported) sh = Shader.Find("Sprites/Default");
+            if (sh == null) return;
+            glMat = new Material(sh); glMat.hideFlags = HideFlags.HideAndDontSave;
+            glMat.mainTexture = Texture2D.whiteTexture; glMat.SetFloat("_SrcBlend", 5); glMat.SetFloat("_DstBlend", 10);
+        }
+        glMat.SetPass(0);
+        // вьюпорт = ойын аумағы (16:9): шетінен шыққан құс/атты қара жолақтарға салынбайды
+        GL.PushMatrix(); GL.Viewport(new Rect(ox, Screen.height - oy - 720 * k, 1280 * k, 720 * k)); GL.LoadPixelMatrix(0, 1280, 720, 0);
+        GL.Begin(GL.TRIANGLES);
+        for (int i = 0; i < vm.nt; i++)
+        {
+            int j = vm.tri[i], c = vm.col[j];
+            GL.Color(new Color32((byte)((c >> 16) & 255), (byte)((c >> 8) & 255), (byte)(c & 255), (byte)((c >> 24) & 255)));
+            GL.TexCoord2(0.5f, 0.5f);
+            GL.Vertex3(vm.vx[j], vm.vy[j], 0);
+        }
+        GL.End(); GL.PopMatrix(); GL.Viewport(new Rect(0, 0, Screen.width, Screen.height));
+    }
     /// <summary>Мәтін ені (виртуал пиксельмен).</summary>
     public static float TextW(string s, int size, bool bold = true)
     {

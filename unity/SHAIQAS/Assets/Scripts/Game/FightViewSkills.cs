@@ -190,6 +190,31 @@ public partial class FightView
     }
     static Color32 Col32(string css) { int c = Col.Parse(css); return new Color32((byte)Col.R(c), (byte)Col.G(c), (byte)Col.B(c), 255); }
 
+    // ---------- АЙҚАЙ: комикс бұлты бас үстінде, қаруы бар жаққа қарай (сөз «атылып» шығады) ----------
+    void ShoutHud()
+    {
+        if (m.paused) return;
+        for (int i = 0; i < m.shouts.Count(); i++)
+        {
+            ShoutL s = m.shouts.Get(i); Fighter f = s.f; if (f == null) continue;
+            float k = s.t, a = Mathf.Clamp01(Mathf.Min(k * 10, (1.25f - k) * 4)), pop = 1 + 0.35f * Mathf.Max(0, 1 - k * 7);
+            Vector2 c = W2S(f.x + f.facing * 46 * f.sc / Db.S, f.y - 300 * f.sc / Db.S - 74 - k * 10);   // әдіс атауының үстінде
+            int sz = Mathf.RoundToInt((s.kind == 0 || s.kind == 4 ? 24 : 19) * pop);
+            float w = Ui.TextW(s.txt, sz) + 28, h = sz * 1.55f;
+            c.x = Mathf.Clamp(c.x, w / 2 + 12, 1280 - w / 2 - 12);
+            float x = c.x - w / 2, y = c.y - h;
+            Color edge = s.kind == 0 ? new Color32(214, 96, 32, 255) : s.kind == 3 ? new Color32(190, 40, 30, 255) : s.kind == 4 ? new Color32(200, 150, 30, 255) : new Color32(60, 40, 30, 255);
+            Color paper = s.kind == 2 ? new Color32(255, 240, 190, 255) : s.kind == 4 ? new Color32(255, 236, 160, 255) : new Color32(255, 252, 244, 255);
+            Color o = GUI.color; GUI.color = new Color(1, 1, 1, a);
+            Ui.Fill(x + 3, y + 4, w, h, new Color(0, 0, 0, 0.3f));
+            Ui.Fill(x, y, w, h, edge); Ui.Fill(x + 2.5f, y + 2.5f, w - 5, h - 5, paper);
+            float tx = c.x - f.facing * 10;
+            for (int q = 0; q < 10; q++) { float tw = 14 * (1 - q / 10f); Ui.Fill(tx - tw / 2 - f.facing * q * 0.8f, y + h - 2 + q, tw, 1.2f, q < 8 ? paper : edge); }
+            Ui.Text(s.txt, x, y, w, h, sz, s.kind == 3 ? (Color)new Color32(150, 20, 16, 255) : new Color32(40, 22, 14, 255), TextAnchor.MiddleCenter, true);
+            GUI.color = o;
+        }
+    }
+
     // ---------- ӘДІС ТАҚТАСЫ 1–4 (веб: ГЕЙМПЛЕЙ 2.0 drawFightHud) ----------
     void SbHud()
     {

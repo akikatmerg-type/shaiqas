@@ -150,6 +150,9 @@ public partial class GameRoot : MonoBehaviour
         if (screen == STORY && s != STORY) Ui.Forget("Art/scenes/");
         if (screen == FIGHT && s != FIGHT) fv.Teardown();
         if (s == ALBUM && screen != ALBUM) AlbumEnter();
+        if (s == LOBBY && screen != LOBBY) LobbyEnter();
+        if (s == STORY) { storyLastPage = -1; storyFadeT0 = -9; }
+        if (s != screen) goT = Time.unscaledTime;
         screen = s; pt = 0;
         Tut.Enter(s);
     }
@@ -257,6 +260,7 @@ public partial class GameRoot : MonoBehaviour
         }
         Ui.blockInput = false;
         OverlaysPost();
+        TransitionFade();
         Tut.Draw(screen);
         if (toastT > 0)
         {

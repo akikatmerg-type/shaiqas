@@ -190,6 +190,12 @@ public class Ghost {
       String rr = ""; for (int i = 0; i < 6; i++) { String zq = Zh.Pick("pre"); rr += zq.substring(0, 6) + "|"; }
       Match am2 = new Match(); am2.StartMode("arena", 0); check(am2.zhPre == null, "жырау: еркін алаңда кеңес жоқ");
       System.out.println("[zh] алдында: " + zp + "\n     кейін: " + zm.zhHead + " / КЕҢЕС: " + zm.zhTip + "\n     pre ретімен: " + rr); }
+    { U.Seed(21); Match lm = new Match(); lm.StartCampaign(2, 1); lm.player.ai = true; int nsh = 0, ng = 0; String said = "";
+      for (int f = 0; f < 60 * 40 && lm.phase != Match.MATCHEND; f++) { int sc0 = lm.shouts.Count(); lm.Update(1f / 60, null); lm.fx.Clear();
+        if (lm.shouts.Count() > 0 && (sc0 == 0 || lm.shouts.Last().t == 0)) { nsh++; if (said.length() < 90) said += lm.shouts.Last().txt + " "; }
+        if (lm.player.gestK > 0 && lm.phase == Match.INTRO) ng = 1; }
+      check(nsh >= 3, "айқайлар: ұрыста кемінде 3 рет (" + nsh + ")");
+      System.out.println("[life] айқай " + nsh + " рет: " + said + "· кіріспеде қимыл: " + (ng > 0 ? "иә" : "жоқ")); }
     { int qc0 = Game.S.coins, qx0 = Game.S.xp; Match qm = new Match(); qm.StartQuick(1, 0); qm.phase = Match.FIGHT; qm.player.active = true; qm.enemy.active = true;
       Move qb = Move.Base("l1"); qb.dmg = 9999; qm.enemy.TakeHit(qb, 1, true, qm.player);
       for (int f = 0; f < 60 * 8 && qm.phase != Match.MATCHEND; f++) { qm.Update(1f / 60, null); qm.fx.Clear(); }

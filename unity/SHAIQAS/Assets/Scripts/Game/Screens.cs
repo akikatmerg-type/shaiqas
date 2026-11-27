@@ -8,9 +8,11 @@ public partial class GameRoot
     void DrawLobby()
     {
         Ui.Img("Art/lobby/backdrop", 0, 0, 1280, 720);
-        float br = Mathf.Sin(Time.time * 1.6f) * 1.5f;
-        Ui.Img("Art/lobby/zhyrau", 980, 250 + br, 300, 420);
-        Ui.Img("Art/lobby/front_" + Game.S.hero, 550, 110 + Mathf.Sin(Time.time * 2.4f) * 1.2f, 420, 560);
+        float lt = Time.unscaledTime, br = Mathf.Sin(lt * 1.6f) * 1.5f;
+        LobbyBack(lt);
+        LobbyZhyrau(lt);
+        LobbyHero(lt);
+        LobbyFront(lt);
         // сол жақ көлеңке (веб: LOBSH)
         Ui.FadeH(0, 0, 528, 720, new Color(0.047f, 0.031f, 0.11f, 0.82f));
         Ui.Fill(0, 600, 1280, 120, new Color(0.04f, 0.024f, 0.08f, 0.35f));
@@ -37,7 +39,8 @@ public partial class GameRoot
         float zk = Mathf.Clamp01((pt - 0.6f) / 0.45f);
         if (zk > 0)
         {
-            string line = Db.J("ZH_LINES").At(Mathf.Min(Progress.RankIndex(), Db.J("ZH_LINES").Count() - 1)).Str();
+            string line = ZhLine();
+            zk = Mathf.Min(zk, Mathf.Clamp01((lt - zhT0) / 0.35f));   // жаңа сөз — бұлт қайта ашылады
             // веб: zhLobbyBubble — сөз бұлты жыраудың дәл басының үстінде, құйрығы аузына қарай
             float zx = 1130, ease = 1 + 2.7f * Mathf.Pow(zk - 1, 3) + 1.7f * Mathf.Pow(zk - 1, 2);
             float tw = Mathf.Min(380, Ui.TextW(line, 17)), bw = Mathf.Max(260, tw + 40);
@@ -71,7 +74,12 @@ public partial class GameRoot
         Ui.Fill(0, 0, 1280, 720, Color.black);
         float k = Mathf.Min(1, pt / 10), zoom = 1 + 0.05f * k;
         float sw = 1280 * zoom, sh = 560 * zoom, ox = (page % 2 == 1 ? -12 : 12) * k;
-        Ui.Img("Art/scenes/" + p.pic, 640 - 640 * zoom + ox, 280 - 280 * zoom, sw, sh);
+        Ui.BeginClip(0, 0, 1280, 720);   // үлкейтілген сурет қара жолақтарға шықпайды
+        StoryPicFade(p.pic); float pa = StoryPrevA();
+        if (pa > 0 && storyPrevPic != null) Ui.Img("Art/scenes/" + storyPrevPic, 640 - 640 * 1.05f, 280 - 280 * 1.05f, 1280 * 1.05f, 560 * 1.05f);
+        Ui.Img("Art/scenes/" + p.pic, 640 - 640 * zoom + ox, 280 - 280 * zoom, sw, sh, 1 - pa);
+        StoryAir(storyCh);
+        Ui.EndClip();
         Ui.Img("Art/ui/prtop", 0, 0, 1280, 84);
         string head = storyMode == "epilogue" ? "ЭПИЛОГ" : Db.Roman(storyCh) + " ТАРАУ · " + U.Upper(Db.ChName(storyCh));
         Ui.TextO(head, 40, 18, 900, 40, 28, new Color32(255, 214, 120, 255), TextAnchor.MiddleLeft);
@@ -128,7 +136,7 @@ public partial class GameRoot
             }
         }
         if (page > 0 && Ui.DzBtn("◀", 940, 618, 52, 60, false, true, null, true)) { page--; pt = 1; }
-        if (pt < 0.4f) Ui.Fill(0, 0, 1280, 720, new Color(0, 0, 0, 1 - pt / 0.4f));
+        if (pt < 0.4f && StoryPrevA() <= 0 && page == 0) Ui.Fill(0, 0, 1280, 720, new Color(0, 0, 0, 1 - pt / 0.4f));
     }
 
     // ================= ТАРАУ СОҢЫ =================

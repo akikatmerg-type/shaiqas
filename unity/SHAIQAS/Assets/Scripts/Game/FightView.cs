@@ -181,11 +181,14 @@ public partial class FightView : MonoBehaviour
         if (Application.isEditor && Skills.TestUnlock && m.player != null) m.player.rux = 100;
         EatFx(); SkSounds(); HistPush(m.player, histP); HistPush(m.enemy, histE);
         StepParticles(m.paused || Tut.Active() ? 0 : dt);
+        Confetti(dt);
         // камера: зум (W/2, pivY) нүктесінің айналасында, діріл
         float z = m.zoom, pv = m.pivY;
         float sx = m.shake > 0 ? (U.Rand() - 0.5f) * m.shake * 1.6f : 0, sy = m.shake > 0 ? (U.Rand() - 0.5f) * m.shake * 1.6f : 0;
         Camera c = GameRoot.I.cam;
         z *= 1 + m.punch * 1.4f;
+        // қолдағы камера сияқты баяу «тыныс» — сахна тірі көрінеді
+        float ct = Time.time; sx += Mathf.Sin(ct * 0.37f) * 1.6f + Mathf.Sin(ct * 0.91f) * 0.6f; sy += Mathf.Sin(ct * 0.53f) * 1.1f;
         c.orthographicSize = 360f / z;
         c.transform.position = new Vector3(640 - sx / z, -(pv + (360 - pv) / z) + sy / z, -100);
         par0.localPosition = new Vector3(-m.cam * parK[0], 0, 0);
@@ -218,7 +221,7 @@ public partial class FightView : MonoBehaviour
         if (f.flash > 0)
         {
             float fk = Mathf.Clamp01(f.flash / 0.15f);
-            if (fk > 0.55f) Painter.Draw(vm, f, L, Col.Pack(255, 252, 240, (int)(0.78f * fk * 255)), 0, 0);
+            if (fk > 0.55f) Painter.Draw(vm, f, L, Col.Pack(255, 252, 240, (int)(0.6f * fk * 255)), 0, 0);
             else Painter.Draw(vm, f, L, Col.Pack(255, 90, 60, (int)(fk * 0.75f * 255)), 0, 0);
         }
         if (f.phase2) Painter.Draw(vm, f, L, Col.Pack(255, 60, 30, (int)((0.22f + 0.14f * Mathf.Sin(f.at * 12)) * 255)), 0, 0);
@@ -412,6 +415,20 @@ public partial class FightView : MonoBehaviour
         if (n >= 6 && y >= Db.GROUND - 2) for (int i = 0; i < (n >= 12 ? 6 : 2); i++) P(P_CHIP, x + Rn(-20, 20), Db.GROUND - 2, Rn(-220, 220), Rn(-420, -160), Rn(0.4f, 0.7f), C(106, 82, 64), Rn(2, 4), 1800);
         if (dir == 0 && n >= 8) RingFx(x, Db.GROUND - 2, 16, n >= 12 ? 620 : 380, 0.3f, Col.Pack(255, 240, 220, 160), 2.5f);
     }
+    // ---------- жеңіс шашуы: түрлі-түсті қағаз жапырақтар жаудырады (тек ойыншы жеңгенде) ----------
+    float confT = -1; int confPh = -1;
+    const int P_CONF = 7;
+    static readonly int[] CONF = { Col.Pack(255, 211, 80, 255), Col.Pack(232, 60, 50, 255), Col.Pack(70, 140, 230, 255), Col.Pack(250, 246, 235, 255), Col.Pack(90, 190, 110, 255) };
+    void Confetti(float dt)
+    {
+        if (m.phase == Match.MATCHEND && m.won && confPh != Match.MATCHEND) confT = 0;
+        confPh = m.phase;
+        if (confT < 0 || confT > 2.2f) return;
+        confT += dt;
+        int n = Mathf.RoundToInt(dt * 90);
+        for (int i = 0; i < n; i++)
+            P(P_CONF, m.cam + Rn(80, 1200), Rn(-80, -10), Rn(-60, 60), Rn(80, 200), Rn(2.5f, 3.6f), CONF[(int)(U.Rand() * CONF.Length) % CONF.Length], Rn(5, 9), 60);
+    }
     /// <summary>Аяқ астынан шыққан шағын шаң (әр қадамда).</summary>
     void Puff(float x, float dir)
     {
@@ -430,6 +447,7 @@ public partial class FightView : MonoBehaviour
             Prt p = prts[i];
             p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
             if (p.kind == P_PUFF) { p.vx *= 1 - 2.2f * dt; p.vy *= 1 - 1.5f * dt; p.size += 16 * dt; }
+            if (p.kind == P_CONF) { if (p.vy > 150) p.vy = 150; p.vx *= 1 - 0.8f * dt; }
             if (p.kind == P_CHIP && p.y > Db.GROUND - 2) { p.y = Db.GROUND - 2; p.vy *= -0.3f; p.vx *= 0.6f; }
             if (p.kind == P_RING) p.r1 += p.vx * dt * (p.life / p.max);
             if (p.life <= 0) prts.RemoveAt(i);
@@ -463,6 +481,7 @@ public partial class FightView : MonoBehaviour
         {
             float k = Mathf.Clamp01(p.life / p.max);
             if (p.kind == P_PUFF) { vfx.FillC(Col.WithA(p.col, k * k * Col.A(p.col) / 255f)); vfx.Circle(p.x, p.y, p.size); }
+            else if (p.kind == P_CONF) { float fl = Mathf.Abs(Mathf.Sin(p.rot * 2)); vfx.FillC(Col.WithA(p.col, Mathf.Min(1, k * 3))); vfx.Save(); vfx.Translate(p.x + Mathf.Sin(p.life * 5 + p.vr) * 8, p.y); vfx.Rotate(p.rot); vfx.Quad(-p.size * 0.5f, -p.size * 0.3f * fl, p.size * 0.5f, -p.size * 0.3f * fl, p.size * 0.5f, p.size * 0.3f * fl, -p.size * 0.5f, p.size * 0.3f * fl); vfx.Restore(); }
             else if (p.kind == P_CHIP) { vfx.FillC(Col.WithA(p.col, Mathf.Min(1, k * 2))); vfx.Save(); vfx.Translate(p.x, p.y); vfx.Rotate(p.rot); lx[0] = -p.size; lx[1] = p.size; ly[0] = 0; ly[1] = 0; vfx.Stroke(lx, ly, 2, p.size * 0.7f, false); vfx.Restore(); }
         }
         foreach (Ghost gh in ghosts)
@@ -600,6 +619,7 @@ public partial class FightView : MonoBehaviour
         if (P.rux >= 100) Ui.TextO("L — РУХ СОҚҚЫСЫ!", 128, 92 + oy, 300, 22, 15, Ui.GOLD, TextAnchor.MiddleLeft, true, 1.5f);
         // сөздер (пергамент көпіршіктер)
         SkHud();
+        ShoutHud();
         SbHud();
         KidWarnHud();
         if (m.mode == "arena") ArenaHud();

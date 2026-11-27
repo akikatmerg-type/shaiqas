@@ -623,7 +623,7 @@ public class StageLive
         v.FillC(col); QStart(x - w, y); QCurve(x - w * 0.9f, y - h * 0.55f, x + sw * k, y - h); QCurve(x + w * 0.9f, y - h * 0.55f, x + w, y); v.Poly(xs, ys, qn);
     }
 
-    void Eagle(VMesh v, float x, float y, float s, float flap, float rot, int col)
+    public static void Eagle(VMesh v, float x, float y, float s, float flap, float rot, int col)
     {
         v.Save(); v.Translate(x, y); v.Rotate(rot); v.FillC(col);
         float sp = 64 * s, wy = flap * 14 * s;
@@ -673,7 +673,7 @@ public class StageLive
         if (tug) { Ln(v, 3 * s, -6 * s, -60 * s, -10 * s, -175 * s); P4(v, -10 * s, -170 * s, -4 * s, -166 * s, 4 * s, -128 * s, -6 * s, -124 * s); }
         v.Restore();
     }
-    static void Walker(VMesh v, float x, float y, float s, float dir, float ph, bool load)
+    public static void Walker(VMesh v, float x, float y, float s, float dir, float ph, bool load)
     {
         v.Save(); v.Translate(x, y); v.Scale(dir, 1);
         float a = Mathf.Sin(ph) * 0.4f;

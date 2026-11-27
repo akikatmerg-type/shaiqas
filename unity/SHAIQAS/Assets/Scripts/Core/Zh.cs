@@ -133,4 +133,40 @@ public static class Zh
         if (tips.Count() == 0) tips.Add(Pick("tGood"));
         return new string[] { Fill(head, null, null), Dot(Fill(tips.Get(0), null, null)) };
     }
+
+    /// <summary>Лоббидегі жырау сөздері (веб: zhLobbyLines): келесі жорық, жабдық, жаңа әдіс, теңге, тарих дерегі, мақал.</summary>
+    public static Lst<string> LobbyLines()
+    {
+        Lst<string> L = new Lst<string>(); SaveData S = Game.S;
+        int c = -1; for (int i = 0; i < Db.NCH; i++) if (Progress.Unlocked(i) && S.prog[i] < 4) { c = i; break; }
+        if (c >= 0)
+        {
+            int si = Mathf.Min(3, S.prog[c]); JNode C = Db.Ch(c);
+            JNode nd = C.Get("nodes").At(si), en = C.Get("enemies").At(si);
+            string P = nd.IsObj() ? nd.S("n") : C.S("name"), E = en.IsObj() ? en.S("name") : "жау";
+            L.Add(Fill(Pick("lGoalPast"), new string[] { "P", "E" }, new string[] { P, E }));
+            if (Eco.Stage(c, si).weak) L.Add(Dot(Gear(A().Get("lGear").At(0).Str(), c, si)));
+        }
+        else L.Add(Fill(A().Get("lDone").At(0).Str(), null, null));
+        Skills.Init();
+        for (int i = 0; i < Skills.All.Count(); i++)
+        {
+            SkDef d = Skills.All.Get(i);
+            if (Skills.Unlocked(d) && !S.skUsed.Contains(d.id)) { L.Add(Fill(A().Get("lSkill").At(0).Str(), new string[] { "S", "Q" }, new string[] { d.name, Seq(d) })); break; }
+        }
+        int mn = 999999; JNode[] T = { Db.Weapons, Db.Armors, Db.Helms }, O = { Db.WeaponOrder, Db.ArmorOrder, Db.HelmOrder };
+        for (int q = 0; q < 3; q++) for (int i = 0; i < O[q].Count(); i++)
+        {
+            string id = O[q].At(i).Str(); JNode it = T[q].Get(id);
+            Lst<string> ow = q == 0 ? S.ownWeapon : q == 1 ? S.ownArmor : S.ownHelm;
+            if (it.IsNull() || it.Bk("prize") || ow.Contains(id) || U.Len(Progress.GearLock(it)) > 0) continue;
+            int pr = it.Ik("price"); if (pr > 0 && pr < mn) mn = pr;
+        }
+        if (S.coins >= mn) L.Add(Fill(A().Get("lCoins").At(0).Str(), new string[] { "C" }, new string[] { "" + S.coins }));
+        int done = 0; for (int i = 0; i < Db.NCH; i++) if (S.prog[i] >= 4) done++;
+        JNode sab = A().Get("lSab"); L.Add(Fill(sab.At(Mathf.Min(done, sab.Count() - 1)).Str(), null, null));
+        L.Add(Fill(Pick("lProv"), null, null));
+        if (L.Count() < 4) L.Add(Fill(A().Get("lGuide").At(0).Str(), null, null));
+        return L;
+    }
 }

@@ -20,7 +20,7 @@ public class Fighter
     // --- күй ---
     public float x, y = Db.GROUND, vx, vy, push, hp, hpLag, rux, sc;
     public int facing = 1, state = IDLE, comboIdx = -1, hitIdx, hitsTaken, blocks;
-    public float st, at, flash, inv, dashDir, ghostT;
+    public float st, at, flash, inv, dashDir, ghostT, shoutT = -9, gestT = -9; public bool lowSaid; public int gestK;
     public Move cm;
     public bool hitDone, queued, lunged, waved, airUsed, guard, wasAir, lowHit;
     public Fighter opp;
@@ -282,7 +282,22 @@ public class Fighter
             aiCombo = U.Rand() < aiComboP + Db.PaceK("aiPush") * fz ? combo.Length - 1 : (U.Rand() < 0.4f + 0.3f * fz ? 1 : 0);
         }
         state = ATTACK; st = 0;
-        if (game != null && sk == null) game.ZhAttack(this, id);
+        if (game != null && sk == null) { game.ZhAttack(this, id); game.ShoutAttack(this, m); }
+    }
+
+    /// <summary>Тыныш тұрғанда «тірі» қимылдар: жауын шақыру (қолмен «кел!»), қаруды ойнату, иық жазу.
+    /// Кіріспеде әркім бір рет шақырады; ұрыста ұзақ тұрып қалса — 6 секундта бір рет.</summary>
+    void Gesture(float[] tg)
+    {
+        int ph = game.phase;
+        if (ph == Match.INTRO && gestK == 0 && game.pt > (ai ? 0.5f : 1.1f) && game.pt < 2.2f) { gestK = 1; gestT = at; }
+        else if (ph == Match.FIGHT && st > 2.2f && at - gestT > 6.5f) { gestK = 1 + (int)(U.Rand() * 3); if (gestK > 3) gestK = 3; gestT = at; }
+        float dur = gestK == 2 ? 1.1f : 0.95f, e = (at - gestT) / dur;
+        if (gestK == 0 || e < 0 || e >= 1) return;
+        float env = Mathf.Sin(e * Mathf.PI);
+        if (gestK == 1) { tg[Pz.FA1] += env * 1.1f; tg[Pz.FA2] += env * (0.6f + Mathf.Sin(at * 14) * 0.35f); tg[Pz.T] -= env * 0.06f; }
+        else if (gestK == 2) { tg[Pz.W] += env * Mathf.Sin(e * Mathf.PI * 2) * 1.6f; tg[Pz.BA2] += env * 0.4f; }
+        else { tg[Pz.HY] -= env * 5; tg[Pz.BA1] += env * 0.5f; tg[Pz.T] -= env * 0.08f; }
     }
 
     void UpdAttack(bool og, float dt, Intent it)
@@ -749,6 +764,7 @@ public class Fighter
             tg[Pz.FA1] += b * 0.03f; tg[Pz.FA2] += b * 0.05f + Mathf.Sin(at * 1.3f) * 0.04f;
             tg[Pz.W] += b * 0.04f + Mathf.Sin(at * 1.3f + 0.8f) * 0.07f; tg[Pz.BA2] += b * 0.04f;
             rate = 14; zeta = 0.9f;
+            if (G0 && s0 == IDLE && !guard && !npc) Gesture(tg);
             if (G0)
             {
                 int ph = game.phase;
